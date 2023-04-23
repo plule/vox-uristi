@@ -1,0 +1,5 @@
+/target
+*.vox
+settings.json
+.vscode
+*_list.txt

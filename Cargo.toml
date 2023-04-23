@@ -1,0 +1,30 @@
+[package]
+name = "vox-uristi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.70"
+clap = { version = "4.2.4", features = ["derive"] }
+dfhack-remote = "0.5.0"
+eframe = {version = "0.21.3", features = ["persistence"]}
+generator = "0.7.3"
+indicatif = "0.17.3"
+itertools = "0.10.5"
+rand = "0.8.5"
+rfd = "0.11.3"
+rgb = "0.8.36"
+serde = "1.0.160"
+tracing-subscriber = "0.3.16"
+vox_writer = "0.1.6"
+
+[build-dependencies]
+image = "0.24.6"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
+[package.metadata.winres]
+ProductName = "Vox Uristi"
