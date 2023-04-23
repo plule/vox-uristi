@@ -10,6 +10,10 @@ jobs:
       fail-fast: false
       matrix:
         target: [x86_64-pc-windows-gnu]
+    permissions:
+      contents: write
+      packages: write
+      deployments: write
     steps:
       - uses: actions/checkout@master
       - name: Compile and release
