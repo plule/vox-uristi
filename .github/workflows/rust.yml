@@ -38,11 +38,13 @@ jobs:
     - uses: Swatinem/rust-cache@v2
     - name: Build
       run: cargo build --release
+    - name: Copy file to release
+      run: cp target/release/vox-uristi.exe vox-uristi-${{ github.ref_name }}.exe
     - name: Release
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: target/release/vox-uristi.exe
+        files: vox-uristi-${{ github.ref_name }}.exe
         draft: true
 
