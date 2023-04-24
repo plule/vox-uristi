@@ -46,7 +46,7 @@ fn export(
             .progress_chars("#>-"),
     );
     let mut df = dfhack_remote::connect()?;
-    let range = elevation_low..elevation_high;
+    let range = elevation_low..elevation_high + 1;
     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
     let (_cancel_tx, cancel_rx) = std::sync::mpsc::channel();
     let task = thread::spawn(move || {
