@@ -14,13 +14,35 @@ can then be opened in a software such as MagicaVoxel to render it.
 
 ## How to
 
-Ensure you have [Dwarf
-Fortress](https://store.steampowered.com/app/975370/Dwarf_Fortress/) and
-[DFHack](https://store.steampowered.com/app/2346660/DFHack__Dwarf_Fortress_Modding_Engine/)
-installed.
+> ⚠ Vox Uristi is in the early stage of development. The exported map is lacking
+> important features, and could not work at all in some cases. Please report any
+> issue you see.
 
-Run Vox Uristi, and select the upper and lower bound to export. Only the zone
-between these two altitudes will be included in the exported model. It works
-best by selecting the surface area of your map.
+First, ensure you have [Dwarf
+Fortress](https://store.steampowered.com/app/975370/Dwarf_Fortress/) with [DFHack](https://store.steampowered.com/app/2346660/DFHack__Dwarf_Fortress_Modding_Engine/). Vox Uristi is mostly tested with the latest Steam release, but could work with previous versions too.
+
+Download [Vox Uristi]({% include latest-download.html %}).
+
+While in game in the save you wish to export, run Vox Uristi and select the
+upper and lower bound to export. Only the zone between these two altitudes will
+be included in the exported model. It works best by selecting the surface area
+of your map.
 
 Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.io/).
+
+> ⚠ The same website has a dedicated voxel viewer. At the moment, the exported
+> files are not correctly rendered by this viewer.
+
+## Features
+
+- ☑ Base building blocks (walls, floors, fortifications)
+- ☑ Water, magma and grass
+- ☑ Basic material colors
+- ☑ Directional ramps
+- ☑ Rough/Smooth floor representation
+- ☑ Basic tree support, inaccurate but good enough
+- ☐ Essential construction items (doors, windows, bars)
+- ☐ Detailed materials (metallic, water, light emission)
+- ☐ Flows, waves and mist
+- ☐ Accurate trees
+- ☐ More construction items (furnitures)
