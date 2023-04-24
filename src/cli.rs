@@ -1,4 +1,5 @@
-use crate::{export, rfr};
+use crate::{export, rfr, update};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{path::PathBuf, thread};
@@ -21,9 +22,10 @@ pub enum Command {
         destination: PathBuf,
     },
     Probe,
+    CheckUpdate,
 }
 
-pub fn run_cli_command(command: Command) -> Result<(), anyhow::Error> {
+pub fn run_cli_command(command: Command) -> Result<()> {
     match command {
         Command::Export {
             elevation_low,
@@ -31,14 +33,11 @@ pub fn run_cli_command(command: Command) -> Result<(), anyhow::Error> {
             destination,
         } => export(elevation_low, elevation_high, destination),
         Command::Probe => probe(),
+        Command::CheckUpdate => check_update(),
     }
 }
 
-fn export(
-    elevation_low: i32,
-    elevation_high: i32,
-    destination: PathBuf,
-) -> Result<(), anyhow::Error> {
+fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Result<()> {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}]")
@@ -115,5 +114,26 @@ fn probe() -> Result<(), anyhow::Error> {
             dbg!(tile);
         }
     }
+    Ok(())
+}
+
+fn check_update() -> Result<()> {
+    match update::check_update()? {
+        update::UpdateStatus::UpToDate => {
+            println!("Up to date");
+        }
+        update::UpdateStatus::NewVersion {
+            name,
+            release_url,
+            asset_url,
+        } => {
+            println!("Vox Uristi {name} is available");
+            println!("URL: {release_url}");
+            if let Some(asset_url) = asset_url {
+                println!("Download: {asset_url}");
+            }
+        }
+    };
+
     Ok(())
 }

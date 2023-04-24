@@ -1,4 +1,7 @@
-use crate::export::{export_voxels, Cancel, Progress};
+use crate::{
+    export::{export_voxels, Cancel, Progress},
+    update::{check_update, UpdateStatus},
+};
 use anyhow::Result;
 use eframe::{
     egui::{self, Button, DragValue, ProgressBar, RichText, Ui},
@@ -13,14 +16,17 @@ use std::{
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
+    low_elevation: i32,
+    high_elevation: i32,
+
     #[serde(skip)]
     error: Option<String>,
     #[serde(skip)]
     progress: Option<(Progress, Receiver<Progress>, Sender<Cancel>)>,
     #[serde(skip)]
     exported_path: Option<String>,
-    low_elevation: i32,
-    high_elevation: i32,
+    #[serde(skip)]
+    update_status: Option<UpdateStatus>,
 }
 
 impl App {
@@ -150,6 +156,36 @@ impl App {
             });
         }
 
+        ui.group(|ui| {
+            if ui.button("🔃 Check for updates").clicked() {
+                match check_update() {
+                    Ok(update_status) => self.update_status = Some(update_status),
+                    Err(error) => self.error = Some(error.to_string()),
+                }
+            }
+
+            if let Some(update_status) = &self.update_status {
+                match update_status {
+                    UpdateStatus::UpToDate => {
+                        ui.label("✔ Up to date");
+                    }
+                    UpdateStatus::NewVersion {
+                        name,
+                        release_url,
+                        asset_url,
+                    } => {
+                        ui.label(format!("⮉ Vox Uristi {name} is available."));
+                        ui.horizontal(|ui| {
+                            ui.hyperlink_to(" Open", release_url);
+                            if let Some(asset_url) = asset_url {
+                                ui.hyperlink_to("⬇ Download", asset_url);
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
         if let Some(err) = &self.error {
             ui.label("Is Dwarf Fortress running with DFHack installed?");
             ui.label(err);
@@ -173,11 +209,12 @@ impl App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            low_elevation: 100,
+            high_elevation: 110,
             error: None,
             progress: None,
             exported_path: None,
-            low_elevation: 100,
-            high_elevation: 110,
+            update_status: None,
         }
     }
 }
