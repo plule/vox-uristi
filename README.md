@@ -1,13 +1,20 @@
 # ☼Vox Uristi☼
 
-![vox-uristi](assets/icon.png)
+<p align="center">
+    <img width="256" height="256" src="https://github.com/plule/vox-uristi/raw/main/assets/icon.png">
+</p>
 
-Vox Uristi exports your Dwarf Fortress map to create beautiful rendering of your
-fortresses.
+Export your Dwarf Fortress map in a voxel format to create beautiful
+rendering of your fortresses.
 
 | ![arelumid](assets/arelumid.png)                  |
 |---------------------------------------------------|
 | *The gates of Arelumid and its two giant statues* |
+
+Vox Uristi uses [DFHack's
+RemoteFortressReader](https://docs.dfhack.org/en/stable/docs/tools/RemoteFortressReader.html)
+to read the fortress data and export is in the `.vox` format. The resulting file
+can then be opened in a software such as MagicaVoxel to render it.
 
 ## How to
 
@@ -21,9 +28,3 @@ between these two altitudes will be included in the exported model. It works
 best by selecting the surface area of your map.
 
 Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.io/).
-
-## Limitations
-
-- Incompatible with the MagicaVoxel viewer: only part of the map is loaded
-- Mist and flows are not included
-- No item is included, only ground and constructions
