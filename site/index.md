@@ -51,11 +51,22 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 
 ## Other Dwarf Fortress visualisation tools
 
-Vox Uristi is only intended to make one-off renders of fortress.
+Vox Uristi is only intended to make one-off renders of fortresses. Other tools
+can be used for different kind of usage or render.
 
 For real-time isometric rendering:
-[**stonesense**](https://docs.dfhack.org/en/stable/docs/tools/stonesense.html).
+[stonesense](https://docs.dfhack.org/en/stable/docs/tools/stonesense.html).
 
-For real-time 3D rendering: [**Armok Vision**](https://github.com/RosaryMala/armok-vision).
+For real-time 3D rendering: [Armok Vision](https://github.com/RosaryMala/armok-vision).
 
-For one-off render of the world map: [**VoxelFortress**](https://github.com/RosaryMala/VoxelFortress/releases/tag/v1.0.0).
+For one-off render of the world map: [VoxelFortress](https://github.com/RosaryMala/VoxelFortress/releases/tag/v1.0.0).
+
+## Gallery
+
+| ![saziramost](assets/saziramost.png)                      |
+|-----------------------------------------------------------|
+| *The bridge of Saziramost at the time of its destruction* |
+
+| ![renowedpainted](assets/renowedpainted.png) |
+|----------------------------------------------|
+| *The reclaimed fortress of Renowedpainted*   |
