@@ -28,6 +28,8 @@ upper and lower bound to export. Only the zone between these two altitudes will
 be included in the exported model. It works best by selecting the surface area
 of your map.
 
+![how-to](assets/how-to.gif)
+
 Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.io/).
 
 > ⚠ The same website has a dedicated voxel viewer. At the moment, the exported

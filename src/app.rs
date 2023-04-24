@@ -33,7 +33,7 @@ impl App {
     }
 
     fn central_panel(&mut self, ui: &mut Ui, ctx: &egui::Context) {
-        ui.heading("☀MagicaDF☀");
+        ui.heading("☀Vox Uristi☀");
 
         let mut canceled = false;
         match &mut self.progress {
