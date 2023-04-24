@@ -3,7 +3,7 @@
 Export your Dwarf Fortress map in a voxel format to create beautiful
 rendering of your fortresses.
 
-| ![arelumid](site/assets/arelumid.png)             |
+| ![arelumid](site/assets/arelumid.jpg)             |
 |---------------------------------------------------|
 | *The gates of Arelumid and its two giant statues* |
 

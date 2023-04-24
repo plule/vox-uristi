@@ -3,7 +3,7 @@
 Export your Dwarf Fortress map in a voxel format to create beautiful
 rendering of your fortresses.
 
-| ![arelumid](assets/arelumid.png)                  |
+| ![arelumid](assets/arelumid.jpg)                  |
 |---------------------------------------------------|
 | *The gates of Arelumid and its two giant statues* |
 
@@ -51,11 +51,11 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 
 ## Gallery
 
-| ![saziramost](assets/saziramost.png)                      |
+| ![saziramost](assets/saziramost.jpg)                      |
 |-----------------------------------------------------------|
 | *The bridge of Saziramost at the time of its destruction* |
 
-| ![renowedpainted](assets/renowedpainted.png) |
+| ![renowedpainted](assets/renowedpainted.jpg) |
 |----------------------------------------------|
 | *The reclaimed fortress of Renowedpainted*   |
 
