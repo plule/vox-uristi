@@ -1,9 +1,5 @@
 # ☼Vox Uristi☼
 
-<p align="center">
-    <img width="256" height="256" src="https://github.com/plule/vox-uristi/raw/main/assets/icon.png">
-</p>
-
 Export your Dwarf Fortress map in a voxel format to create beautiful
 rendering of your fortresses.
 
