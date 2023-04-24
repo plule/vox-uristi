@@ -1,6 +1,6 @@
 [package]
 name = "vox-uristi"
-version = "0.2.0-dev0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"] }
-dfhack-remote = "0.5.0"
+dfhack-remote = "0.6.0"
 eframe = {version = "0.21.3", features = ["persistence"]}
 generator = "0.7.3"
 indicatif = "0.17.3"
