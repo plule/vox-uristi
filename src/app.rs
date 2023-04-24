@@ -91,13 +91,13 @@ impl App {
                     if (ui.add(elevation_picker("⏶".to_string(), &mut self.high_elevation)))
                         .changed()
                     {
-                        self.low_elevation = self.low_elevation.min(self.high_elevation - 1);
+                        self.low_elevation = self.low_elevation.min(self.high_elevation);
                     }
                     if ui
                         .add(elevation_picker("⏷".to_string(), &mut self.low_elevation))
                         .changed()
                     {
-                        self.high_elevation = self.high_elevation.max(self.low_elevation + 1);
+                        self.high_elevation = self.high_elevation.max(self.low_elevation);
                     }
                     ui.separator();
                     let button = Button::new(RichText::new("💾 Export").heading());
@@ -115,7 +115,7 @@ impl App {
                                 {
                                     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
                                     let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
-                                    let range = self.low_elevation..self.high_elevation;
+                                    let range = self.low_elevation..self.high_elevation + 1;
                                     self.progress =
                                         Some((Progress::Connecting, progress_rx, cancel_tx));
                                     thread::spawn(move || {
