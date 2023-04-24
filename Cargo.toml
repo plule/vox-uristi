@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.70"
-clap = { version = "4.2.4", features = ["derive"] }
+clap = { version = "4.2.4", features = ["derive"], optional = true }
 dfhack-remote = "0.6.0"
 eframe = {version = "0.21.3", features = ["persistence"]}
 generator = "0.7.3"
@@ -28,5 +28,14 @@ image = "0.24.6"
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
 
+[features]
+cli = ["dep:clap"]
+
 [package.metadata.winres]
 ProductName = "Vox Uristi"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+codegen-units = 1
