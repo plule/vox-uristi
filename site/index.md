@@ -49,6 +49,16 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☐ Accurate trees
 - ☐ More construction items (furnitures)
 
+## Gallery
+
+| ![saziramost](assets/saziramost.png)                      |
+|-----------------------------------------------------------|
+| *The bridge of Saziramost at the time of its destruction* |
+
+| ![renowedpainted](assets/renowedpainted.png) |
+|----------------------------------------------|
+| *The reclaimed fortress of Renowedpainted*   |
+
 ## Other Dwarf Fortress visualisation tools
 
 Vox Uristi is only intended to make one-off renders of fortresses. Other tools
@@ -60,13 +70,3 @@ For real-time isometric rendering:
 For real-time 3D rendering: [Armok Vision](https://github.com/RosaryMala/armok-vision).
 
 For one-off render of the world map: [VoxelFortress](https://github.com/RosaryMala/VoxelFortress/releases/tag/v1.0.0).
-
-## Gallery
-
-| ![saziramost](assets/saziramost.png)                      |
-|-----------------------------------------------------------|
-| *The bridge of Saziramost at the time of its destruction* |
-
-| ![renowedpainted](assets/renowedpainted.png) |
-|----------------------------------------------|
-| *The reclaimed fortress of Renowedpainted*   |
