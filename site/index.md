@@ -59,6 +59,10 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 |----------------------------------------------|
 | *The reclaimed fortress of Renowedpainted*   |
 
+| ![arelumid-2](assets/arelumid-2.jpg) |
+|----------------------------------------------|
+| *Another view of the gates of Arelumid*      |
+
 ## Other Dwarf Fortress visualisation tools
 
 Vox Uristi is only intended to make one-off renders of fortresses. Other tools
