@@ -6,7 +6,7 @@ pub mod export;
 pub mod map;
 pub mod palette;
 pub mod tile;
-pub mod tile_iterator;
+pub mod rfr;
 use app::App;
 use clap::Parser;
 use cli::{run_cli_command, Cli};

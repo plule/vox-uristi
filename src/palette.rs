@@ -1,4 +1,4 @@
-use crate::{tile::Tile, tile_iterator::MatPairHash};
+use crate::{rfr::MatPairHash, tile::Tile};
 use dfhack_remote::MaterialDefinition;
 use rand::seq::SliceRandom;
 use std::collections::HashMap;

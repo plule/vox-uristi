@@ -1,4 +1,4 @@
-use crate::{export, tile_iterator};
+use crate::{export, rfr};
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{path::PathBuf, thread};
@@ -100,7 +100,7 @@ fn probe() -> Result<(), anyhow::Error> {
     let tile_types = &tile_type_list.tiletype_list;
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let materials = &material_list.material_list;
-    let (_, tiles) = tile_iterator::iter_tiles(
+    let (_, tiles) = rfr::iter_tiles(
         &mut client,
         100,
         0..1000,

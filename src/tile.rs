@@ -1,7 +1,7 @@
 use crate::{
     map::{Coords, Direction, Map},
     palette::{Material, Palette},
-    tile_iterator::{DFTile, MatPairHash},
+    rfr::{DFTile, MatPairHash},
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use itertools::Itertools;

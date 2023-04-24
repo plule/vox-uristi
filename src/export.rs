@@ -1,4 +1,4 @@
-use crate::{map::Map, palette::Palette, tile_iterator::iter_tiles};
+use crate::{map::Map, palette::Palette, rfr::iter_tiles};
 use anyhow::Result;
 use std::{
     ops::Range,

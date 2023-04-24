@@ -1,4 +1,4 @@
-use crate::{tile::Tile, tile_iterator::DFTile};
+use crate::{tile::Tile, rfr::DFTile};
 use dfhack_remote::Coord;
 use std::{collections::HashMap, ops::Add};
 
