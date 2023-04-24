@@ -1,4 +1,4 @@
-use crate::{tile::Tile, rfr::DFTile};
+use crate::{rfr::DFTile, tile::Tile};
 use dfhack_remote::Coord;
 use std::{collections::HashMap, ops::Add};
 
@@ -44,10 +44,6 @@ impl Map {
         }
     }
     pub fn add_tile<'a>(&mut self, df_tile: &'a DFTile<'a>) {
-        if df_tile.hidden {
-            return;
-        }
-
         if let Some(tile) = df_tile.into() {
             let coord_mirrored = Coords::new(df_tile.coords.x, df_tile.coords.y, df_tile.coords.z);
             self.tiles.insert(coord_mirrored, tile);

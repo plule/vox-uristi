@@ -4,10 +4,11 @@ use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use vox_writer::VoxWriter;
 
-const WATER: u8 = 0;
-const MAGMA: u8 = 1;
-const DARK_GRASS: u8 = 2;
-const LIGHT_GRASS: u8 = 3;
+const HIDDEN: u8 = 0;
+const WATER: u8 = 1;
+const MAGMA: u8 = 2;
+const DARK_GRASS: u8 = 3;
+const LIGHT_GRASS: u8 = 4;
 
 #[derive(Default)]
 pub struct Palette {
@@ -22,13 +23,14 @@ impl Palette {
                 let palette_size = self.colors.len() as u8;
                 self.colors
                     .entry(mat_pair.to_owned())
-                    .or_insert_with(|| palette_size + 4);
+                    .or_insert_with(|| palette_size + 5);
             }
         }
     }
 
     pub fn write_palette(&self, vox: &mut VoxWriter, materials: &[MaterialDefinition]) {
         vox.clear_colors();
+        vox.add_color(0, 0, 0, 255, HIDDEN);
         vox.add_color(0, 0, 255, 64, WATER);
         vox.add_color(255, 0, 0, 64, MAGMA);
         vox.add_color(0, 102, 0, 255, DARK_GRASS);
@@ -56,6 +58,7 @@ impl Palette {
 
 #[derive(Debug)]
 pub enum Material {
+    Hidden,
     Water,
     Magma,
     DarkGrass,
@@ -73,6 +76,7 @@ impl Material {
 
     pub fn pick_color(&self, palette: &HashMap<MatPairHash, u8>) -> u8 {
         (match self {
+            Material::Hidden => HIDDEN,
             Material::Water => WATER,
             Material::Magma => MAGMA,
             Material::DarkGrass => DARK_GRASS,

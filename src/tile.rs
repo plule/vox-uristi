@@ -21,7 +21,7 @@ pub enum Shape {
     Stair,
     Tree { origin: Coords, part: TreePart },
     Fortification,
-    Wall,
+    Full,
     Ramp,
 }
 
@@ -52,7 +52,7 @@ impl RampContactKind {
 fn get_ramp_contact_kind(map: &Map, coords: &Coords) -> RampContactKind {
     if let Some(tile) = map.tiles.get(coords) {
         return match tile.shape {
-            Shape::Wall | Shape::Fortification => RampContactKind::Wall,
+            Shape::Full | Shape::Fortification => RampContactKind::Wall,
             Shape::Ramp => RampContactKind::Ramp,
             _ => RampContactKind::Empty,
         };
@@ -264,7 +264,7 @@ impl Tile {
                     [true, true, true]
                 ],
             ],
-            Shape::Wall => [
+            Shape::Full => [
                 [[true, true, true], [true, true, true], [true, true, true]],
                 [[true, true, true], [true, true, true], [true, true, true]],
                 [[true, true, true], [true, true, true], [true, true, true]],
@@ -307,6 +307,13 @@ impl Tile {
 
 impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
     fn from(tile: &DFTile) -> Self {
+        if tile.hidden {
+            return Some(Tile {
+                shape: Shape::Full,
+                material: Material::Hidden,
+                coords: tile.coords,
+            });
+        }
         // Check if it's a fluid, in that case, ignore what's below
         match tile.tile_type.material() {
             TiletypeMaterial::MAGMA => {
@@ -400,7 +407,7 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
                 | TiletypeShape::STAIR_DOWN
                 | TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair),
                 TiletypeShape::FORTIFICATION => Some(Shape::Fortification),
-                TiletypeShape::WALL => Some(Shape::Wall),
+                TiletypeShape::WALL => Some(Shape::Full),
                 _ => None,
             } {
                 let material: MatPairHash = material.mat_pair.clone().unwrap_or_default().into();
