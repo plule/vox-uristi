@@ -7,7 +7,7 @@ rendering of your fortresses.
 |---------------------------------------------------|
 | *The gates of Arelumid and its two giant statues* |
 
-Vox Uristi uses [DFHack's
+**Vox Uristi** uses [DFHack's
 RemoteFortressReader](https://docs.dfhack.org/en/stable/docs/tools/RemoteFortressReader.html)
 to read the fortress data and export it in the `.vox` format. The resulting file
 can then be opened in a software such as MagicaVoxel to render it.
@@ -46,3 +46,14 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☐ Flows, waves and mist
 - ☐ Accurate trees
 - ☐ More construction items (furnitures)
+
+## Other Dwarf Fortress visualisation tools
+
+Vox Uristi is only intended to make one-off renders of fortress.
+
+For real-time isometric rendering:
+[**stonesense**](https://docs.dfhack.org/en/stable/docs/tools/stonesense.html).
+
+For real-time 3D rendering: [**Armok Vision**](https://github.com/RosaryMala/armok-vision).
+
+For one-off render of the world map: [**VoxelFortress**](https://github.com/RosaryMala/VoxelFortress/releases/tag/v1.0.0).
