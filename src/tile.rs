@@ -18,7 +18,7 @@ pub struct Tile {
 pub enum Shape {
     Fluid(u8),
     Floor { smooth: bool },
-    Stair,
+    Stair(StairPart),
     Tree { origin: Coords, part: TreePart },
     Fortification,
     Full,
@@ -30,6 +30,13 @@ pub enum TreePart {
     Trunk,
     Branch,
     Twig,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StairPart {
+    UpDown,
+    Up,
+    Down,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -147,23 +154,30 @@ impl Tile {
                 ]
             }
             #[rustfmt::skip]
-            Shape::Stair => [
+            Shape::Stair(part) => {
+                let up = *part == StairPart::Up || *part == StairPart::UpDown;
+                let middle = *part == StairPart::Up || *part == StairPart::UpDown;
+                let down = *part == StairPart::Down || *part == StairPart::UpDown;
+                let floor = *part == StairPart::Up;
+                
                 [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [true, true, true]
-                ],
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [true, true, true]
-                ],
-            ],
+                    [
+                        [up, up, false],
+                        [false, false, false],
+                        [false, false, false],
+                    ],
+                    [
+                        [false, false, false],
+                        [middle, false, false],
+                        [middle, false, false]
+                    ],
+                    [
+                        [floor, floor, down | floor],
+                        [floor, floor, down | floor],
+                        [floor, down | floor, down | floor]
+                    ],
+                ]
+            }
 
             #[rustfmt::skip]
             Shape::Ramp => {
@@ -403,9 +417,9 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
                     smooth: tile.tile_type.special() == TiletypeSpecial::SMOOTH,
                 }),
                 TiletypeShape::RAMP => Some(Shape::Ramp),
-                TiletypeShape::STAIR_UP
-                | TiletypeShape::STAIR_DOWN
-                | TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair),
+                TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair(StairPart::UpDown)),
+                TiletypeShape::STAIR_UP => Some(Shape::Stair(StairPart::Up)),
+                TiletypeShape::STAIR_DOWN => Some(Shape::Stair(StairPart::Down)),
                 TiletypeShape::FORTIFICATION => Some(Shape::Fortification),
                 TiletypeShape::WALL => Some(Shape::Full),
                 _ => None,
