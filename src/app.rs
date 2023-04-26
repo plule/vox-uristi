@@ -13,6 +13,12 @@ use std::{
     thread,
 };
 
+enum CheckUpdateStatus {
+    NotDone,
+    Doing(Receiver<Result<UpdateStatus>>),
+    Done(UpdateStatus),
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
@@ -26,7 +32,7 @@ pub struct App {
     #[serde(skip)]
     exported_path: Option<String>,
     #[serde(skip)]
-    update_status: Option<UpdateStatus>,
+    update_status: CheckUpdateStatus,
 }
 
 impl App {
@@ -156,36 +162,6 @@ impl App {
             });
         }
 
-        ui.group(|ui| {
-            if ui.button("🔃 Check for updates").clicked() {
-                match check_update() {
-                    Ok(update_status) => self.update_status = Some(update_status),
-                    Err(error) => self.error = Some(error.to_string()),
-                }
-            }
-
-            if let Some(update_status) = &self.update_status {
-                match update_status {
-                    UpdateStatus::UpToDate => {
-                        ui.label("✔ Up to date");
-                    }
-                    UpdateStatus::NewVersion {
-                        name,
-                        release_url,
-                        asset_url,
-                    } => {
-                        ui.label(format!("⮉ Vox Uristi {name} is available."));
-                        ui.horizontal(|ui| {
-                            ui.hyperlink_to(" Open", release_url);
-                            if let Some(asset_url) = asset_url {
-                                ui.hyperlink_to("⬇ Download", asset_url);
-                            }
-                        });
-                    }
-                }
-            }
-        });
-
         if let Some(err) = &self.error {
             ui.label("Is Dwarf Fortress running with DFHack installed?");
             ui.label(err);
@@ -204,6 +180,41 @@ impl App {
             ui.hyperlink_to("👁 MagicaVoxel", "https://ephtracy.github.io/");
         });
     }
+
+    fn status_bar(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| match &self.update_status {
+            CheckUpdateStatus::NotDone => {
+                if ui.button("🔃 Check for updates").clicked() {
+                    let (sender, receiver) = std::sync::mpsc::channel();
+                    self.update_status = CheckUpdateStatus::Doing(receiver);
+                    let ctx = ui.ctx().clone();
+                    std::thread::spawn(move || {
+                        sender.send(check_update()).unwrap();
+                        ctx.request_repaint();
+                    });
+                }
+            }
+            CheckUpdateStatus::Doing(_) => {
+                ui.spinner();
+            }
+            CheckUpdateStatus::Done(UpdateStatus::UpToDate) => {
+                ui.label("✔ Up to date");
+            }
+            CheckUpdateStatus::Done(UpdateStatus::NewVersion {
+                name,
+                release_url,
+                asset_url,
+            }) => {
+                ui.label(format!("⮉ {name} is available."));
+                ui.horizontal(|ui| {
+                    ui.hyperlink_to(" Open", release_url);
+                    if let Some(asset_url) = asset_url {
+                        ui.hyperlink_to("⬇ Download", asset_url);
+                    }
+                });
+            }
+        });
+    }
 }
 
 impl Default for App {
@@ -214,7 +225,7 @@ impl Default for App {
             error: None,
             progress: None,
             exported_path: None,
-            update_status: None,
+            update_status: CheckUpdateStatus::NotDone,
         }
     }
 }
@@ -225,8 +236,25 @@ impl eframe::App for App {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let CheckUpdateStatus::Doing(receiver) = &self.update_status {
+            if let Some(update_status) = receiver.try_iter().last() {
+                match update_status {
+                    Ok(update_status) => {
+                        self.update_status = CheckUpdateStatus::Done(update_status);
+                    }
+                    Err(err) => {
+                        self.update_status = CheckUpdateStatus::NotDone;
+                        self.error = Some(err.to_string());
+                    }
+                }
+            }
+        }
         egui::CentralPanel::default().show(ctx, |ui| {
             self.central_panel(ui, ctx);
+        });
+
+        egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
+            self.status_bar(ui);
         });
     }
 }
