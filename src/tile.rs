@@ -39,7 +39,7 @@ pub enum StairPart {
     Down,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RampContactKind {
     Wall,
     Ramp,
@@ -47,7 +47,7 @@ enum RampContactKind {
 }
 
 impl RampContactKind {
-    fn get_height(&self) -> i8 {
+    fn height(&self) -> i8 {
         match self {
             RampContactKind::Wall => 3,
             RampContactKind::Ramp => 2,
@@ -56,28 +56,23 @@ impl RampContactKind {
     }
 }
 
-fn get_ramp_contact_kind(map: &Map, coords: &Coords) -> RampContactKind {
+fn ramp_status_at(map: &Map, coords: &Coords) -> RampContactKind {
     if let Some(tile) = map.tiles.get(coords) {
         return match tile.shape {
             Shape::Full | Shape::Fortification => RampContactKind::Wall,
             Shape::Ramp => RampContactKind::Ramp,
             _ => RampContactKind::Empty,
         };
-    }
-
+    };
     RampContactKind::Empty
 }
 
-fn side_ramp_level(direct: RampContactKind, o1: RampContactKind, o2: RampContactKind) -> i8 {
-    match direct {
-        RampContactKind::Wall => 2,
-        RampContactKind::Ramp => 1,
-        RampContactKind::Empty => (o1.get_height().max(o2.get_height()) - 1).min(1),
-    }
-}
-
 fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> i8 {
-    (c1.get_height() + c2.get_height()) / 2
+    match (c1, c2) {
+        (RampContactKind::Ramp, RampContactKind::Ramp) => 2, // should be 1 for concave, 3 for convexe todo
+        (RampContactKind::Ramp, c) | (c, RampContactKind::Ramp) => c.height(),
+        (c1, c2) => (c1.height() + c2.height()) / 2
+    }
 }
 
 impl Tile {
@@ -179,38 +174,19 @@ impl Tile {
                 ]
             }
 
-            #[rustfmt::skip]
             Shape::Ramp => {
-                let n = get_ramp_contact_kind(map, &(self.coords + Direction::North));
-                let s = get_ramp_contact_kind(map, &(self.coords + Direction::South));
-                let e = get_ramp_contact_kind(map, &(self.coords + Direction::East));
-                let w = get_ramp_contact_kind(map, &(self.coords + Direction::West));
+                let n = ramp_status_at(map, &(self.coords + Direction::North));
+                let s = ramp_status_at(map, &(self.coords + Direction::South));
+                let e = ramp_status_at(map, &(self.coords + Direction::East));
+                let w = ramp_status_at(map, &(self.coords + Direction::West));
 
                 let levels = [
-                    [corner_ramp_level(n, w) , side_ramp_level(n, w, e) , corner_ramp_level(n, e)],
-                    [side_ramp_level(w, n, s), 1                        , side_ramp_level(e, n, s)],
-                    [corner_ramp_level(s, w) , side_ramp_level(s, e, w) , corner_ramp_level(s, e)],
+                    [corner_ramp_level(n, w) , n.height(), corner_ramp_level(n, e)],
+                    [w.height()      , 2                 , e.height()             ],
+                    [corner_ramp_level(s, w) , s.height(), corner_ramp_level(s, e)],
                 ];
 
-                // should be doable less manually
-                // ~ [0, 1, 2].map(|z| [0, 1, 2].map(|y| [0, 1, 2].map(|x| levels[x][y] >= z)))
-                [
-                    [
-                        [levels[0][0] >= 2, levels[0][1] >= 2, levels[0][2] >= 2],
-                        [levels[1][0] >= 2, levels[1][1] >= 2, levels[1][2] >= 2],
-                        [levels[2][0] >= 2, levels[2][1] >= 2, levels[2][2] >= 2]
-                    ],
-                    [
-                        [levels[0][0] >= 1, levels[0][1] >= 1, levels[0][2] >= 1],
-                        [levels[1][0] >= 1, levels[1][1] >= 1, levels[1][2] >= 1],
-                        [levels[2][0] >= 1, levels[2][1] >= 1, levels[2][2] >= 1]
-                    ],
-                    [
-                        [true, true, true],
-                        [true, true, true],
-                        [true, true, true]
-                    ],
-                ]
+                [2, 1, 0].map(|z| [0,1,2].map(|y| [0,1,2].map(|x| levels[y][x] > z)))
             }
             Shape::Tree { origin, part } => {
                 let a = map.has_tree_at_coords(&(self.coords + Direction::Above), origin);
