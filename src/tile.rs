@@ -193,6 +193,7 @@ impl Tile {
                 ];
 
                 // should be doable less manually
+                // ~ [0, 1, 2].map(|z| [0, 1, 2].map(|y| [0, 1, 2].map(|x| levels[x][y] >= z)))
                 [
                     [
                         [levels[0][0] >= 2, levels[0][1] >= 2, levels[0][2] >= 2],
