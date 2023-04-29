@@ -51,17 +51,42 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 
 ## Gallery
 
+### Enorid
+
 | ![saziramost](assets/saziramost.jpg)                      |
 |-----------------------------------------------------------|
 | *The bridge of Saziramost at the time of its destruction* |
 
-| ![renowedpainted](assets/renowedpainted.jpg) |
-|----------------------------------------------|
-| *The reclaimed fortress of Renowedpainted*   |
-
 | ![arelumid-2](assets/arelumid-2.jpg) |
 |----------------------------------------------|
 | *Another view of the gates of Arelumid*      |
+
+### Fort Chantbell
+
+Fort Chantbell is a fortress by Neo.
+
+| ![overview](assets/chantbell-1.jpg) |
+|-------------------------------------|
+| *Isometric overview of the Fort*    |
+
+| ![cathedral](assets/chantbell-2.jpg) |
+|--------------------------------------|
+| *The Cathedral of the Fort*          |
+
+| ![library](assets/chantbell-3.jpg) |
+|------------------------------------|
+| *The library, lego style           |
+
+## Version History
+
+### v0.2
+
+- Better ramps and stairs
+- Support auto-update
+
+### v0.1
+
+Initial release with support of basic shapes
 
 ## Other Dwarf Fortress visualisation tools
 
