@@ -71,7 +71,7 @@ Fort Chantbell is a fortress by Neo.
 
 | ![cathedral](assets/chantbell-2.jpg) |
 |--------------------------------------|
-| *The Cathedral of the Fort*          |
+| *Salt Peter's Basilica*              |
 
 | ![library](assets/chantbell-3.jpg) |
 |------------------------------------|
