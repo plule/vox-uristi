@@ -65,9 +65,9 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 
 Fort Chantbell is a fortress by Neo.
 
-| ![overview](assets/chantbell-1.jpg) |
-|-------------------------------------|
-| *Isometric overview of the Fort*    |
+| ![overview](assets/chantbell-1.jpg)          |
+|----------------------------------------------|
+| *Isometric overview of the Fort, year 62*    |
 
 | ![cathedral](assets/chantbell-2.jpg) |
 |--------------------------------------|
@@ -75,7 +75,7 @@ Fort Chantbell is a fortress by Neo.
 
 | ![library](assets/chantbell-3.jpg) |
 |------------------------------------|
-| *The library, lego style           |
+| *The library, lego style*          |
 
 ## Version History
 
