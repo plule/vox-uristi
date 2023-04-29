@@ -1,10 +1,15 @@
-use crate::{rfr::DFTile, tile::Tile};
-use dfhack_remote::Coord;
+use crate::{
+    building::{Building, BuildingType},
+    rfr::DFTile,
+    tile::Tile,
+};
+use dfhack_remote::{BuildingInstance, Coord};
 use std::{collections::HashMap, ops::Add};
 
 /// Intermediary format between DF and voxels
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
+    pub buildings: HashMap<Coords, Building>,
     pub dimensions: [i32; 3],
 }
 pub enum Direction {
@@ -40,13 +45,25 @@ impl Map {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self {
             tiles: Default::default(),
+            buildings: Default::default(),
             dimensions: [x, y, z],
         }
     }
     pub fn add_tile<'a>(&mut self, df_tile: &'a DFTile<'a>) {
         if let Some(tile) = df_tile.into() {
-            let coord_mirrored = Coords::new(df_tile.coords.x, df_tile.coords.y, df_tile.coords.z);
-            self.tiles.insert(coord_mirrored, tile);
+            let coords = Coords::new(df_tile.coords.x, df_tile.coords.y, df_tile.coords.z);
+            self.tiles.insert(coords, tile);
+        }
+    }
+
+    pub fn add_building(&mut self, df_building: BuildingInstance) {
+        let coords = Coords::new(
+            df_building.pos_x_min(),
+            df_building.pos_y_min(),
+            df_building.pos_z_min(),
+        );
+        if let Some(building) = Building::from_df_building(df_building) {
+            self.buildings.insert(coords, building);
         }
     }
 
@@ -54,6 +71,31 @@ impl Map {
         self.tiles
             .get(coords)
             .some_and(|t| t.is_from_tree(tree_origin))
+    }
+
+    pub fn connect_window_to_coords(&self, coords: Coords) -> bool {
+        self.buildings.get(&coords).some_and(|b| {
+            b.building_type == BuildingType::WindowGem
+                || b.building_type == BuildingType::WindowGlass
+        }) || self.tiles.get(&coords).some_and(|t| {
+            matches!(
+                t.shape,
+                crate::tile::Shape::Fortification | crate::tile::Shape::Full
+            )
+        })
+    }
+
+    pub fn connect_door_to_coords(&self, coords: &Coords) -> bool {
+        // Connect to wall and doors
+        self.buildings
+            .get(coords)
+            .some_and(|b| b.building_type == BuildingType::Door)
+            || self.tiles.get(coords).some_and(|t| {
+                matches!(
+                    t.shape,
+                    crate::tile::Shape::Fortification | crate::tile::Shape::Full
+                )
+            })
     }
 }
 

@@ -1,4 +1,8 @@
-use crate::{map::Map, palette::Palette, rfr::iter_tiles};
+use crate::{
+    map::Map,
+    palette::Palette,
+    rfr::{iter_buildings, iter_tiles},
+};
 use anyhow::Result;
 use std::{
     ops::Range,
@@ -65,12 +69,22 @@ pub fn try_export_voxels(
         map.add_tile(&tile);
     }
 
+    let (_, buildings) = iter_buildings(client, 0..1000, 0..1000, elevation_range)?;
+    for building in buildings {
+        map.add_building(building);
+    }
+
     let total = map.tiles.len();
     progress_tx.send(Progress::StartBuilding { total })?;
 
     let mut vox = vox_writer::VoxWriter::create_empty();
     let mut palette = Palette::default();
-    palette.build_palette(map.tiles.values());
+    palette.build_palette(
+        map.tiles
+            .values()
+            .map(|tile| &tile.material)
+            .chain(map.buildings.values().map(|b| &b.material)),
+    );
     palette.write_palette(&mut vox, materials);
 
     for (progress, tile) in map.tiles.values().enumerate() {
@@ -83,6 +97,18 @@ pub fn try_export_voxels(
             to: total,
         })?;
         let voxels = tile.collect_voxels(&palette, &map);
+        for (coord, color) in voxels {
+            vox.add_voxel(
+                coord.x,
+                map.dimensions[1] * 3 - coord.y,
+                coord.z,
+                color.into(),
+            );
+        }
+    }
+
+    for building in map.buildings.values() {
+        let voxels = building.collect_voxels(&palette, &map);
         for (coord, color) in voxels {
             vox.add_voxel(
                 coord.x,

@@ -1,9 +1,9 @@
 use crate::{
     map::{Coords, Direction, Map},
     palette::{Material, Palette},
-    rfr::{DFTile, MatPairHash},
+    rfr::DFTile,
 };
-use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
+use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial, MatPair};
 use itertools::Itertools;
 use rand::Rng;
 
@@ -94,22 +94,22 @@ impl Tile {
 
     pub fn new_tree(coords: Coords, mat_index: i32, origin: Coords, part: TreePart) -> Self {
         let shape = Shape::Tree { origin, part };
-        let wood = MatPairHash::new(420, mat_index);
-        let leaves = MatPairHash::new(421, mat_index);
+        let wood = MatPair { mat_type: Some(420), mat_index: Some(mat_index), ..Default::default() };
+        let leaves = MatPair { mat_type: Some(421), mat_index: Some(mat_index), ..Default::default() };
         match part {
             TreePart::Trunk => Tile {
                 shape,
-                material: Material::Generic(vec![wood]),
+                material: Material::Generic(wood),
                 coords,
             },
             TreePart::Branch => Tile {
                 shape,
-                material: Material::Generic(vec![wood, leaves]),
+                material: Material::Random(vec![wood, leaves]),
                 coords,
             },
             TreePart::Twig => Tile {
                 shape,
-                material: Material::Generic(vec![leaves]),
+                material: Material::Generic(leaves),
                 coords,
             },
         }
@@ -401,11 +401,10 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
                 TiletypeShape::WALL => Some(Shape::Full),
                 _ => None,
             } {
-                let material: MatPairHash = material.mat_pair.clone().unwrap_or_default().into();
                 return Some(Tile {
                     coords: tile.coords,
                     shape,
-                    material: Material::Generic(vec![material]),
+                    material: Material::Generic(material.mat_pair.clone().unwrap_or_default()),
                 });
             }
         }

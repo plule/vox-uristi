@@ -1,6 +1,6 @@
 use crate::map::Coords;
-use anyhow::Result;
-use dfhack_remote::{BlockRequest, MatPair, MaterialDefinition, Tiletype};
+use anyhow::{Context, Result};
+use dfhack_remote::{BlockRequest, BuildingInstance, MaterialDefinition, Tiletype};
 use generator::{done, Gn};
 use std::{collections::HashMap, ops::Range};
 
@@ -22,39 +22,6 @@ pub struct DFTile<'a> {
     pub grass_percent: Option<i32>,
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
-pub struct MatPairHash {
-    pub mat_type: i32,
-    pub mat_index: i32,
-}
-
-impl MatPairHash {
-    pub fn new(mat_type: i32, mat_index: i32) -> Self {
-        Self {
-            mat_type,
-            mat_index,
-        }
-    }
-}
-
-impl From<&MatPair> for MatPairHash {
-    fn from(value: &MatPair) -> Self {
-        Self {
-            mat_type: value.mat_type(),
-            mat_index: value.mat_index(),
-        }
-    }
-}
-
-impl From<MatPair> for MatPairHash {
-    fn from(value: MatPair) -> Self {
-        Self {
-            mat_type: value.mat_type(),
-            mat_index: value.mat_index(),
-        }
-    }
-}
-
 pub fn iter_tiles<'a>(
     client: &'a mut dfhack_remote::Stubs<dfhack_remote::Channel>,
     block_per_it: i32,
@@ -74,12 +41,10 @@ pub fn iter_tiles<'a>(
         tile_number,
         Gn::new_scoped_opt_local(4096 * 4, move |mut s| {
             client.remote_fortress_reader().reset_map_hashes()?;
+            #[allow(clippy::mutable_key_type)] // possibly an actual issue?
             let mut material_map = HashMap::new();
             for material in materials.iter() {
-                material_map.insert(
-                    MatPairHash::from(&material.mat_pair.clone().unwrap_or_default()),
-                    material,
-                );
+                material_map.insert(material.mat_pair.clone().unwrap_or_default(), material);
             }
 
             loop {
@@ -127,9 +92,9 @@ pub fn iter_tiles<'a>(
                                 hidden: hiddens[index],
                                 water: waters[index],
                                 tile_type: &tile_types[tile_types_indexes[index] as usize],
-                                material: material_map.get(&matpairs.into()).copied(),
-                                base_material: material_map.get(&base_batpairs.into()).copied(),
-                                vein_material: material_map.get(&vein_batpairs.into()).copied(),
+                                material: material_map.get(matpairs).copied(),
+                                base_material: material_map.get(base_batpairs).copied(),
+                                vein_material: material_map.get(vein_batpairs).copied(),
                                 magma: magmas[index],
                                 water_stagnant: water_stagnants[index],
                                 water_salt: water_salts[index],
@@ -150,6 +115,37 @@ pub fn iter_tiles<'a>(
                     done!()
                 }
             }
+        }),
+    ))
+}
+
+pub fn iter_buildings(
+    client: &mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+    x_range: Range<i32>,
+    y_range: Range<i32>,
+    z_range: Range<i32>,
+) -> Result<(usize, impl Iterator<Item = BuildingInstance>)> {
+    client.remote_fortress_reader().reset_map_hashes()?;
+    let mut req = BlockRequest::new();
+    req.set_blocks_needed(100);
+    req.set_min_x(x_range.start);
+    req.set_max_x(x_range.end);
+    req.set_min_y(y_range.start);
+    req.set_max_y(y_range.end);
+    req.set_min_z(z_range.start);
+    req.set_max_z(z_range.end);
+    let blocks = client.remote_fortress_reader().get_block_list(req)?;
+    // items are only inserted on the first block
+    let first_block = blocks.map_blocks.first().context("No block")?.clone();
+    let item_number = first_block.buildings.len();
+
+    Ok((
+        item_number,
+        Gn::new_scoped_opt_local(4096 * 4, move |mut s| {
+            for building in first_block.buildings {
+                s.yield_(building);
+            }
+            done!()
         }),
     ))
 }
