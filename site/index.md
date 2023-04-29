@@ -43,7 +43,7 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Directional ramps
 - ☑ Rough/Smooth floor representation
 - ☑ Basic tree support, inaccurate but good enough
-- ☐ Essential construction items (doors, windows, bars)
+- ☑ Essential construction items (doors, windows, bars, bridges): in progress
 - ☐ Detailed materials (metallic, water, light emission)
 - ☐ Flows, waves and mist
 - ☐ Accurate trees
@@ -81,7 +81,7 @@ Fort Chantbell is a fortress by Neo.
 
 ### v0.3
 
-- Initial support for some buildings
+- Initial support for some construction buildings
 
 ### v0.2
 
@@ -90,7 +90,7 @@ Fort Chantbell is a fortress by Neo.
 
 ### v0.1
 
-Initial release with support of basic shapes
+- Initial release with support of basic shapes
 
 ## Other Dwarf Fortress visualisation tools
 
