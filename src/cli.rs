@@ -2,6 +2,7 @@ use crate::{export, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
+use protobuf::MessageDyn;
 use std::{path::PathBuf, thread};
 
 #[derive(Parser)]
@@ -13,6 +14,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// Export the map in the .vox folder
     Export {
         /// Lower elevation bound to export
         elevation_low: i32,
@@ -21,7 +23,14 @@ pub enum Command {
         /// Destination file
         destination: PathBuf,
     },
+    /// Debug the tile under the cursor
     Probe,
+    /// Dump the material, plant, raw lists...
+    DumpLists {
+        /// Destination folder
+        destination: PathBuf,
+    },
+    /// Check for new versions
     CheckUpdate,
 }
 
@@ -32,6 +41,7 @@ pub fn run_cli_command(command: Command) -> Result<()> {
             elevation_high,
             destination,
         } => export(elevation_low, elevation_high, destination),
+        Command::DumpLists { destination } => dump_lists(destination),
         Command::Probe => probe(),
         Command::CheckUpdate => check_update(),
     }
@@ -114,6 +124,41 @@ fn probe() -> Result<(), anyhow::Error> {
             dbg!(tile);
         }
     }
+    Ok(())
+}
+
+fn dump_lists(destination: PathBuf) -> Result<()> {
+    let mut client = dfhack_remote::connect()?;
+
+    let materials = client.remote_fortress_reader().get_material_list()?;
+    dump(&materials, &destination, "materials.json")?;
+
+    let plants = client.remote_fortress_reader().get_plant_raws()?;
+    dump(&plants, &destination, "plant_raws.json")?;
+
+    let ttypes = client.remote_fortress_reader().get_tiletype_list()?;
+    dump(&ttypes, &destination, "tiletypes.json")?;
+
+    let building_defs = client.remote_fortress_reader().get_building_def_list()?;
+    dump(&building_defs, &destination, "building_defs.json")?;
+
+    let growth_list = client.remote_fortress_reader().get_growth_list()?;
+    dump(&growth_list, &destination, "growths.json")?;
+
+    let item_list = client.remote_fortress_reader().get_item_list()?;
+    dump(&item_list, &destination, "items.json")?;
+
+    let language = client.remote_fortress_reader().get_language()?;
+    dump(&language, &destination, "language.json")?;
+
+    Ok(())
+}
+
+fn dump(message: &dyn MessageDyn, folder: &PathBuf, filename: &str) -> Result<()> {
+    let materials = protobuf_json_mapping::print_to_string(message)?;
+    let mut dest = folder.clone();
+    dest.push(filename);
+    std::fs::write(dest, materials)?;
     Ok(())
 }
 
