@@ -1,6 +1,7 @@
 use crate::{export, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use dfhack_remote::BlockRequest;
 use indicatif::{ProgressBar, ProgressStyle};
 use protobuf::MessageDyn;
 use std::{path::PathBuf, thread};
@@ -150,6 +151,22 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
 
     let language = client.remote_fortress_reader().get_language()?;
     dump(&language, &destination, "language.json")?;
+
+    let view_info = client.remote_fortress_reader().get_view_info()?;
+    client.remote_fortress_reader().reset_map_hashes()?;
+    let z = view_info.cursor_pos_z();
+    let req = BlockRequest {
+        blocks_needed: Some(1),
+        min_x: Some(0),
+        max_x: Some(1000),
+        min_y: Some(0),
+        max_y: Some(1000),
+        min_z: Some(z),
+        max_z: Some(z + 1),
+        ..Default::default()
+    };
+    let blocks = client.remote_fortress_reader().get_block_list(req)?;
+    dump(&blocks, &destination, "blocks.json")?;
 
     Ok(())
 }
