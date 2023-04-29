@@ -79,6 +79,10 @@ Fort Chantbell is a fortress by Neo.
 
 ## Version History
 
+### v0.3
+
+- Initial support for some buildings
+
 ### v0.2
 
 - Better ramps and stairs
