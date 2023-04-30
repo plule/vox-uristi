@@ -123,6 +123,7 @@ impl App {
                                 if let Some(path) = rfd::FileDialog::new()
                                     .set_title("Model destination")
                                     .set_file_name(&default_filename(&mut df))
+                                    .add_filter("MagicaVoxel", &["vox"])
                                     .save_file()
                                 {
                                     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
