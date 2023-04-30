@@ -1,4 +1,4 @@
-use crate::{building::BuildingExtensions, export, rfr, update};
+use crate::{export, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;

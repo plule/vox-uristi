@@ -61,6 +61,10 @@ pub enum BuildingType {
 
 impl BuildingType {
     pub fn maybe_from_df(instance: &BuildingInstance) -> Option<BuildingType> {
+        if instance.building_type.is_none() {
+            return None;
+        }
+
         let building_type = instance.building_type.get_or_default();
         let t = match building_type.building_type() {
             0 => BuildingType::Chair,

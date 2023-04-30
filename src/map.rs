@@ -1,5 +1,5 @@
 use crate::{
-    building::Building,
+    building::{BoundingBox, Building},
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     rfr::DFTile,
     tile::{Shape, Tile},
@@ -134,6 +134,23 @@ impl Map {
             W => DirectionFlat::West,
             _ => unreachable!(),
         }
+    }
+
+    pub fn bounds(&self) -> BoundingBox {
+        let mut min_x = i32::MAX;
+        let mut max_x = i32::MIN;
+        let mut min_y = i32::MAX;
+        let mut max_y = i32::MIN;
+        let mut min_z = i32::MAX;
+        let mut max_z = i32::MIN;
+
+        for coord in self.tiles.keys().chain(self.buildings.keys()) {
+            (min_x, max_x) = (min_x.min(coord.x), max_x.max(coord.x));
+            (min_y, max_y) = (min_y.min(coord.y), max_y.max(coord.y));
+            (min_z, max_z) = (min_z.min(coord.z), max_z.max(coord.z));
+        }
+
+        BoundingBox::new(min_x..=max_x, min_y..=max_y, min_z..=max_z)
     }
 }
 

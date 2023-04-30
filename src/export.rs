@@ -1,4 +1,5 @@
 use crate::{
+    building::BoundingBox,
     map::Map,
     palette::Palette,
     rfr::{iter_buildings, iter_tiles},
@@ -88,6 +89,13 @@ pub fn try_export_voxels(
     );
     palette.write_palette(&mut vox, materials);
 
+    let bounds = map.bounds();
+    let bounds = BoundingBox::new(
+        bounds.x.start() * 3..=bounds.x.end() * 3,
+        bounds.y.start() * 3..=bounds.y.end() * 3,
+        bounds.z.start() * 3..=bounds.z.end() * 3,
+    );
+
     for (progress, tile) in map.tiles.values().enumerate() {
         if cancel_rx.try_iter().next().is_some() {
             return Ok(());
@@ -100,9 +108,9 @@ pub fn try_export_voxels(
         let voxels = tile.collect_voxels(&palette, &map);
         for (coord, color) in voxels {
             vox.add_voxel(
-                coord.x,
-                map.dimensions[1] * 3 - coord.y,
-                coord.z,
+                coord.x - bounds.x.start(),
+                bounds.y.end() - coord.y,
+                coord.z - bounds.z.start(),
                 color.into(),
             );
         }
@@ -113,9 +121,9 @@ pub fn try_export_voxels(
             let voxels = building.collect_voxels(&palette, &map);
             for (coord, color) in voxels {
                 vox.add_voxel(
-                    coord.x,
-                    map.dimensions[1] * 3 - coord.y,
-                    coord.z,
+                    coord.x - bounds.x.start(),
+                    bounds.y.end() - coord.y,
+                    coord.z - bounds.z.start(),
                     color.into(),
                 );
             }
