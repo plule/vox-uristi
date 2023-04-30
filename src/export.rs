@@ -1,9 +1,4 @@
-use crate::{
-    building::BoundingBox,
-    map::Map,
-    palette::Palette,
-    rfr::{iter_buildings, iter_tiles},
-};
+use crate::{building::BoundingBox, map::Map, palette::Palette, rfr};
 use anyhow::Result;
 use std::{
     ops::Range,
@@ -35,44 +30,45 @@ pub fn try_export_voxels(
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
-    let tile_type = &tile_type_list.tiletype_list;
+
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let materials = &material_list.material_list;
     let map_info = client.remote_fortress_reader().get_map_info()?;
+    #[allow(clippy::mutable_key_type)] // possibly an actual issue?
+    let material_map = rfr::build_material_map(client)?;
 
-    let (count, tiles) = iter_tiles(
-        client,
-        100,
-        0..1000,
-        0..1000,
-        elevation_range.clone(),
-        tile_type,
-        materials,
-    )?;
+    let block_list_iterator =
+        rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
+    let (block_list_count, _) = block_list_iterator.size_hint();
 
     let mut map = Map::new(
         map_info.block_size_x() * 16,
         map_info.block_size_y() * 16,
         elevation_range.len().try_into().unwrap(),
     );
-    progress_tx.send(Progress::StartReading { total: count })?;
+    progress_tx.send(Progress::StartReading {
+        total: block_list_count,
+    })?;
 
-    for (progress, tile) in tiles.enumerate() {
+    for (progress, block_list) in block_list_iterator.enumerate() {
         if cancel_rx.try_iter().next().is_some() {
             return Ok(());
         }
-        let tile = tile?;
 
         progress_tx.send(Progress::Reading {
             curr: progress,
-            to: count,
+            to: block_list_count,
         })?;
-        map.add_tile(&tile);
-    }
 
-    let (_, buildings) = iter_buildings(client, 0..1000, 0..1000, elevation_range)?;
-    for building in buildings {
-        map.add_building(building);
+        for block in block_list?.map_blocks {
+            for tile in rfr::TileIterator::new(&block, &material_map, &tile_type_list) {
+                map.add_tile(&tile);
+            }
+
+            for building in block.buildings {
+                map.add_building(building);
+            }
+        }
     }
 
     let total = map.tiles.len();

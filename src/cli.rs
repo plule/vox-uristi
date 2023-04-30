@@ -1,4 +1,4 @@
-use crate::{export, rfr, update};
+use crate::{export, map::Coords, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;
@@ -110,38 +110,44 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let y = view_info.cursor_pos_y();
     let z = view_info.cursor_pos_z();
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
-    let tile_types = &tile_type_list.tiletype_list;
-    let material_list = client.remote_fortress_reader().get_material_list()?;
-    let materials = &material_list.material_list;
-    let (_, tiles) = rfr::iter_tiles(
-        &mut client,
-        100,
-        0..1000,
-        0..1000,
-        z..z + 1,
-        tile_types,
-        materials,
-    )?;
-    for tile in tiles {
-        let tile = tile?;
-        if (tile.coords.x, tile.coords.y, tile.coords.z) == (x, y, z) {
-            dbg!(tile);
+    let probe = Coords::new(x, y, z);
+    let material_map = rfr::build_material_map(&mut client)?;
+    for block_list in rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?
+    {
+        for block in block_list?.map_blocks {
+            for tile in rfr::TileIterator::new(&block, &material_map, &tile_type_list) {
+                if tile.coords() == probe {
+                    println!("coords: {}", tile.coords());
+                    println!("hidden: {}", tile.hidden());
+                    println!("water: {}", tile.water());
+                    println!("tile_type: {}", tile.tile_type());
+                    println!("material: {:#?}", tile.material());
+                    println!("base_material: {:#?}", tile.base_material());
+                    println!("vein_material: {:#?}", tile.vein_material());
+                    println!("magma: {}", tile.magma());
+                    println!("water_stagnant: {}", tile.water_stagnant());
+                    println!("water_salt: {}", tile.water_salt());
+                    println!("tree: {}", tile.tree());
+                    println!("tree_origin: {}", tile.tree_origin());
+                    println!("tree_percent: {}", tile.tree_percent());
+                }
+            }
+
+            for (i, building) in block.buildings.into_iter().enumerate() {
+                let bx = building.pos_x_min()..=building.pos_x_max();
+                let by = building.pos_y_min()..=building.pos_y_max();
+                let bz = building.pos_z_min()..=building.pos_z_max();
+                if bx.contains(&x) && by.contains(&y) && bz.contains(&z) {
+                    dump(
+                        &building,
+                        &destination,
+                        format!("building_{i}.json").as_str(),
+                    )?;
+                }
+            }
         }
     }
 
-    let (_, buildings) = rfr::iter_buildings(&mut client, 0..1000, 0..1000, z..z + 1)?;
-    for (i, building) in buildings.enumerate() {
-        let bx = building.pos_x_min()..=building.pos_x_max();
-        let by = building.pos_y_min()..=building.pos_y_max();
-        let bz = building.pos_z_min()..=building.pos_z_max();
-        if bx.contains(&x) && by.contains(&y) && bz.contains(&z) {
-            dump(
-                &building,
-                &destination,
-                format!("building_{i}.json").as_str(),
-            )?;
-        }
-    }
     Ok(())
 }
 

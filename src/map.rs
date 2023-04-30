@@ -1,12 +1,12 @@
 use crate::{
     building::{BoundingBox, Building},
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
-    rfr::DFTile,
+    rfr::BlockTile,
     tile::{Shape, Tile},
 };
 use dfhack_remote::{BuildingInstance, Coord};
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Add};
+use std::{collections::HashMap, fmt::Display, ops::Add};
 
 /// Intermediary format between DF and voxels
 pub struct Map {
@@ -20,6 +20,12 @@ pub struct Coords {
     pub x: i32,
     pub y: i32,
     pub z: i32,
+}
+
+impl Display for Coords {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{},{})", self.x, self.y, self.z)
+    }
 }
 
 pub trait IsSomeAnd<T> {
@@ -43,10 +49,9 @@ impl Map {
             dimensions: [x, y, z],
         }
     }
-    pub fn add_tile<'a>(&mut self, df_tile: &'a DFTile<'a>) {
+    pub fn add_tile<'a>(&mut self, df_tile: &'a BlockTile<'a>) {
         if let Some(tile) = df_tile.into() {
-            let coords = Coords::new(df_tile.coords.x, df_tile.coords.y, df_tile.coords.z);
-            self.tiles.insert(coords, tile);
+            self.tiles.insert(df_tile.coords(), tile);
         }
     }
 
@@ -67,13 +72,13 @@ impl Map {
         F: Fn(Option<&Tile>, &Vec<Building>) -> T,
     {
         let empty_vec = vec![];
-        return Neighbouring::new(|direction| {
+        Neighbouring::new(|direction| {
             let neighbour = coords + direction;
             func(
                 self.tiles.get(&neighbour),
                 self.buildings.get(&neighbour).unwrap_or(&empty_vec),
             )
-        });
+        })
     }
 
     /// Compute a given function for all the neighbours on the same plane
@@ -82,13 +87,13 @@ impl Map {
         F: Fn(Option<&Tile>, &Vec<Building>) -> T,
     {
         let empty_vec = vec![];
-        return NeighbouringFlat::new(|direction| {
+        NeighbouringFlat::new(|direction| {
             let neighbour = coords + direction;
             func(
                 self.tiles.get(&neighbour),
                 self.buildings.get(&neighbour).unwrap_or(&empty_vec),
             )
-        });
+        })
     }
 
     /// Find the most "wally" direction, ie the direction to put furniture against

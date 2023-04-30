@@ -2,7 +2,7 @@ use crate::{
     map::{Coords, IsSomeAnd, Map},
     maths::RotatingMatrix,
     palette::{Material, Palette},
-    rfr::DFTile,
+    rfr::BlockTile,
 };
 use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use itertools::Itertools;
@@ -312,54 +312,54 @@ impl Tile {
     }
 }
 
-impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
-    fn from(tile: &DFTile) -> Self {
-        if tile.hidden {
+impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
+    fn from(tile: &BlockTile) -> Self {
+        if tile.hidden() {
             return Some(Tile {
                 shape: Shape::Full,
                 material: Material::Hidden,
-                coords: tile.coords,
+                coords: tile.coords(),
             });
         }
         // Check if it's a fluid, in that case, ignore what's below
-        match tile.tile_type.material() {
+        match tile.tile_type().material() {
             TiletypeMaterial::MAGMA => {
                 return Some(Tile::new_magma(
-                    tile.coords,
-                    tile.magma.try_into().unwrap_or_default(),
+                    tile.coords(),
+                    tile.magma().try_into().unwrap_or_default(),
                 ))
             }
             TiletypeMaterial::POOL | TiletypeMaterial::BROOK | TiletypeMaterial::RIVER => {
                 return Some(Tile::new_water(
-                    tile.coords,
-                    tile.water.try_into().unwrap_or_default(),
+                    tile.coords(),
+                    tile.water().try_into().unwrap_or_default(),
                 ))
             }
             TiletypeMaterial::TREE_MATERIAL => {
-                let mat_pair_index = tile.material.map(|mat| mat.mat_pair.mat_index());
+                let mat_pair_index = tile.material().map(|mat| mat.mat_pair.mat_index());
                 if let Some(mat_pair_index) = mat_pair_index {
-                    match tile.tile_type.shape() {
+                    match tile.tile_type().shape() {
                         TiletypeShape::WALL | TiletypeShape::TRUNK_BRANCH => {
                             return Some(Tile::new_tree(
-                                tile.coords,
+                                tile.coords(),
                                 mat_pair_index,
-                                tile.tree_origin,
+                                tile.tree_origin(),
                                 TreePart::Trunk,
                             ));
                         }
                         TiletypeShape::BRANCH | TiletypeShape::RAMP => {
                             return Some(Tile::new_tree(
-                                tile.coords,
+                                tile.coords(),
                                 mat_pair_index,
-                                tile.tree_origin,
+                                tile.tree_origin(),
                                 TreePart::Branch,
                             ));
                         }
                         TiletypeShape::TWIG => {
                             return Some(Tile::new_tree(
-                                tile.coords,
+                                tile.coords(),
                                 mat_pair_index,
-                                tile.tree_origin,
+                                tile.tree_origin(),
                                 TreePart::Twig,
                             ));
                         }
@@ -369,14 +369,14 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
             }
             TiletypeMaterial::GRASS_DARK => {
                 return Some(Tile {
-                    coords: tile.coords,
+                    coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
                     material: Material::DarkGrass,
                 })
             }
             TiletypeMaterial::GRASS_LIGHT => {
                 return Some(Tile {
-                    coords: tile.coords,
+                    coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
                     material: Material::LightGrass,
                 })
@@ -385,29 +385,29 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
         };
 
         // Some fluid tile just have the fluid amount indic
-        if tile.water == 7 {
+        if tile.water() == 7 {
             return Some(Tile::new_water(
-                tile.coords,
-                tile.water.try_into().unwrap_or_default(),
+                tile.coords(),
+                tile.water().try_into().unwrap_or_default(),
             ));
         }
 
-        if tile.magma == 7 {
+        if tile.magma() == 7 {
             return Some(Tile::new_magma(
-                tile.coords,
-                tile.magma.try_into().unwrap_or_default(),
+                tile.coords(),
+                tile.magma().try_into().unwrap_or_default(),
             ));
         }
 
         // Not a fluid, check if it has a solid shape and a material
-        if let Some(material) = tile.material {
-            if let Some(shape) = match tile.tile_type.shape() {
+        if let Some(material) = tile.material() {
+            if let Some(shape) = match tile.tile_type().shape() {
                 TiletypeShape::FLOOR
                 | TiletypeShape::BOULDER
                 | TiletypeShape::PEBBLES
                 | TiletypeShape::SHRUB
                 | TiletypeShape::SAPLING => Some(Shape::Floor {
-                    smooth: tile.tile_type.special() == TiletypeSpecial::SMOOTH,
+                    smooth: tile.tile_type().special() == TiletypeSpecial::SMOOTH,
                 }),
                 TiletypeShape::RAMP => Some(Shape::Ramp),
                 TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair(StairPart::UpDown)),
@@ -418,7 +418,7 @@ impl<'a> From<&'a DFTile<'a>> for Option<Tile> {
                 _ => None,
             } {
                 return Some(Tile {
-                    coords: tile.coords,
+                    coords: tile.coords(),
                     shape,
                     material: Material::Generic(material.mat_pair.clone().unwrap_or_default()),
                 });
