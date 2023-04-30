@@ -6,6 +6,7 @@ use crate::{
     building_type::BuildingType,
     direction::{Direction, DirectionFlat},
     map::{Coords, Map},
+    maths::look_at,
     palette::{Material, Palette},
 };
 
@@ -233,8 +234,8 @@ impl Building {
         ]
     }
 
-    fn archery_shape(&self, _direction: DirectionFlat) -> [[[bool; 3]; 3]; 3] {
-        [
+    fn archery_shape(&self, direction: DirectionFlat) -> [[[bool; 3]; 3]; 3] {
+        let shape = [
             [
                 [true, true, true],
                 [false, true, false],
@@ -250,7 +251,8 @@ impl Building {
                 [false, true, false],
                 [false, true, false],
             ],
-        ]
+        ];
+        look_at(shape, direction)
     }
 
     fn bridge_collect_voxels(

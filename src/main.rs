@@ -8,6 +8,7 @@ mod cli;
 mod direction;
 pub mod export;
 pub mod map;
+pub mod maths;
 pub mod palette;
 pub mod rfr;
 pub mod tile;
