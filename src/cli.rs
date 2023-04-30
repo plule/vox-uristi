@@ -110,7 +110,7 @@ fn probe() -> Result<(), anyhow::Error> {
     let tile_types = &tile_type_list.tiletype_list;
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let materials = &material_list.material_list;
-    /*let (_, tiles) = rfr::iter_tiles(
+    let (_, tiles) = rfr::iter_tiles(
         &mut client,
         100,
         0..1000,
@@ -124,17 +124,20 @@ fn probe() -> Result<(), anyhow::Error> {
         if (tile.coords.x, tile.coords.y, tile.coords.z) == (x, y, z) {
             dbg!(tile);
         }
-    }*/
+    }
 
     let (_, buildings) = rfr::iter_buildings(&mut client, 0..1000, 0..1000, z..z + 1)?;
     for building in buildings {
+        let t = building.building_type.get_or_default().building_type();
+        if t == 29 || t == 30 {
+            // spammy civzone and alike
+            continue;
+        }
         let bx = building.pos_x_min()..=building.pos_x_max();
         let by = building.pos_y_min()..=building.pos_y_max();
         let bz = building.pos_z_min()..=building.pos_z_max();
         if bx.contains(&x) && by.contains(&y) && bz.contains(&z) {
-            if building.building_type.get_or_default().building_type() != 29 {
-                dbg!(&building);
-            }
+            dbg!(&building);
         }
     }
     Ok(())

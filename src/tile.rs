@@ -1,7 +1,7 @@
 use crate::{
-    map::{Coords, Direction, Map},
+    map::{Coords, Map},
     palette::{Material, Palette},
-    rfr::DFTile,
+    rfr::DFTile, direction::{Direction, DirectionFlat},
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial, MatPair};
 use itertools::Itertools;
@@ -175,10 +175,10 @@ impl Tile {
             }
 
             Shape::Ramp => {
-                let n = ramp_status_at(map, &(self.coords + Direction::North));
-                let s = ramp_status_at(map, &(self.coords + Direction::South));
-                let e = ramp_status_at(map, &(self.coords + Direction::East));
-                let w = ramp_status_at(map, &(self.coords + Direction::West));
+                let n = ramp_status_at(map, &(self.coords + DirectionFlat::North));
+                let s = ramp_status_at(map, &(self.coords + DirectionFlat::South));
+                let e = ramp_status_at(map, &(self.coords + DirectionFlat::East));
+                let w = ramp_status_at(map, &(self.coords + DirectionFlat::West));
 
                 let levels = [
                     [corner_ramp_level(n, w) , n.height(), corner_ramp_level(n, e)],

@@ -12,14 +12,6 @@ pub struct Map {
     pub buildings: HashMap<Coords, Building>,
     pub dimensions: [i32; 3],
 }
-pub enum Direction {
-    Above,
-    Below,
-    North,
-    South,
-    East,
-    West,
-}
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Coords {
@@ -99,19 +91,6 @@ impl Map {
     }
 }
 
-impl Direction {
-    pub fn get_coords(&self) -> Coords {
-        match self {
-            Direction::Above => Coords::new(0, 0, 1),
-            Direction::Below => Coords::new(0, 0, -1),
-            Direction::North => Coords::new(0, -1, 0),
-            Direction::South => Coords::new(0, 1, 0),
-            Direction::East => Coords::new(1, 0, 0),
-            Direction::West => Coords::new(-1, 0, 0),
-        }
-    }
-}
-
 impl Coords {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
@@ -141,13 +120,5 @@ impl<'a> Add<Coords> for &'a Coords {
 
     fn add(self, rhs: Coords) -> Self::Output {
         Coords::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
-    }
-}
-
-impl Add<Direction> for Coords {
-    type Output = Coords;
-
-    fn add(self, rhs: Direction) -> Self::Output {
-        self + rhs.get_coords()
     }
 }

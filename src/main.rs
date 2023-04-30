@@ -4,6 +4,7 @@ mod app;
 mod building;
 #[cfg(feature = "cli")]
 mod cli;
+mod direction;
 pub mod export;
 pub mod map;
 pub mod palette;
