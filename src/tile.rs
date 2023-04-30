@@ -1,5 +1,6 @@
 use crate::{
     map::{Coords, IsSomeAnd, Map},
+    maths::RotatingMatrix,
     palette::{Material, Palette},
     rfr::DFTile,
 };
@@ -155,22 +156,22 @@ impl Tile {
                 #[rustfmt::skip]
                 let shape = [
                     [
-                        [up, up, false],
+                        [false, up, up],
                         [false, false, false],
                         [false, false, false],
                     ],
                     [
                         [false, false, false],
-                        [middle, false, false],
-                        [middle, false, false]
+                        [false, false, middle],
+                        [false, false, middle]
                     ],
                     [
-                        [floor, floor, down | floor],
-                        [floor, floor, down | floor],
-                        [floor, down | floor, down | floor]
+                        [floor, floor, floor],
+                        [floor, floor, floor],
+                        [down || floor, down || floor, floor]
                     ],
                 ];
-                shape
+                shape.rotated_by((self.coords.z % 4) as usize)
             }
 
             Shape::Ramp => {

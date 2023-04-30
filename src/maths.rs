@@ -24,13 +24,22 @@ pub fn look_at<T: Copy>(input: [[[T; 3]; 3]; 3], direction: DirectionFlat) -> [[
     out
 }
 
-pub trait LookingAt {
+pub trait RotatingMatrix {
     fn looking_at(self, direction: DirectionFlat) -> Self;
+    fn rotated_by(self, amount: usize) -> Self;
 }
 
-impl<T: Copy> LookingAt for [[[T; 3]; 3]; 3] {
+impl<T: Copy> RotatingMatrix for [[[T; 3]; 3]; 3] {
     fn looking_at(self, direction: DirectionFlat) -> Self {
         look_at(self, direction)
+    }
+
+    fn rotated_by(self, amount: usize) -> Self {
+        let mut out = self;
+        for _ in 0..amount {
+            out = flat_rotate(out);
+        }
+        out
     }
 }
 

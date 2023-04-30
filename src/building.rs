@@ -2,7 +2,7 @@ use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
     map::{Coords, IsSomeAnd, Map},
-    maths::{look_at, LookingAt},
+    maths::{look_at, RotatingMatrix},
     palette::{Material, Palette},
     tile::Shape,
 };
