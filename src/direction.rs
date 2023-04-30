@@ -7,17 +7,33 @@ pub enum Direction {
     Above,
     Below,
     North,
-    South,
     East,
+    South,
     West,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DirectionFlat {
     North,
-    South,
     East,
+    South,
     West,
+}
+
+pub struct NeighbouringFlat<T> {
+    pub n: T,
+    pub e: T,
+    pub s: T,
+    pub w: T,
+}
+
+pub struct Neighbouring<T> {
+    pub a: T,
+    pub b: T,
+    pub n: T,
+    pub e: T,
+    pub s: T,
+    pub w: T,
 }
 
 impl Direction {
@@ -67,5 +83,35 @@ impl Add<DirectionFlat> for Coords {
 
     fn add(self, rhs: DirectionFlat) -> Self::Output {
         self + rhs.get_coords()
+    }
+}
+
+impl<T> NeighbouringFlat<T> {
+    pub fn new<F>(func: F) -> Self
+    where
+        F: Fn(DirectionFlat) -> T,
+    {
+        Self {
+            n: func(DirectionFlat::North),
+            e: func(DirectionFlat::East),
+            s: func(DirectionFlat::South),
+            w: func(DirectionFlat::West),
+        }
+    }
+}
+
+impl<T> Neighbouring<T> {
+    pub fn new<F>(func: F) -> Self
+    where
+        F: Fn(Direction) -> T,
+    {
+        Self {
+            a: func(Direction::Above),
+            b: func(Direction::Below),
+            n: func(Direction::North),
+            e: func(Direction::East),
+            s: func(Direction::South),
+            w: func(Direction::West),
+        }
     }
 }

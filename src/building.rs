@@ -1,14 +1,14 @@
+use crate::{
+    building_type::BuildingType,
+    direction::DirectionFlat,
+    map::{Coords, IsSomeAnd, Map},
+    maths::{look_at, LookingAt},
+    palette::{Material, Palette},
+    tile::Shape,
+};
 use dfhack_remote::BuildingInstance;
 use itertools::Itertools;
 use std::ops::RangeInclusive;
-
-use crate::{
-    building_type::BuildingType,
-    direction::{Direction, DirectionFlat},
-    map::{Coords, Map},
-    maths::{look_at, LookingAt},
-    palette::{Material, Palette},
-};
 
 #[derive(Debug)]
 pub struct BoundingBox {
@@ -262,26 +262,56 @@ impl Building {
     }
 
     fn window_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
-        let n = map.connect_window_to_coords(self.origin + Direction::North);
-        let s = map.connect_window_to_coords(self.origin + Direction::South);
-        let e = map.connect_window_to_coords(self.origin + Direction::East);
-        let w = map.connect_window_to_coords(self.origin + Direction::West);
+        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
+            buildings.iter().any(|b| {
+                matches!(
+                    b.building_type,
+                    BuildingType::WindowGem | BuildingType::WindowGlass
+                )
+            }) || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+        });
         [
-            [[false, n, false], [w, true, e], [false, s, false]],
-            [[false, n, false], [w, true, e], [false, s, false]],
-            [[false, n, false], [w, true, e], [false, s, false]],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
         ]
     }
 
     fn door_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
-        let n = map.connect_door_to_coords(self.origin + Direction::North);
-        let s = map.connect_door_to_coords(self.origin + Direction::South);
-        let e = map.connect_door_to_coords(self.origin + Direction::East);
-        let w = map.connect_door_to_coords(self.origin + Direction::West);
+        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
+            buildings
+                .iter()
+                .any(|b| matches!(b.building_type, BuildingType::Door))
+                || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+        });
         [
-            [[false, n, false], [w, true, e], [false, s, false]],
-            [[false, n, false], [w, true, e], [false, s, false]],
-            [[false, n, false], [w, true, e], [false, s, false]],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
         ]
     }
 

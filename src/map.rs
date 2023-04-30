@@ -1,7 +1,6 @@
 use crate::{
     building::Building,
-    building_type::BuildingType,
-    direction::DirectionFlat,
+    direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     rfr::DFTile,
     tile::{Shape, Tile},
 };
@@ -62,37 +61,34 @@ impl Map {
         }
     }
 
-    pub fn has_tree_at_coords(&self, coords: &Coords, tree_origin: &Coords) -> bool {
-        self.tiles
-            .get(coords)
-            .some_and(|t| t.is_from_tree(tree_origin))
-    }
-
-    pub fn connect_window_to_coords(&self, coords: Coords) -> bool {
-        self.buildings.get(&coords).some_and(|v| {
-            v.iter().any(|b| {
-                b.building_type == BuildingType::WindowGem
-                    || b.building_type == BuildingType::WindowGlass
-            })
-        }) || self.tiles.get(&coords).some_and(|t| {
-            matches!(
-                t.shape,
-                crate::tile::Shape::Fortification | crate::tile::Shape::Full
+    /// Compute a given function for all the neighbours including above and below
+    pub fn neighbouring<F, T>(&self, coords: Coords, func: F) -> Neighbouring<T>
+    where
+        F: Fn(Option<&Tile>, &Vec<Building>) -> T,
+    {
+        let empty_vec = vec![];
+        return Neighbouring::new(|direction| {
+            let neighbour = coords + direction;
+            func(
+                self.tiles.get(&neighbour),
+                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
             )
-        })
+        });
     }
 
-    pub fn connect_door_to_coords(&self, coords: Coords) -> bool {
-        // Connect to wall and doors
-        self.buildings
-            .get(&coords)
-            .some_and(|v| v.iter().any(|b| b.building_type == BuildingType::Door))
-            || self.tiles.get(&coords).some_and(|t| {
-                matches!(
-                    t.shape,
-                    crate::tile::Shape::Fortification | crate::tile::Shape::Full
-                )
-            })
+    /// Compute a given function for all the neighbours on the same plane
+    pub fn neighbouring_flat<F, T>(&self, coords: Coords, func: F) -> NeighbouringFlat<T>
+    where
+        F: Fn(Option<&Tile>, &Vec<Building>) -> T,
+    {
+        let empty_vec = vec![];
+        return NeighbouringFlat::new(|direction| {
+            let neighbour = coords + direction;
+            func(
+                self.tiles.get(&neighbour),
+                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
+            )
+        });
     }
 
     /// Find the most "wally" direction, ie the direction to put furniture against

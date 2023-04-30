@@ -1,9 +1,9 @@
 use crate::{
-    map::{Coords, Map},
+    map::{Coords, IsSomeAnd, Map},
     palette::{Material, Palette},
-    rfr::DFTile, direction::{Direction, DirectionFlat},
+    rfr::DFTile,
 };
-use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial, MatPair};
+use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use itertools::Itertools;
 use rand::Rng;
 
@@ -56,22 +56,11 @@ impl RampContactKind {
     }
 }
 
-fn ramp_status_at(map: &Map, coords: &Coords) -> RampContactKind {
-    if let Some(tile) = map.tiles.get(coords) {
-        return match tile.shape {
-            Shape::Full | Shape::Fortification => RampContactKind::Wall,
-            Shape::Ramp => RampContactKind::Ramp,
-            _ => RampContactKind::Empty,
-        };
-    };
-    RampContactKind::Empty
-}
-
 fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> i8 {
     match (c1, c2) {
         (RampContactKind::Ramp, RampContactKind::Ramp) => 2, // should be 1 for concave, 3 for convexe todo
         (RampContactKind::Ramp, c) | (c, RampContactKind::Ramp) => c.height(),
-        (c1, c2) => (c1.height() + c2.height()) / 2
+        (c1, c2) => (c1.height() + c2.height()) / 2,
     }
 }
 
@@ -94,8 +83,16 @@ impl Tile {
 
     pub fn new_tree(coords: Coords, mat_index: i32, origin: Coords, part: TreePart) -> Self {
         let shape = Shape::Tree { origin, part };
-        let wood = MatPair { mat_type: Some(420), mat_index: Some(mat_index), ..Default::default() };
-        let leaves = MatPair { mat_type: Some(421), mat_index: Some(mat_index), ..Default::default() };
+        let wood = MatPair {
+            mat_type: Some(420),
+            mat_index: Some(mat_index),
+            ..Default::default()
+        };
+        let leaves = MatPair {
+            mat_type: Some(421),
+            mat_index: Some(mat_index),
+            ..Default::default()
+        };
         match part {
             TreePart::Trunk => Tile {
                 shape,
@@ -148,14 +145,15 @@ impl Tile {
                     ],
                 ]
             }
-            #[rustfmt::skip]
+
             Shape::Stair(part) => {
                 let up = *part == StairPart::Up || *part == StairPart::UpDown;
                 let middle = *part == StairPart::Up || *part == StairPart::UpDown;
                 let down = *part == StairPart::Down || *part == StairPart::UpDown;
                 let floor = *part == StairPart::Up;
-                
-                [
+
+                #[rustfmt::skip]
+                let shape = [
                     [
                         [up, up, false],
                         [false, false, false],
@@ -171,30 +169,41 @@ impl Tile {
                         [floor, floor, down | floor],
                         [floor, down | floor, down | floor]
                     ],
-                ]
+                ];
+                shape
             }
 
             Shape::Ramp => {
-                let n = ramp_status_at(map, &(self.coords + DirectionFlat::North));
-                let s = ramp_status_at(map, &(self.coords + DirectionFlat::South));
-                let e = ramp_status_at(map, &(self.coords + DirectionFlat::East));
-                let w = ramp_status_at(map, &(self.coords + DirectionFlat::West));
+                let c = map.neighbouring_flat(self.coords, |tile, _| match tile {
+                    Some(Tile {
+                        shape: Shape::Full | Shape::Fortification,
+                        ..
+                    }) => RampContactKind::Wall,
+                    Some(Tile {
+                        shape: Shape::Ramp, ..
+                    }) => RampContactKind::Ramp,
+                    _ => RampContactKind::Empty,
+                });
 
+                #[rustfmt::skip]
                 let levels = [
-                    [corner_ramp_level(n, w) , n.height(), corner_ramp_level(n, e)],
-                    [w.height()      , 2                 , e.height()             ],
-                    [corner_ramp_level(s, w) , s.height(), corner_ramp_level(s, e)],
+                    [corner_ramp_level(c.n, c.w) , c.n.height(), corner_ramp_level(c.n, c.e)],
+                    [c.w.height()                , 2           , c.e.height()               ],
+                    [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
                 ];
 
-                [2, 1, 0].map(|z| [0,1,2].map(|y| [0,1,2].map(|x| levels[y][x] > z)))
+                [2, 1, 0].map(|z| [0, 1, 2].map(|y| [0, 1, 2].map(|x| levels[y][x] > z)))
             }
             Shape::Tree { origin, part } => {
-                let a = map.has_tree_at_coords(&(self.coords + Direction::Above), origin);
-                let n = map.has_tree_at_coords(&(self.coords + Direction::North), origin);
-                let w = map.has_tree_at_coords(&(self.coords + Direction::West), origin);
-                let e = map.has_tree_at_coords(&(self.coords + Direction::East), origin);
-                let s = map.has_tree_at_coords(&(self.coords + Direction::South), origin);
-                let b = map.has_tree_at_coords(&(self.coords + Direction::Below), origin);
+                let connectivity = map.neighbouring(self.coords, |tile, _| {
+                    tile.some_and(|t| match &t.shape {
+                        Shape::Tree {
+                            origin: other_origin,
+                            part: _,
+                        } => origin == other_origin,
+                        _ => false,
+                    })
+                });
                 match part {
                     TreePart::Trunk => [
                         [[true, true, true], [true, true, true], [true, true, true]],
@@ -204,34 +213,34 @@ impl Tile {
                     TreePart::Branch => [
                         [
                             [rng.gen(), rng.gen(), rng.gen()],
-                            [rng.gen(), a, rng.gen()],
+                            [rng.gen(), connectivity.a, rng.gen()],
                             [rng.gen(), rng.gen(), rng.gen()],
                         ],
                         [
-                            [rng.gen(), n, rng.gen()],
-                            [w, true, e],
-                            [rng.gen(), s, rng.gen()],
+                            [rng.gen(), connectivity.n, rng.gen()],
+                            [connectivity.w, true, connectivity.e],
+                            [rng.gen(), connectivity.s, rng.gen()],
                         ],
                         [
                             [rng.gen(), rng.gen(), rng.gen()],
-                            [rng.gen(), b, rng.gen()],
+                            [rng.gen(), connectivity.b, rng.gen()],
                             [rng.gen(), rng.gen(), rng.gen()],
                         ],
                     ],
                     TreePart::Twig => [
                         [
                             [rng.gen(), false, rng.gen()],
-                            [false, a, false],
+                            [false, connectivity.a, false],
                             [rng.gen(), false, rng.gen()],
                         ],
                         [
-                            [rng.gen(), n, rng.gen()],
-                            [w, true, e],
-                            [rng.gen(), s, rng.gen()],
+                            [rng.gen(), connectivity.n, rng.gen()],
+                            [connectivity.w, true, connectivity.e],
+                            [rng.gen(), connectivity.s, rng.gen()],
                         ],
                         [
                             [rng.gen(), false, rng.gen()],
-                            [false, b, false],
+                            [false, connectivity.b, false],
                             [rng.gen(), false, rng.gen()],
                         ],
                     ],
@@ -260,13 +269,6 @@ impl Tile {
                 [[true, true, true], [true, true, true], [true, true, true]],
                 [[true, true, true], [true, true, true], [true, true, true]],
             ],
-        }
-    }
-
-    pub fn is_from_tree(&self, other_tree: &Coords) -> bool {
-        match &self.shape {
-            Shape::Tree { origin, part: _ } => origin == other_tree,
-            _ => false,
         }
     }
 
