@@ -47,4 +47,5 @@ jobs:
       with:
         files: vox-uristi-${{ github.ref_name }}.exe
         draft: true
-
+        body: |-
+          # ☼Vox Uristi ${{ github.ref_name }}☼
