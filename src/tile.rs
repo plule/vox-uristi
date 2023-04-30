@@ -247,24 +247,37 @@ impl Tile {
                     ],
                 }
             }
-            #[rustfmt::skip]
-            Shape::Fortification => [
-                [
-                    [true, false, true],
-                    [false, false, false],
-                    [true, false, true]
-                ],
-                [
-                    [true, false, true],
-                    [false, false, false],
-                    [true, false, true]
-                ],
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [true, true, true]
-                ],
-            ],
+            Shape::Fortification => {
+                let conn = map.neighbouring_flat(self.coords, |tile, _| {
+                    matches!(
+                        tile,
+                        Some(Tile {
+                            shape: Shape::Full | Shape::Fortification,
+                            ..
+                        })
+                    )
+                });
+                #[rustfmt::skip]
+                let shape = [
+                    [
+                        [true, conn.n, true],
+                        [conn.w, false, conn.e],
+                        [true, conn.s, true]
+                    ],
+                    [
+                        [true, conn.n, true],
+                        [conn.w, false, conn.e],
+                        [true, conn.s, true]
+                    ],
+                    [
+                        [true, true, true],
+                        [true, true, true],
+                        [true, true, true]
+                    ],
+                ];
+
+                shape
+            }
             Shape::Full => [
                 [[true, true, true], [true, true, true], [true, true, true]],
                 [[true, true, true], [true, true, true], [true, true, true]],
