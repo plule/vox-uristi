@@ -141,6 +141,7 @@ impl Building {
                 ],
             ],
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
+            BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
                 return self.bridge_collect_voxels(palette, direction);
             }
@@ -154,6 +155,18 @@ impl Building {
         let s = map.connect_window_to_coords(self.origin + Direction::South);
         let e = map.connect_window_to_coords(self.origin + Direction::East);
         let w = map.connect_window_to_coords(self.origin + Direction::West);
+        [
+            [[false, n, false], [w, true, e], [false, s, false]],
+            [[false, n, false], [w, true, e], [false, s, false]],
+            [[false, n, false], [w, true, e], [false, s, false]],
+        ]
+    }
+
+    fn door_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
+        let n = map.connect_door_to_coords(self.origin + Direction::North);
+        let s = map.connect_door_to_coords(self.origin + Direction::South);
+        let e = map.connect_door_to_coords(self.origin + Direction::East);
+        let w = map.connect_door_to_coords(self.origin + Direction::West);
         [
             [[false, n, false], [w, true, e], [false, s, false]],
             [[false, n, false], [w, true, e], [false, s, false]],

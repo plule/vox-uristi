@@ -77,12 +77,12 @@ impl Map {
         })
     }
 
-    pub fn connect_door_to_coords(&self, coords: &Coords) -> bool {
+    pub fn connect_door_to_coords(&self, coords: Coords) -> bool {
         // Connect to wall and doors
         self.buildings
-            .get(coords)
+            .get(&coords)
             .some_and(|b| b.building_type == BuildingType::Door)
-            || self.tiles.get(coords).some_and(|t| {
+            || self.tiles.get(&coords).some_and(|t| {
                 matches!(
                     t.shape,
                     crate::tile::Shape::Fortification | crate::tile::Shape::Full
