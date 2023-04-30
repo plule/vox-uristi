@@ -1,5 +1,12 @@
-use crate::{building::Building, building_type::BuildingType, rfr::DFTile, tile::Tile};
+use crate::{
+    building::Building,
+    building_type::BuildingType,
+    direction::DirectionFlat,
+    rfr::DFTile,
+    tile::{Shape, Tile},
+};
 use dfhack_remote::{BuildingInstance, Coord};
+use itertools::Itertools;
 use std::{collections::HashMap, ops::Add};
 
 /// Intermediary format between DF and voxels
@@ -86,6 +93,51 @@ impl Map {
                     crate::tile::Shape::Fortification | crate::tile::Shape::Full
                 )
             })
+    }
+
+    /// Find the most "wally" direction, ie the direction to put furniture against
+    pub fn wall_direction(&self, coords: Coords) -> DirectionFlat {
+        let z = coords.z;
+        // there's likely a nice way to write that
+        // N, E, S, W
+        const N: usize = 0;
+        const E: usize = 1;
+        const S: usize = 2;
+        const W: usize = 3;
+        let mut wallyness = [0, 0, 0, 0];
+        for x in -1..=1 {
+            for y in -1..=1 {
+                let wally = self
+                    .tiles
+                    .get(&Coords::new(coords.x + x, coords.y + y, z))
+                    .some_and(|tile| matches!(tile.shape, Shape::Fortification | Shape::Full));
+                if wally {
+                    if x == -1 {
+                        wallyness[W] += 1;
+                    }
+
+                    if x == 1 {
+                        wallyness[E] += 1;
+                    }
+
+                    if y == -1 {
+                        wallyness[N] += 1;
+                    }
+
+                    if y == 1 {
+                        wallyness[S] += 1;
+                    }
+                }
+            }
+        }
+
+        match wallyness.iter().position_max().unwrap() {
+            N => DirectionFlat::North,
+            E => DirectionFlat::East,
+            S => DirectionFlat::South,
+            W => DirectionFlat::West,
+            _ => unreachable!(),
+        }
     }
 }
 

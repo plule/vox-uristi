@@ -6,7 +6,7 @@ use crate::{
     building_type::BuildingType,
     direction::{Direction, DirectionFlat},
     map::{Coords, Map},
-    maths::look_at,
+    maths::{look_at, LookingAt},
     palette::{Material, Palette},
 };
 
@@ -79,6 +79,19 @@ impl Building {
                     [false, true, false],
                 ],
             ],
+            BuildingType::Hatch => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [[true, true, true], [true, true, true], [true, true, true]],
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+            ],
             BuildingType::BarsVertical
             | BuildingType::GrateWall
             | BuildingType::Support
@@ -115,7 +128,8 @@ impl Building {
                     [true, true, true],
                     [false, false, false],
                 ],
-            ],
+            ]
+            .looking_at(map.wall_direction(self.origin)),
             BuildingType::Statue | BuildingType::GearAssembly => [
                 [
                     [false, false, false],
@@ -133,10 +147,29 @@ impl Building {
                     [false, false, false],
                 ],
             ],
-            BuildingType::Box
-            | BuildingType::AnimalTrap
+            BuildingType::Box => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, true, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+            ]
+            .looking_at(map.wall_direction(self.origin)),
+            BuildingType::AnimalTrap
             | BuildingType::Chair
-            | BuildingType::Chain => [
+            | BuildingType::Chain
+            | BuildingType::DisplayFurniture
+            | BuildingType::OfferingPlace => [
                 [
                     [false, false, false],
                     [false, false, false],
@@ -166,7 +199,25 @@ impl Building {
                     [true, false, true],
                 ],
             ],
-            BuildingType::Bed | BuildingType::Coffin => [
+            BuildingType::Bed => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, true, true],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+            ]
+            .looking_at(map.wall_direction(self.origin)),
+            BuildingType::Coffin => [
                 [
                     [false, false, false],
                     [false, false, false],

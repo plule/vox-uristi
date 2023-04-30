@@ -24,6 +24,16 @@ pub fn look_at<T: Copy>(input: [[[T; 3]; 3]; 3], direction: DirectionFlat) -> [[
     out
 }
 
+pub trait LookingAt {
+    fn looking_at(self, direction: DirectionFlat) -> Self;
+}
+
+impl<T: Copy> LookingAt for [[[T; 3]; 3]; 3] {
+    fn looking_at(self, direction: DirectionFlat) -> Self {
+        look_at(self, direction)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
