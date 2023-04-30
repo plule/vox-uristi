@@ -25,7 +25,10 @@ pub enum Command {
         destination: PathBuf,
     },
     /// Debug the tile under the cursor
-    Probe,
+    Probe {
+        /// Destination folder
+        destination: PathBuf,
+    },
     /// Dump the material, plant, raw lists...
     DumpLists {
         /// Destination folder
@@ -43,7 +46,7 @@ pub fn run_cli_command(command: Command) -> Result<()> {
             destination,
         } => export(elevation_low, elevation_high, destination),
         Command::DumpLists { destination } => dump_lists(destination),
-        Command::Probe => probe(),
+        Command::Probe { destination } => probe(destination),
         Command::CheckUpdate => check_update(),
     }
 }
@@ -100,7 +103,7 @@ fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Resu
     Ok(())
 }
 
-fn probe() -> Result<(), anyhow::Error> {
+fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let mut client = dfhack_remote::connect()?;
     let view_info = client.remote_fortress_reader().get_view_info()?;
     let x = view_info.cursor_pos_x();
@@ -127,17 +130,16 @@ fn probe() -> Result<(), anyhow::Error> {
     }
 
     let (_, buildings) = rfr::iter_buildings(&mut client, 0..1000, 0..1000, z..z + 1)?;
-    for building in buildings {
-        let t = building.building_type.get_or_default().building_type();
-        if t == 29 || t == 30 {
-            // spammy civzone and alike
-            continue;
-        }
+    for (i, building) in buildings.enumerate() {
         let bx = building.pos_x_min()..=building.pos_x_max();
         let by = building.pos_y_min()..=building.pos_y_max();
         let bz = building.pos_z_min()..=building.pos_z_max();
         if bx.contains(&x) && by.contains(&y) && bz.contains(&z) {
-            dbg!(&building);
+            dump(
+                &building,
+                &destination,
+                format!("building_{i}.json").as_str(),
+            )?;
         }
     }
     Ok(())
@@ -190,6 +192,7 @@ fn dump(message: &dyn MessageDyn, folder: &PathBuf, filename: &str) -> Result<()
     let materials = protobuf_json_mapping::print_to_string(message)?;
     let mut dest = folder.clone();
     dest.push(filename);
+    println!("{}", &dest.display());
     std::fs::write(dest, materials)?;
     Ok(())
 }

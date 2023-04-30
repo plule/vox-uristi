@@ -80,10 +80,11 @@ pub fn try_export_voxels(
     let mut vox = vox_writer::VoxWriter::create_empty();
     let mut palette = Palette::default();
     palette.build_palette(
-        map.tiles
-            .values()
-            .map(|tile| &tile.material)
-            .chain(map.buildings.values().map(|b| &b.material)),
+        map.tiles.values().map(|tile| &tile.material).chain(
+            map.buildings
+                .values()
+                .flat_map(|v| v.iter().map(|b| &b.material)),
+        ),
     );
     palette.write_palette(&mut vox, materials);
 
@@ -107,15 +108,17 @@ pub fn try_export_voxels(
         }
     }
 
-    for building in map.buildings.values() {
-        let voxels = building.collect_voxels(&palette, &map);
-        for (coord, color) in voxels {
-            vox.add_voxel(
-                coord.x,
-                map.dimensions[1] * 3 - coord.y,
-                coord.z,
-                color.into(),
-            );
+    for building_list in map.buildings.values() {
+        for building in building_list {
+            let voxels = building.collect_voxels(&palette, &map);
+            for (coord, color) in voxels {
+                vox.add_voxel(
+                    coord.x,
+                    map.dimensions[1] * 3 - coord.y,
+                    coord.z,
+                    color.into(),
+                );
+            }
         }
     }
 

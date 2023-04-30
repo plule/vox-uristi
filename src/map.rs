@@ -1,15 +1,11 @@
-use crate::{
-    building::{Building, BuildingType},
-    rfr::DFTile,
-    tile::Tile,
-};
+use crate::{building::Building, building_type::BuildingType, rfr::DFTile, tile::Tile};
 use dfhack_remote::{BuildingInstance, Coord};
 use std::{collections::HashMap, ops::Add};
 
 /// Intermediary format between DF and voxels
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
-    pub buildings: HashMap<Coords, Building>,
+    pub buildings: HashMap<Coords, Vec<Building>>,
     pub dimensions: [i32; 3],
 }
 
@@ -55,7 +51,7 @@ impl Map {
             df_building.pos_z_min(),
         );
         if let Some(building) = Building::from_df_building(df_building) {
-            self.buildings.insert(coords, building);
+            self.buildings.entry(coords).or_default().push(building);
         }
     }
 
@@ -66,9 +62,11 @@ impl Map {
     }
 
     pub fn connect_window_to_coords(&self, coords: Coords) -> bool {
-        self.buildings.get(&coords).some_and(|b| {
-            b.building_type == BuildingType::WindowGem
-                || b.building_type == BuildingType::WindowGlass
+        self.buildings.get(&coords).some_and(|v| {
+            v.iter().any(|b| {
+                b.building_type == BuildingType::WindowGem
+                    || b.building_type == BuildingType::WindowGlass
+            })
         }) || self.tiles.get(&coords).some_and(|t| {
             matches!(
                 t.shape,
@@ -81,7 +79,7 @@ impl Map {
         // Connect to wall and doors
         self.buildings
             .get(&coords)
-            .some_and(|b| b.building_type == BuildingType::Door)
+            .some_and(|v| v.iter().any(|b| b.building_type == BuildingType::Door))
             || self.tiles.get(&coords).some_and(|t| {
                 matches!(
                     t.shape,

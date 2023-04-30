@@ -3,11 +3,13 @@ use itertools::Itertools;
 use std::ops::RangeInclusive;
 
 use crate::{
+    building_type::BuildingType,
     direction::{Direction, DirectionFlat},
     map::{Coords, Map},
     palette::{Material, Palette},
 };
 
+#[derive(Debug)]
 pub struct BoundingBox {
     pub x: RangeInclusive<i32>,
     pub y: RangeInclusive<i32>,
@@ -20,32 +22,12 @@ impl BoundingBox {
     }
 }
 
+#[derive(Debug)]
 pub struct Building {
     pub building_type: BuildingType,
     pub material: Material,
     pub origin: Coords,
     pub bounding_box: BoundingBox,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum BuildingType {
-    Door,
-    Floodgate,
-    WindowGlass,
-    WindowGem,
-    Workshop { subtype: i32 },
-    Bridge { direction: Option<DirectionFlat> },
-    Support,
-    Hatch,
-    GrateWall,
-    GrateFloor,
-    BarsVertical,
-    BarsFloor,
-    AxleVertical,
-    Slab,
-    Bookcase,
-    DisplayFurniture,
-    OfferingPlace,
 }
 
 pub trait BuildingExtensions {
@@ -54,32 +36,7 @@ pub trait BuildingExtensions {
 
 impl BuildingExtensions for dfhack_remote::BuildingInstance {
     fn get_type(&self) -> Option<BuildingType> {
-        let building_type = self.building_type.get_or_default();
-        let t = match building_type.building_type() {
-            8 => BuildingType::Door,
-            9 => BuildingType::Floodgate,
-            13 => BuildingType::Workshop {
-                subtype: building_type.building_subtype(),
-            },
-            16 => BuildingType::WindowGlass,
-            17 => BuildingType::WindowGem,
-            19 => BuildingType::Bridge {
-                direction: DirectionFlat::maybe_from_df(&self.direction()),
-            },
-            25 => BuildingType::Support,
-            35 => BuildingType::Hatch,
-            36 => BuildingType::GrateWall,
-            37 => BuildingType::GrateFloor,
-            38 => BuildingType::BarsVertical,
-            39 => BuildingType::BarsFloor,
-            42 => BuildingType::AxleVertical,
-            46 => BuildingType::Slab,
-            52 => BuildingType::Bookcase,
-            53 => BuildingType::DisplayFurniture,
-            54 => BuildingType::OfferingPlace,
-            _ => return None,
-        };
-        Some(t)
+        BuildingType::maybe_from_df(self)
     }
 }
 
@@ -103,6 +60,7 @@ impl Building {
 
     pub fn collect_voxels(&self, palette: &Palette, map: &Map) -> Vec<(Coords, u8)> {
         let shape = match self.building_type {
+            BuildingType::ArcheryTarget { direction } => self.archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 [
                     [false, false, false],
@@ -127,6 +85,107 @@ impl Building {
                 [
                     [false, false, false],
                     [false, true, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+            ],
+            BuildingType::Bookcase | BuildingType::Cabinet => [
+                [
+                    [true, true, true],
+                    [true, true, true],
+                    [false, false, false],
+                ],
+                [
+                    [true, true, true],
+                    [true, true, true],
+                    [false, false, false],
+                ],
+                [
+                    [true, true, true],
+                    [true, true, true],
+                    [false, false, false],
+                ],
+            ],
+            BuildingType::Statue | BuildingType::GearAssembly => [
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, true, false],
+                    [true, true, true],
+                    [false, true, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+            ],
+            BuildingType::Box
+            | BuildingType::AnimalTrap
+            | BuildingType::Chair
+            | BuildingType::Chain => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+            ],
+            BuildingType::Table | BuildingType::TractionBench => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [[true, true, true], [true, true, true], [true, true, true]],
+                [
+                    [true, false, true],
+                    [false, false, false],
+                    [true, false, true],
+                ],
+            ],
+            BuildingType::Bed | BuildingType::Coffin => [
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, true, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
+                [
+                    [false, false, false],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+            ],
+            BuildingType::Well => [
+                [
+                    [false, false, false],
+                    [true, true, true],
                     [false, false, false],
                 ],
                 [
@@ -171,6 +230,26 @@ impl Building {
             [[false, n, false], [w, true, e], [false, s, false]],
             [[false, n, false], [w, true, e], [false, s, false]],
             [[false, n, false], [w, true, e], [false, s, false]],
+        ]
+    }
+
+    fn archery_shape(&self, _direction: DirectionFlat) -> [[[bool; 3]; 3]; 3] {
+        [
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, false, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
         ]
     }
 

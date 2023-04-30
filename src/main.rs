@@ -2,6 +2,7 @@
 
 mod app;
 mod building;
+pub mod building_type;
 #[cfg(feature = "cli")]
 mod cli;
 mod direction;
