@@ -45,7 +45,7 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Basic tree support, inaccurate but good enough
 - ☑ Essential construction items (doors, windows, bars, bridges)
 - ☐ Detailed materials (metallic, water, light emission)
-- ☐ Flows, waves and mist
+- ☑ Flows, waves and mist
 - ☐ Accurate trees
 - ☑ More construction items (furnitures)
 
@@ -78,6 +78,10 @@ Fort Chantbell is a fortress by Neo.
 | *The library, lego style*          |
 
 ## Version History
+
+### v0.5
+
+- Mist, waves and smoke
 
 ### v0.4
 
