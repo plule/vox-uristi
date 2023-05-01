@@ -12,6 +12,7 @@ dfhack-remote = "0.6.1"
 eframe = {version = "0.21.3", features = ["persistence"]}
 indicatif = "0.17.3"
 itertools = "0.10.5"
+num_enum = "0.6.1"
 protobuf = { version ="3.2.0", optional = true }
 protobuf-json-mapping = { version ="3.2.0", optional = true }
 rand = "0.8.5"
@@ -20,6 +21,7 @@ rfd = "0.11.3"
 rgb = "0.8.36"
 semver = "1.0.17"
 serde = "1.0.160"
+strum = { version = "0.24.1", features = ["derive"] }
 tracing-subscriber = "0.3.16"
 vox_writer = "0.1.6"
 

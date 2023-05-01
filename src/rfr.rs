@@ -3,7 +3,11 @@ use anyhow::Result;
 use dfhack_remote::{
     BlockList, BlockRequest, MapBlock, MatPair, MaterialDefinition, Tiletype, TiletypeList,
 };
-use std::{collections::HashMap, fmt::Debug, ops::Range};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+    ops::Range,
+};
 
 /// Wrapper around dwarf fortress blocks to help access individual tile properties
 #[derive(Debug)]
@@ -234,4 +238,36 @@ pub fn build_material_map(
         .into_iter()
         .map(|mat| (mat.mat_pair.get_or_default().to_owned(), mat))
         .collect())
+}
+
+impl Display for BlockTile<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "coords: {}", self.coords())?;
+        writeln!(f, "hidden: {}", self.hidden())?;
+        writeln!(f, "water: {}", self.water())?;
+        writeln!(f, "tile_type: {}", self.tile_type())?;
+        writeln!(
+            f,
+            "material: {}",
+            self.material().map(|m| m.id()).unwrap_or("None")
+        )?;
+        writeln!(
+            f,
+            "base_material: {}",
+            self.base_material().map(|m| m.id()).unwrap_or("None")
+        )?;
+        writeln!(
+            f,
+            "vein_material: {}",
+            self.vein_material().map(|m| m.id()).unwrap_or("None")
+        )?;
+        writeln!(f, "magma: {}", self.magma())?;
+        writeln!(f, "water_stagnant: {}", self.water_stagnant())?;
+        writeln!(f, "water_salt: {}", self.water_salt())?;
+        writeln!(f, "tree: {}", self.tree())?;
+        writeln!(f, "tree_origin: {}", self.tree_origin())?;
+        writeln!(f, "tree_percent: {}", self.tree_percent())?;
+        writeln!(f, "grass: {}", self.grass_percent())?;
+        Ok(())
+    }
 }

@@ -117,19 +117,7 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
         for block in block_list?.map_blocks {
             for tile in rfr::TileIterator::new(&block, &material_map, &tile_type_list) {
                 if tile.coords() == probe {
-                    println!("coords: {}", tile.coords());
-                    println!("hidden: {}", tile.hidden());
-                    println!("water: {}", tile.water());
-                    println!("tile_type: {}", tile.tile_type());
-                    println!("material: {:#?}", tile.material());
-                    println!("base_material: {:#?}", tile.base_material());
-                    println!("vein_material: {:#?}", tile.vein_material());
-                    println!("magma: {}", tile.magma());
-                    println!("water_stagnant: {}", tile.water_stagnant());
-                    println!("water_salt: {}", tile.water_salt());
-                    println!("tree: {}", tile.tree());
-                    println!("tree_origin: {}", tile.tree_origin());
-                    println!("tree_percent: {}", tile.tree_percent());
+                    println!("{}", tile);
                 }
             }
 

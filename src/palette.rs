@@ -1,13 +1,44 @@
 use dfhack_remote::{MatPair, MaterialDefinition};
+use num_enum::IntoPrimitive;
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
+use strum::{EnumCount, EnumIter, IntoEnumIterator};
 use vox_writer::VoxWriter;
 
-const HIDDEN: u8 = 0;
-const WATER: u8 = 1;
-const MAGMA: u8 = 2;
-const DARK_GRASS: u8 = 3;
-const LIGHT_GRASS: u8 = 4;
+/// A material to be exported as an entry in the palette
+#[derive(Debug)]
+pub enum Material {
+    /// Default material with hard-coded color
+    Default(DefaultMaterials),
+    /// Generic material built procedurally from Dwarf Fortress
+    Generic(MatPair),
+    /// Generic material randomly picked from a list
+    Random(Vec<MatPair>),
+}
+
+/// The default hard-coded materials
+#[derive(Debug, Clone, Copy, IntoPrimitive, EnumIter, EnumCount)]
+#[repr(u8)]
+pub enum DefaultMaterials {
+    /// Common material for all hidden tiles
+    Hidden,
+    Water,
+    Magma,
+    DarkGrass,
+    LightGrass,
+}
+
+impl DefaultMaterials {
+    pub fn get_color(&self) -> (u8, u8, u8, u8) {
+        match self {
+            DefaultMaterials::Hidden => (0, 0, 0, 255),
+            DefaultMaterials::Water => (0, 0, 255, 64),
+            DefaultMaterials::Magma => (255, 0, 0, 64),
+            DefaultMaterials::DarkGrass => (0, 102, 0, 255),
+            DefaultMaterials::LightGrass => (0, 153, 51, 255),
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct Palette {
@@ -19,21 +50,22 @@ impl Palette {
         self.colors.clear();
         for material in materials {
             for mat_pair in material.list_mat_pairs() {
-                let palette_size = self.colors.len() as u8;
-                self.colors
-                    .entry(mat_pair.to_owned())
-                    .or_insert_with(|| palette_size + 5);
+                let palette_size = self.colors.len();
+                self.colors.entry(mat_pair.to_owned()).or_insert_with(|| {
+                    (DefaultMaterials::COUNT + palette_size)
+                        .try_into()
+                        .unwrap_or_default() // would be nice to warn in case of palette overflow
+                });
             }
         }
     }
 
     pub fn write_palette(&self, vox: &mut VoxWriter, materials: &[MaterialDefinition]) {
         vox.clear_colors();
-        vox.add_color(0, 0, 0, 255, HIDDEN);
-        vox.add_color(0, 0, 255, 64, WATER);
-        vox.add_color(255, 0, 0, 64, MAGMA);
-        vox.add_color(0, 102, 0, 255, DARK_GRASS);
-        vox.add_color(0, 153, 51, 255, LIGHT_GRASS);
+        for default_mat in DefaultMaterials::iter() {
+            let (r, g, b, a) = default_mat.get_color();
+            vox.add_color(r, g, b, a, default_mat.into());
+        }
 
         // Custom colored
         for (matpair, index) in self.colors.iter() {
@@ -54,17 +86,6 @@ impl Palette {
     }
 }
 
-#[derive(Debug)]
-pub enum Material {
-    Hidden,
-    Water,
-    Magma,
-    DarkGrass,
-    LightGrass,
-    Generic(MatPair),
-    Random(Vec<MatPair>),
-}
-
 impl Material {
     pub fn list_mat_pairs(&self) -> Vec<MatPair> {
         match self {
@@ -77,11 +98,7 @@ impl Material {
     #[allow(clippy::mutable_key_type)] // possibly an actual issue?
     pub fn pick_color(&self, palette: &HashMap<MatPair, u8>) -> u8 {
         (match self {
-            Material::Hidden => HIDDEN,
-            Material::Water => WATER,
-            Material::Magma => MAGMA,
-            Material::DarkGrass => DARK_GRASS,
-            Material::LightGrass => LIGHT_GRASS,
+            Material::Default(material) => Into::<u8>::into(*material),
             Material::Generic(pair) => *palette.get(pair).unwrap(),
             Material::Random(s) => {
                 let mut rng = rand::thread_rng();

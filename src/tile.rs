@@ -1,7 +1,7 @@
 use crate::{
     map::{Coords, IsSomeAnd, Map},
     maths::RotatingMatrix,
-    palette::{Material, Palette},
+    palette::{DefaultMaterials, Material, Palette},
     rfr::BlockTile,
 };
 use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
@@ -69,7 +69,7 @@ impl Tile {
     pub fn new_water(coords: Coords, level: u8) -> Self {
         Self {
             shape: Shape::Fluid(level),
-            material: Material::Water,
+            material: Material::Default(DefaultMaterials::Water),
             coords,
         }
     }
@@ -77,7 +77,7 @@ impl Tile {
     pub fn new_magma(coords: Coords, level: u8) -> Self {
         Self {
             shape: Shape::Fluid(level),
-            material: Material::Magma,
+            material: Material::Default(DefaultMaterials::Magma),
             coords,
         }
     }
@@ -317,7 +317,7 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
         if tile.hidden() {
             return Some(Tile {
                 shape: Shape::Full,
-                material: Material::Hidden,
+                material: Material::Default(DefaultMaterials::Hidden),
                 coords: tile.coords(),
             });
         }
@@ -371,14 +371,14 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
                 return Some(Tile {
                     coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
-                    material: Material::DarkGrass,
+                    material: Material::Default(DefaultMaterials::DarkGrass),
                 })
             }
             TiletypeMaterial::GRASS_LIGHT => {
                 return Some(Tile {
                     coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
-                    material: Material::LightGrass,
+                    material: Material::Default(DefaultMaterials::LightGrass),
                 })
             }
             _ => {}
