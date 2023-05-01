@@ -2,8 +2,8 @@ use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
     map::{Coords, IsSomeAnd, Map},
-    maths::{look_at, RotatingMatrix},
     palette::{Material, Palette},
+    shape::{self, Box3D, Rotating},
     tile::Shape,
 };
 use dfhack_remote::BuildingInstance;
@@ -63,16 +63,8 @@ impl Building {
         let shape = match self.building_type {
             BuildingType::ArcheryTarget { direction } => self.archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
                     [false, true, false],
                     [true, true, true],
@@ -80,38 +72,14 @@ impl Building {
                 ],
             ],
             BuildingType::Hatch => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [[true, true, true], [true, true, true], [true, true, true]],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
+                shape::slice_full(),
+                shape::slice_empty(),
             ],
             BuildingType::BarsVertical
             | BuildingType::GrateWall
             | BuildingType::Support
-            | BuildingType::AxleVertical => [
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-            ],
+            | BuildingType::AxleVertical => shape::box_from_fn(|x, y, _| x == 1 && y == 1),
             BuildingType::Bookcase | BuildingType::Cabinet => [
                 [
                     [true, true, true],
@@ -148,21 +116,13 @@ impl Building {
                 ],
             ],
             BuildingType::Box => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
                 [
                     [false, true, false],
                     [false, false, false],
                     [false, false, false],
                 ],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(self.origin)),
             BuildingType::AnimalTrap
@@ -170,69 +130,37 @@ impl Building {
             | BuildingType::Chain
             | BuildingType::DisplayFurniture
             | BuildingType::OfferingPlace => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
                 [
                     [false, false, false],
                     [false, true, false],
                     [false, false, false],
                 ],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
             ],
             BuildingType::Table | BuildingType::TractionBench => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [[true, true, true], [true, true, true], [true, true, true]],
-                [
-                    [true, false, true],
-                    [false, false, false],
-                    [true, false, true],
-                ],
+                shape::slice_empty(),
+                shape::slice_full(),
+                shape::slice_empty(),
             ],
             BuildingType::Bed => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
                 [
                     [false, true, true],
                     [false, false, false],
                     [false, false, false],
                 ],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(self.origin)),
             BuildingType::Coffin => [
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
                 [
                     [false, true, false],
                     [false, true, false],
                     [false, false, false],
                 ],
-                [
-                    [false, false, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
+                shape::slice_empty(),
             ],
             BuildingType::Well => [
                 [
@@ -261,7 +189,7 @@ impl Building {
         collect_shape_voxels(&self.origin, &self.material, palette, shape)
     }
 
-    fn window_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
+    fn window_shape(&self, map: &Map) -> Box3D<3, bool> {
         let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
             buildings.iter().any(|b| {
                 matches!(
@@ -289,7 +217,7 @@ impl Building {
         ]
     }
 
-    fn door_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
+    fn door_shape(&self, map: &Map) -> Box3D<3, bool> {
         let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
             buildings
                 .iter()
@@ -315,8 +243,8 @@ impl Building {
         ]
     }
 
-    fn archery_shape(&self, direction: DirectionFlat) -> [[[bool; 3]; 3]; 3] {
-        let shape = [
+    fn archery_shape(&self, direction: DirectionFlat) -> Box3D<3, bool> {
+        [
             [
                 [true, true, true],
                 [false, true, false],
@@ -332,8 +260,8 @@ impl Building {
                 [false, true, false],
                 [false, true, false],
             ],
-        ];
-        look_at(shape, direction)
+        ]
+        .looking_at(direction)
     }
 
     fn bridge_collect_voxels(
@@ -351,13 +279,9 @@ impl Building {
                 let n = ew && y == *self.bounding_box.y.start();
                 let s = ew && y == *self.bounding_box.y.end();
                 let shape = [
-                    [
-                        [false, false, false],
-                        [false, false, false],
-                        [false, false, false],
-                    ],
+                    shape::slice_empty(),
                     [[w || n, n, e || n], [w, false, e], [w || s, s, e || s]],
-                    [[true, true, true], [true, true, true], [true, true, true]],
+                    shape::slice_full(),
                 ];
                 let mut shape_voxels = collect_shape_voxels(
                     &Coords::new(x, y, self.origin.z),
@@ -376,7 +300,7 @@ fn collect_shape_voxels(
     coords: &Coords,
     material: &Material,
     palette: &Palette,
-    shape: [[[bool; 3]; 3]; 3],
+    shape: Box3D<3, bool>,
 ) -> Vec<(Coords, u8)> {
     (0_usize..3_usize)
         .flat_map(move |x| {

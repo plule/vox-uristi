@@ -1,8 +1,8 @@
 use crate::{
     map::{Coords, IsSomeAnd, Map},
-    maths::RotatingMatrix,
     palette::{DefaultMaterials, Material, Palette},
     rfr::BlockTile,
+    shape::{self, Box3D, Rotating},
 };
 use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use itertools::Itertools;
@@ -48,7 +48,7 @@ enum RampContactKind {
 }
 
 impl RampContactKind {
-    fn height(&self) -> i8 {
+    fn height(&self) -> usize {
         match self {
             RampContactKind::Wall => 3,
             RampContactKind::Ramp => 2,
@@ -57,7 +57,7 @@ impl RampContactKind {
     }
 }
 
-fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> i8 {
+fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> usize {
     match (c1, c2) {
         (RampContactKind::Ramp, RampContactKind::Ramp) => 2, // should be 1 for concave, 3 for convexe todo
         (RampContactKind::Ramp, c) | (c, RampContactKind::Ramp) => c.height(),
@@ -113,37 +113,21 @@ impl Tile {
         }
     }
 
-    fn get_shape(&self, map: &Map) -> [[[bool; 3]; 3]; 3] {
+    fn get_shape(&self, map: &Map) -> Box3D<3, bool> {
         let mut rng = rand::thread_rng();
         match &self.shape {
-            Shape::Fluid(level) => {
-                let lvl1 = *level >= 4;
-                let lvl2 = *level >= 7;
-                [
-                    [[lvl2, lvl2, lvl2], [lvl2, lvl2, lvl2], [lvl2, lvl2, lvl2]],
-                    [[lvl1, lvl1, lvl1], [lvl1, lvl1, lvl1], [lvl1, lvl1, lvl1]],
-                    [[true, true, true], [true, true, true], [true, true, true]],
-                ]
-            }
+            Shape::Fluid(level) => [
+                shape::slice_const(*level >= 7),
+                shape::slice_const(*level >= 4),
+                shape::slice_full(),
+            ],
             #[rustfmt::skip]
             Shape::Floor { smooth } => {
                 let r = !smooth;
                 [
-                    [
-                        [false, false, false],
-                        [false, false, false],
-                        [false, false, false],
-                    ],
-                    [
-                        [r && rng.gen(), r && rng.gen(), r && rng.gen()],
-                        [r && rng.gen(), r && rng.gen(), r && rng.gen()],
-                        [r && rng.gen(), r && rng.gen(), r && rng.gen()],
-                    ],
-                    [
-                        [true, true, true],
-                        [true, true, true],
-                        [true, true, true]
-                    ],
+                    shape::slice_empty(),
+                    shape::slice_from_fn(|_,_| r && rng.gen()),
+                    shape::slice_full(),
                 ]
             }
 
@@ -193,7 +177,7 @@ impl Tile {
                     [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
                 ];
 
-                [2, 1, 0].map(|z| [0, 1, 2].map(|y| [0, 1, 2].map(|x| levels[y][x] > z)))
+                shape::box_from_levels(levels)
             }
             Shape::Tree { origin, part } => {
                 let connectivity = map.neighbouring(self.coords, |tile, _| {
@@ -206,11 +190,7 @@ impl Tile {
                     })
                 });
                 match part {
-                    TreePart::Trunk => [
-                        [[true, true, true], [true, true, true], [true, true, true]],
-                        [[true, true, true], [true, true, true], [true, true, true]],
-                        [[true, true, true], [true, true, true], [true, true, true]],
-                    ],
+                    TreePart::Trunk => shape::box_full(),
                     TreePart::Branch => [
                         [
                             [rng.gen(), rng.gen(), rng.gen()],
@@ -269,20 +249,12 @@ impl Tile {
                         [conn.w, false, conn.e],
                         [true, conn.s, true]
                     ],
-                    [
-                        [true, true, true],
-                        [true, true, true],
-                        [true, true, true]
-                    ],
+                    shape::slice_full()
                 ];
 
                 shape
             }
-            Shape::Full => [
-                [[true, true, true], [true, true, true], [true, true, true]],
-                [[true, true, true], [true, true, true], [true, true, true]],
-                [[true, true, true], [true, true, true], [true, true, true]],
-            ],
+            Shape::Full => shape::box_full(),
         }
     }
 

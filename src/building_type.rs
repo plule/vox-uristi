@@ -1,6 +1,5 @@
-use dfhack_remote::BuildingInstance;
-
 use crate::direction::DirectionFlat;
+use dfhack_remote::BuildingInstance;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum BuildingType {

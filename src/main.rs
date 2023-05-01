@@ -2,17 +2,17 @@
 
 mod app;
 mod building;
-pub mod building_type;
+mod building_type;
 #[cfg(feature = "cli")]
 mod cli;
 mod direction;
-pub mod export;
-pub mod map;
-pub mod maths;
-pub mod palette;
-pub mod rfr;
-pub mod tile;
-pub mod update;
+mod export;
+mod map;
+mod palette;
+mod rfr;
+mod shape;
+mod tile;
+mod update;
 use app::App;
 use eframe::egui;
 
