@@ -133,6 +133,11 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
                     )?;
                 }
             }
+            for (i, flow) in block.flows.iter().enumerate() {
+                if Coords::from(flow.pos.get_or_default()) == probe {
+                    dump(flow, &destination, format!("flow_{i}.json").as_str())?;
+                }
+            }
         }
     }
 

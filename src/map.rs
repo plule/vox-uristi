@@ -1,17 +1,20 @@
 use crate::{
     building::Building,
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
-    rfr::BlockTile,
+    flow::Flow,
+    rfr,
     tile::{Shape, Tile},
 };
-use dfhack_remote::{BuildingInstance, Coord};
+use dfhack_remote::{Coord, MapBlock, MatPair, MaterialDefinition, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display, ops::Add};
 
 /// Intermediary format between DF and voxels
+#[derive(Default)]
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
     pub buildings: HashMap<Coords, Vec<Building>>,
+    pub flows: HashMap<Coords, Flow>,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -41,26 +44,34 @@ impl<T> IsSomeAnd<T> for Option<T> {
 }
 
 impl Map {
-    pub fn new() -> Self {
-        Self {
-            tiles: Default::default(),
-            buildings: Default::default(),
+    #[allow(clippy::mutable_key_type)] // possibly an actual issue?
+    pub fn add_block<'a>(
+        &mut self,
+        block: MapBlock,
+        materials: &'a HashMap<MatPair, MaterialDefinition>,
+        tiletypes: &'a TiletypeList,
+    ) {
+        for tile in rfr::TileIterator::new(&block, materials, tiletypes) {
+            let df_tile = &tile;
+            if let Some(tile) = df_tile.into() {
+                self.tiles.insert(df_tile.coords(), tile);
+            }
         }
-    }
-    pub fn add_tile<'a>(&mut self, df_tile: &'a BlockTile<'a>) {
-        if let Some(tile) = df_tile.into() {
-            self.tiles.insert(df_tile.coords(), tile);
-        }
-    }
 
-    pub fn add_building(&mut self, df_building: BuildingInstance) {
-        let coords = Coords::new(
-            df_building.pos_x_min(),
-            df_building.pos_y_min(),
-            df_building.pos_z_min(),
-        );
-        if let Some(building) = Building::from_df_building(df_building) {
-            self.buildings.entry(coords).or_default().push(building);
+        for building in block.buildings {
+            let coords = Coords::new(
+                building.pos_x_min(),
+                building.pos_y_min(),
+                building.pos_z_min(),
+            );
+            if let Some(building) = Building::from_df_building(building) {
+                self.buildings.entry(coords).or_default().push(building);
+            }
+        }
+
+        for flow in block.flows {
+            let flow = Flow::new(flow);
+            self.flows.insert(flow.coords(), flow);
         }
     }
 
@@ -148,6 +159,16 @@ impl Coords {
 
 impl From<Coord> for Coords {
     fn from(value: Coord) -> Self {
+        Self {
+            x: value.x(),
+            y: value.y(),
+            z: value.z(),
+        }
+    }
+}
+
+impl From<&Coord> for Coords {
+    fn from(value: &Coord) -> Self {
         Self {
             x: value.x(),
             y: value.y(),

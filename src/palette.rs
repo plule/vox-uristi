@@ -23,7 +23,11 @@ pub enum DefaultMaterials {
     /// Common material for all hidden tiles
     Hidden,
     Water,
+    Mist,
     Magma,
+    Fire,
+    Smoke,
+    Miasma,
     DarkGrass,
     LightGrass,
 }
@@ -33,7 +37,11 @@ impl DefaultMaterials {
         match self {
             DefaultMaterials::Hidden => (0, 0, 0, 255),
             DefaultMaterials::Water => (0, 0, 255, 64),
+            DefaultMaterials::Mist => (255, 255, 255, 64),
             DefaultMaterials::Magma => (255, 0, 0, 64),
+            DefaultMaterials::Fire => (255, 174, 0, 64),
+            DefaultMaterials::Smoke => (100, 100, 100, 64),
+            DefaultMaterials::Miasma => (208, 89, 255, 64),
             DefaultMaterials::DarkGrass => (0, 102, 0, 255),
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
         }

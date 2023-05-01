@@ -40,7 +40,7 @@ pub fn try_export_voxels(
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
     let (block_list_count, _) = block_list_iterator.size_hint();
 
-    let mut map = Map::new();
+    let mut map = Map::default();
     progress_tx.send(Progress::StartReading {
         total: block_list_count,
     })?;
@@ -56,13 +56,7 @@ pub fn try_export_voxels(
         })?;
 
         for block in block_list?.map_blocks {
-            for tile in rfr::TileIterator::new(&block, &material_map, &tile_type_list) {
-                map.add_tile(&tile);
-            }
-
-            for building in block.buildings {
-                map.add_building(building);
-            }
+            map.add_block(block, &material_map, &tile_type_list);
         }
     }
 
@@ -104,6 +98,13 @@ pub fn try_export_voxels(
             for (coord, color) in voxels {
                 vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
             }
+        }
+    }
+
+    for flow in map.flows.values() {
+        let voxels = flow.collect_voxels(&palette);
+        for (coord, color) in voxels {
+            vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
         }
     }
 

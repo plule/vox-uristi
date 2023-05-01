@@ -7,6 +7,7 @@ mod building_type;
 mod cli;
 mod direction;
 mod export;
+mod flow;
 mod map;
 mod palette;
 mod rfr;
