@@ -1,10 +1,7 @@
 use crate::map::Coords;
 use anyhow::Result;
-use dfhack_remote::{
-    BlockList, BlockRequest, MapBlock, MatPair, MaterialDefinition, Tiletype, TiletypeList,
-};
+use dfhack_remote::{BlockList, BlockRequest, MapBlock, MatPair, Tiletype, TiletypeList};
 use std::{
-    collections::HashMap,
     fmt::{Debug, Display},
     ops::Range,
 };
@@ -14,7 +11,6 @@ use std::{
 pub struct BlockTile<'a> {
     block: &'a MapBlock,
     index: usize,
-    materials: &'a HashMap<MatPair, MaterialDefinition>,
     tiletypes: &'a TiletypeList,
 }
 
@@ -30,20 +26,13 @@ pub struct BlockListIterator<'a> {
 pub struct TileIterator<'a> {
     block: &'a MapBlock,
     index: Range<usize>,
-    materials: &'a HashMap<MatPair, MaterialDefinition>,
     tiletypes: &'a TiletypeList,
 }
 
-#[allow(clippy::mutable_key_type)] // possibly an actual issue?
 impl<'a> TileIterator<'a> {
-    pub fn new(
-        block: &'a MapBlock,
-        materials: &'a HashMap<MatPair, MaterialDefinition>,
-        tiletypes: &'a TiletypeList,
-    ) -> Self {
+    pub fn new(block: &'a MapBlock, tiletypes: &'a TiletypeList) -> Self {
         Self {
             block,
-            materials,
             index: 0..block.tiles.len(),
             tiletypes,
         }
@@ -55,7 +44,7 @@ impl<'a> Iterator for TileIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.index.next();
-        index.map(|index| BlockTile::new(self.block, index, self.materials, self.tiletypes))
+        index.map(|index| BlockTile::new(self.block, index, self.tiletypes))
     }
 }
 
@@ -116,18 +105,11 @@ impl<'a> Iterator for BlockListIterator<'a> {
     }
 }
 
-#[allow(clippy::mutable_key_type)] // possibly an actual issue?
 impl<'a> BlockTile<'a> {
-    pub fn new(
-        block: &'a MapBlock,
-        index: usize,
-        materials: &'a HashMap<MatPair, MaterialDefinition>,
-        tiletypes: &'a TiletypeList,
-    ) -> Self {
+    pub fn new(block: &'a MapBlock, index: usize, tiletypes: &'a TiletypeList) -> Self {
         Self {
             block,
             index,
-            materials,
             tiletypes,
         }
     }
@@ -157,28 +139,16 @@ impl<'a> BlockTile<'a> {
         &self.tiletypes.tiletype_list[self.tile_type_index() as usize]
     }
 
-    pub fn material_pair(&self) -> &MatPair {
+    pub fn material(&self) -> &MatPair {
         &self.block.materials[self.index]
     }
 
-    pub fn material(&self) -> Option<&MaterialDefinition> {
-        self.materials.get(self.material_pair())
-    }
-
-    pub fn base_material_pair(&self) -> &MatPair {
+    pub fn base_material(&self) -> &MatPair {
         &self.block.base_materials[self.index]
     }
 
-    pub fn base_material(&self) -> Option<&MaterialDefinition> {
-        self.materials.get(self.base_material_pair())
-    }
-
-    pub fn vein_material_pair(&self) -> &MatPair {
+    pub fn vein_material(&self) -> &MatPair {
         &self.block.vein_materials[self.index]
-    }
-
-    pub fn vein_material(&self) -> Option<&MaterialDefinition> {
-        self.materials.get(self.vein_material_pair())
     }
 
     pub fn magma(&self) -> i32 {
@@ -220,38 +190,15 @@ impl<'a> BlockTile<'a> {
     }
 }
 
-pub fn build_material_map(
-    client: &mut dfhack_remote::Client,
-) -> Result<HashMap<MatPair, MaterialDefinition>> {
-    let materials = client.remote_fortress_reader().get_material_list()?;
-    Ok(materials
-        .material_list
-        .into_iter()
-        .map(|mat| (mat.mat_pair.get_or_default().to_owned(), mat))
-        .collect())
-}
-
 impl Display for BlockTile<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "coords: {}", self.coords())?;
         writeln!(f, "hidden: {}", self.hidden())?;
         writeln!(f, "water: {}", self.water())?;
         writeln!(f, "tile_type: {}", self.tile_type())?;
-        writeln!(
-            f,
-            "material: {}",
-            self.material().map(|m| m.id()).unwrap_or("None")
-        )?;
-        writeln!(
-            f,
-            "base_material: {}",
-            self.base_material().map(|m| m.id()).unwrap_or("None")
-        )?;
-        writeln!(
-            f,
-            "vein_material: {}",
-            self.vein_material().map(|m| m.id()).unwrap_or("None")
-        )?;
+        writeln!(f, "material: {}", self.material())?;
+        writeln!(f, "base_material: {}", self.base_material())?;
+        writeln!(f, "vein_material: {}", self.vein_material())?;
         writeln!(f, "magma: {}", self.magma())?;
         writeln!(f, "water_stagnant: {}", self.water_stagnant())?;
         writeln!(f, "water_salt: {}", self.water_salt())?;

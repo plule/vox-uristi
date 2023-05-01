@@ -111,11 +111,10 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let z = view_info.cursor_pos_z();
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
     let probe = Coords::new(x, y, z);
-    let material_map = rfr::build_material_map(&mut client)?;
     for block_list in rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?
     {
         for block in block_list?.map_blocks {
-            for tile in rfr::TileIterator::new(&block, &material_map, &tile_type_list) {
+            for tile in rfr::TileIterator::new(&block, &tile_type_list) {
                 if tile.coords() == probe {
                     println!("{}", tile);
                 }

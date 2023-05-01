@@ -5,7 +5,7 @@ use crate::{
     rfr,
     tile::{Shape, Tile},
 };
-use dfhack_remote::{Coord, MapBlock, MatPair, MaterialDefinition, TiletypeList};
+use dfhack_remote::{Coord, MapBlock, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display, ops::Add};
 
@@ -44,14 +44,8 @@ impl<T> IsSomeAnd<T> for Option<T> {
 }
 
 impl Map {
-    #[allow(clippy::mutable_key_type)] // possibly an actual issue?
-    pub fn add_block<'a>(
-        &mut self,
-        block: MapBlock,
-        materials: &'a HashMap<MatPair, MaterialDefinition>,
-        tiletypes: &'a TiletypeList,
-    ) {
-        for tile in rfr::TileIterator::new(&block, materials, tiletypes) {
+    pub fn add_block(&mut self, block: MapBlock, tiletypes: &TiletypeList) {
+        for tile in rfr::TileIterator::new(&block, tiletypes) {
             let df_tile = &tile;
             if let Some(tile) = df_tile.into() {
                 self.tiles.insert(df_tile.coords(), tile);

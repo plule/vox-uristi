@@ -308,35 +308,33 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
                 ))
             }
             TiletypeMaterial::TREE_MATERIAL => {
-                let mat_pair_index = tile.material().map(|mat| mat.mat_pair.mat_index());
-                if let Some(mat_pair_index) = mat_pair_index {
-                    match tile.tile_type().shape() {
-                        TiletypeShape::WALL | TiletypeShape::TRUNK_BRANCH => {
-                            return Some(Tile::new_tree(
-                                tile.coords(),
-                                mat_pair_index,
-                                tile.tree_origin(),
-                                TreePart::Trunk,
-                            ));
-                        }
-                        TiletypeShape::BRANCH | TiletypeShape::RAMP => {
-                            return Some(Tile::new_tree(
-                                tile.coords(),
-                                mat_pair_index,
-                                tile.tree_origin(),
-                                TreePart::Branch,
-                            ));
-                        }
-                        TiletypeShape::TWIG => {
-                            return Some(Tile::new_tree(
-                                tile.coords(),
-                                mat_pair_index,
-                                tile.tree_origin(),
-                                TreePart::Twig,
-                            ));
-                        }
-                        _ => {}
+                let mat_pair_index = tile.material().mat_index();
+                match tile.tile_type().shape() {
+                    TiletypeShape::WALL | TiletypeShape::TRUNK_BRANCH => {
+                        return Some(Tile::new_tree(
+                            tile.coords(),
+                            mat_pair_index,
+                            tile.tree_origin(),
+                            TreePart::Trunk,
+                        ));
                     }
+                    TiletypeShape::BRANCH | TiletypeShape::RAMP => {
+                        return Some(Tile::new_tree(
+                            tile.coords(),
+                            mat_pair_index,
+                            tile.tree_origin(),
+                            TreePart::Branch,
+                        ));
+                    }
+                    TiletypeShape::TWIG => {
+                        return Some(Tile::new_tree(
+                            tile.coords(),
+                            mat_pair_index,
+                            tile.tree_origin(),
+                            TreePart::Twig,
+                        ));
+                    }
+                    _ => {}
                 }
             }
             TiletypeMaterial::GRASS_DARK => {
@@ -372,29 +370,27 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
         }
 
         // Not a fluid, check if it has a solid shape and a material
-        if let Some(material) = tile.material() {
-            if let Some(shape) = match tile.tile_type().shape() {
-                TiletypeShape::FLOOR
-                | TiletypeShape::BOULDER
-                | TiletypeShape::PEBBLES
-                | TiletypeShape::SHRUB
-                | TiletypeShape::SAPLING => Some(Shape::Floor {
-                    smooth: tile.tile_type().special() == TiletypeSpecial::SMOOTH,
-                }),
-                TiletypeShape::RAMP => Some(Shape::Ramp),
-                TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair(StairPart::UpDown)),
-                TiletypeShape::STAIR_UP => Some(Shape::Stair(StairPart::Up)),
-                TiletypeShape::STAIR_DOWN => Some(Shape::Stair(StairPart::Down)),
-                TiletypeShape::FORTIFICATION => Some(Shape::Fortification),
-                TiletypeShape::WALL => Some(Shape::Full),
-                _ => None,
-            } {
-                return Some(Tile {
-                    coords: tile.coords(),
-                    shape,
-                    material: Material::Generic(material.mat_pair.clone().unwrap_or_default()),
-                });
-            }
+        if let Some(shape) = match tile.tile_type().shape() {
+            TiletypeShape::FLOOR
+            | TiletypeShape::BOULDER
+            | TiletypeShape::PEBBLES
+            | TiletypeShape::SHRUB
+            | TiletypeShape::SAPLING => Some(Shape::Floor {
+                smooth: tile.tile_type().special() == TiletypeSpecial::SMOOTH,
+            }),
+            TiletypeShape::RAMP => Some(Shape::Ramp),
+            TiletypeShape::STAIR_UPDOWN => Some(Shape::Stair(StairPart::UpDown)),
+            TiletypeShape::STAIR_UP => Some(Shape::Stair(StairPart::Up)),
+            TiletypeShape::STAIR_DOWN => Some(Shape::Stair(StairPart::Down)),
+            TiletypeShape::FORTIFICATION => Some(Shape::Fortification),
+            TiletypeShape::WALL => Some(Shape::Full),
+            _ => None,
+        } {
+            return Some(Tile {
+                coords: tile.coords(),
+                shape,
+                material: Material::Generic(tile.material().clone()),
+            });
         }
 
         None

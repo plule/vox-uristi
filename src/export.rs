@@ -33,8 +33,6 @@ pub fn try_export_voxels(
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let map_info = client.remote_fortress_reader().get_map_info()?;
-    #[allow(clippy::mutable_key_type)] // possibly an actual issue?
-    let material_map = rfr::build_material_map(client)?;
 
     let block_list_iterator =
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
@@ -56,7 +54,7 @@ pub fn try_export_voxels(
         })?;
 
         for block in block_list?.map_blocks {
-            map.add_block(block, &material_map, &tile_type_list);
+            map.add_block(block, &tile_type_list);
         }
     }
 
