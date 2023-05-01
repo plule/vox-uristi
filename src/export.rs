@@ -20,7 +20,7 @@ pub enum Progress {
 pub struct Cancel;
 
 pub fn try_export_voxels(
-    client: &mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+    client: &mut dfhack_remote::Client,
     elevation_range: Range<i32>,
     path: PathBuf,
     progress_tx: Sender<Progress>,
@@ -133,7 +133,7 @@ pub fn try_export_voxels(
 }
 
 pub fn export_voxels(
-    client: &mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+    client: &mut dfhack_remote::Client,
     elevation_range: Range<i32>,
     path: PathBuf,
     progress_tx: Sender<Progress>,

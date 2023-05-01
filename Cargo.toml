@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"], optional = true }
-dfhack-remote = "0.6.1"
+dfhack-remote = "0.6.2"
 eframe = {version = "0.21.3", features = ["persistence"]}
 indicatif = "0.17.3"
 itertools = "0.10.5"

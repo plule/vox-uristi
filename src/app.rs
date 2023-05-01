@@ -33,6 +33,8 @@ pub struct App {
     exported_path: Option<String>,
     #[serde(skip)]
     update_status: CheckUpdateStatus,
+    #[serde(skip)]
+    df: Option<dfhack_remote::Client>,
 }
 
 impl App {
@@ -100,13 +102,21 @@ impl App {
                     ui.horizontal(|ui| {
                         ui.add_space(ui.available_width());
                     });
-                    if (ui.add(elevation_picker("⏶".to_string(), &mut self.high_elevation)))
-                        .changed()
+                    if (ui.add(elevation_picker(
+                        "⏶".to_string(),
+                        &mut self.high_elevation,
+                        &mut self.df,
+                    )))
+                    .changed()
                     {
                         self.low_elevation = self.low_elevation.min(self.high_elevation);
                     }
                     if ui
-                        .add(elevation_picker("⏷".to_string(), &mut self.low_elevation))
+                        .add(elevation_picker(
+                            "⏷".to_string(),
+                            &mut self.low_elevation,
+                            &mut self.df,
+                        ))
                         .changed()
                     {
                         self.high_elevation = self.high_elevation.max(self.low_elevation);
@@ -118,7 +128,11 @@ impl App {
                         .clicked()
                     {
                         self.error = None;
-                        match dfhack_remote::connect() {
+                        let df = match self.df.take() {
+                            Some(df) => Ok(df),
+                            None => dfhack_remote::connect(),
+                        };
+                        self.df = match df {
                             Ok(mut df) => {
                                 if let Some(path) = rfd::FileDialog::new()
                                     .set_title("Model destination")
@@ -134,10 +148,14 @@ impl App {
                                     thread::spawn(move || {
                                         export_voxels(&mut df, range, path, progress_tx, cancel_rx);
                                     });
+                                    None
+                                } else {
+                                    Some(df)
                                 }
                             }
                             Err(err) => {
                                 self.error = Some(err.to_string());
+                                None
                             }
                         }
                     }
@@ -227,6 +245,7 @@ impl Default for App {
             progress: None,
             exported_path: None,
             update_status: CheckUpdateStatus::NotDone,
+            df: None,
         }
     }
 }
@@ -260,11 +279,11 @@ impl eframe::App for App {
     }
 }
 
-fn default_filename(df: &mut dfhack_remote::Stubs<dfhack_remote::Channel>) -> String {
+fn default_filename(df: &mut dfhack_remote::Client) -> String {
     maybe_default_filename(df).unwrap_or_else(|| "model.vox".to_string())
 }
 
-fn maybe_default_filename(df: &mut dfhack_remote::Stubs<dfhack_remote::Channel>) -> Option<String> {
+fn maybe_default_filename(df: &mut dfhack_remote::Client) -> Option<String> {
     let world_map = df.remote_fortress_reader().get_world_map().ok()?;
     Some(format!(
         "{}_{}.vox",
@@ -273,13 +292,28 @@ fn maybe_default_filename(df: &mut dfhack_remote::Stubs<dfhack_remote::Channel>)
     ))
 }
 
-fn try_get_current_elevation() -> Result<i32> {
-    let mut df = dfhack_remote::connect()?;
-    let view = df.remote_fortress_reader().get_view_info()?;
-    Ok(view.view_pos_z())
+fn try_get_current_elevation(df: &mut Option<dfhack_remote::Client>) -> Result<i32> {
+    let client = if let Some(current_client) = df {
+        current_client
+    } else {
+        let new_client = dfhack_remote::connect()?;
+        *df = Some(new_client);
+        df.as_mut().unwrap()
+    };
+    match client.remote_fortress_reader().get_view_info() {
+        Ok(view) => Ok(view.view_pos_z()),
+        Err(err) => {
+            *df = None;
+            Err(anyhow::Error::from(err))
+        }
+    }
 }
 
-fn elevation_picker(text: String, elevation: &mut i32) -> impl egui::Widget + '_ {
+fn elevation_picker<'a>(
+    text: String,
+    elevation: &'a mut i32,
+    df: &'a mut Option<dfhack_remote::Client>,
+) -> impl egui::Widget + 'a {
     move |ui: &mut Ui| {
         ui.horizontal(|ui| {
             ui.label(text);
@@ -289,7 +323,7 @@ fn elevation_picker(text: String, elevation: &mut i32) -> impl egui::Widget + '_
                 .on_hover_text("Set the elevation from the current view.")
                 .clicked()
             {
-                if let Ok(current_elevation) = try_get_current_elevation() {
+                if let Ok(current_elevation) = try_get_current_elevation(df) {
                     resp.mark_changed();
                     *elevation = current_elevation;
                 }

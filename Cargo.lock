@@ -907,9 +907,9 @@ dependencies = [
 
 [[package]]
 name = "dfhack-remote"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7558ea18e32725d8222e40fcb105a02d25b915ad03a18b73cf193d8854d7c298"
+checksum = "7afea00adc784e20094b60b10686f71ef76665e996793159855bdf0f9f8561e9"
 dependencies = [
  "byteorder",
  "derive_more",

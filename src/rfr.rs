@@ -19,7 +19,7 @@ pub struct BlockTile<'a> {
 }
 
 pub struct BlockListIterator<'a> {
-    client: &'a mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+    client: &'a mut dfhack_remote::Client,
     block_per_it: i32,
     x_range: Range<i32>,
     y_range: Range<i32>,
@@ -70,7 +70,7 @@ impl<'a> Iterator for TileIterator<'a> {
 
 impl<'a> BlockListIterator<'a> {
     pub fn try_new(
-        client: &'a mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+        client: &'a mut dfhack_remote::Client,
         block_per_it: i32,
         x_range: Range<i32>,
         y_range: Range<i32>,
@@ -230,7 +230,7 @@ impl<'a> BlockTile<'a> {
 }
 
 pub fn build_material_map(
-    client: &mut dfhack_remote::Stubs<dfhack_remote::Channel>,
+    client: &mut dfhack_remote::Client,
 ) -> Result<HashMap<MatPair, MaterialDefinition>> {
     let materials = client.remote_fortress_reader().get_material_list()?;
     Ok(materials
