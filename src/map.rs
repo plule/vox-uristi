@@ -1,5 +1,5 @@
 use crate::{
-    building::{BoundingBox, Building},
+    building::Building,
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     rfr::BlockTile,
     tile::{Shape, Tile},
@@ -12,7 +12,6 @@ use std::{collections::HashMap, fmt::Display, ops::Add};
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
     pub buildings: HashMap<Coords, Vec<Building>>,
-    pub dimensions: [i32; 3],
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -42,11 +41,10 @@ impl<T> IsSomeAnd<T> for Option<T> {
 }
 
 impl Map {
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
+    pub fn new() -> Self {
         Self {
             tiles: Default::default(),
             buildings: Default::default(),
-            dimensions: [x, y, z],
         }
     }
     pub fn add_tile<'a>(&mut self, df_tile: &'a BlockTile<'a>) {
@@ -139,23 +137,6 @@ impl Map {
             W => DirectionFlat::West,
             _ => unreachable!(),
         }
-    }
-
-    pub fn bounds(&self) -> BoundingBox {
-        let mut min_x = i32::MAX;
-        let mut max_x = i32::MIN;
-        let mut min_y = i32::MAX;
-        let mut max_y = i32::MIN;
-        let mut min_z = i32::MAX;
-        let mut max_z = i32::MIN;
-
-        for coord in self.tiles.keys().chain(self.buildings.keys()) {
-            (min_x, max_x) = (min_x.min(coord.x), max_x.max(coord.x));
-            (min_y, max_y) = (min_y.min(coord.y), max_y.max(coord.y));
-            (min_z, max_z) = (min_z.min(coord.z), max_z.max(coord.z));
-        }
-
-        BoundingBox::new(min_x..=max_x, min_y..=max_y, min_z..=max_z)
     }
 }
 

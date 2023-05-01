@@ -1,4 +1,4 @@
-use crate::{building::BoundingBox, map::Map, palette::Palette, rfr};
+use crate::{map::Map, palette::Palette, rfr};
 use anyhow::Result;
 use std::{
     ops::Range,
@@ -29,10 +29,9 @@ pub fn try_export_voxels(
     let path_str = path.to_string_lossy().to_string();
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
-    let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
 
+    let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
     let material_list = client.remote_fortress_reader().get_material_list()?;
-    let materials = &material_list.material_list;
     let map_info = client.remote_fortress_reader().get_map_info()?;
     #[allow(clippy::mutable_key_type)] // possibly an actual issue?
     let material_map = rfr::build_material_map(client)?;
@@ -41,11 +40,7 @@ pub fn try_export_voxels(
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
     let (block_list_count, _) = block_list_iterator.size_hint();
 
-    let mut map = Map::new(
-        map_info.block_size_x() * 16,
-        map_info.block_size_y() * 16,
-        elevation_range.len().try_into().unwrap(),
-    );
+    let mut map = Map::new();
     progress_tx.send(Progress::StartReading {
         total: block_list_count,
     })?;
@@ -83,14 +78,10 @@ pub fn try_export_voxels(
                 .flat_map(|v| v.iter().map(|b| &b.material)),
         ),
     );
-    palette.write_palette(&mut vox, materials);
+    palette.write_palette(&mut vox, &material_list.material_list);
 
-    let bounds = map.bounds();
-    let bounds = BoundingBox::new(
-        bounds.x.start() * 3..=bounds.x.end() * 3,
-        bounds.y.start() * 3..=bounds.y.end() * 3,
-        bounds.z.start() * 3..=bounds.z.end() * 3,
-    );
+    let max_y = map_info.block_size_y() * 16 * 3;
+    let min_z = elevation_range.start;
 
     for (progress, tile) in map.tiles.values().enumerate() {
         if cancel_rx.try_iter().next().is_some() {
@@ -103,12 +94,7 @@ pub fn try_export_voxels(
         })?;
         let voxels = tile.collect_voxels(&palette, &map);
         for (coord, color) in voxels {
-            vox.add_voxel(
-                coord.x - bounds.x.start(),
-                bounds.y.end() - coord.y,
-                coord.z - bounds.z.start(),
-                color.into(),
-            );
+            vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
         }
     }
 
@@ -116,12 +102,7 @@ pub fn try_export_voxels(
         for building in building_list {
             let voxels = building.collect_voxels(&palette, &map);
             for (coord, color) in voxels {
-                vox.add_voxel(
-                    coord.x - bounds.x.start(),
-                    bounds.y.end() - coord.y,
-                    coord.z - bounds.z.start(),
-                    color.into(),
-                );
+                vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
             }
         }
     }
