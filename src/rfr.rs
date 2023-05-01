@@ -29,7 +29,7 @@ pub struct BlockListIterator<'a> {
 
 pub struct TileIterator<'a> {
     block: &'a MapBlock,
-    index: usize,
+    index: Range<usize>,
     materials: &'a HashMap<MatPair, MaterialDefinition>,
     tiletypes: &'a TiletypeList,
 }
@@ -44,7 +44,7 @@ impl<'a> TileIterator<'a> {
         Self {
             block,
             materials,
-            index: 0,
+            index: 0..block.tiles.len(),
             tiletypes,
         }
     }
@@ -54,17 +54,8 @@ impl<'a> Iterator for TileIterator<'a> {
     type Item = BlockTile<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.index += 1;
-        if self.index <= self.block.tiles.len() {
-            Some(BlockTile::new(
-                self.block,
-                self.index - 1,
-                self.materials,
-                self.tiletypes,
-            ))
-        } else {
-            None
-        }
+        let index = self.index.next();
+        index.map(|index| BlockTile::new(self.block, index, self.materials, self.tiletypes))
     }
 }
 
