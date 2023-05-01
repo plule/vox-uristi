@@ -65,11 +65,9 @@ impl Building {
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 shape::slice_empty(),
                 shape::slice_empty(),
-                [
-                    [false, true, false],
-                    [true, true, true],
-                    [false, true, false],
-                ],
+                shape::slice_from_fn(|x, y| {
+                    (self.origin.x + x as i32) % 2 == 0 || (self.origin.y + y as i32) % 2 == 0
+                }),
             ],
             BuildingType::Hatch => [
                 shape::slice_empty(),
