@@ -23,6 +23,7 @@ pub struct Cancel;
 pub fn try_export_voxels(
     client: &mut dfhack_remote::Client,
     elevation_range: Range<i32>,
+    yeah_tick: i32,
     path: PathBuf,
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
@@ -34,6 +35,7 @@ pub fn try_export_voxels(
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let map_info = client.remote_fortress_reader().get_map_info()?;
+    let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
 
     let block_list_iterator =
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
@@ -55,7 +57,7 @@ pub fn try_export_voxels(
         })?;
 
         for block in block_list?.map_blocks {
-            map.add_block(block, &tile_type_list);
+            map.add_block(block, &tile_type_list, yeah_tick, &plant_raws);
         }
     }
 
@@ -121,6 +123,7 @@ fn add_voxels<T>(
 pub fn export_voxels(
     client: &mut dfhack_remote::Client,
     elevation_range: Range<i32>,
+    yeah_tick: i32,
     path: PathBuf,
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
@@ -128,6 +131,7 @@ pub fn export_voxels(
     if let Err(err) = try_export_voxels(
         client,
         elevation_range,
+        yeah_tick,
         path,
         progress_tx.clone(),
         cancel_rx,

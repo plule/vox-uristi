@@ -59,11 +59,19 @@ fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Resu
             .progress_chars("#>-"),
     );
     let mut df = dfhack_remote::connect()?;
+    let year_tick = df.remote_fortress_reader().get_world_map()?.cur_year_tick();
     let range = elevation_low..elevation_high + 1;
     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
     let (_cancel_tx, cancel_rx) = std::sync::mpsc::channel();
     let task = thread::spawn(move || {
-        export::export_voxels(&mut df, range, destination, progress_tx, cancel_rx);
+        export::export_voxels(
+            &mut df,
+            range,
+            year_tick,
+            destination,
+            progress_tx,
+            cancel_rx,
+        );
     });
     'outer: loop {
         for progress in progress_rx.try_iter() {
@@ -119,12 +127,6 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
             for tile in rfr::TileIterator::new(&block, &tile_type_list) {
                 if tile.coords() == probe {
                     println!("{}", tile);
-
-                    if tile.material().mat_type() == 419 {
-                        let plant = PlantTile::from_block_tile(&tile);
-                        dbg!(&plant);
-                        dbg!(&plant.growth_colors(&plant_raws, world_map.cur_year_tick()));
-                    }
                 }
             }
 

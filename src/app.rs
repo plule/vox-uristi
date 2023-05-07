@@ -7,11 +7,14 @@ use eframe::{
     egui::{self, Button, DragValue, ProgressBar, RichText, Ui},
     epaint::Vec2,
 };
+use num_enum::IntoPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt::Display,
     sync::mpsc::{Receiver, Sender},
     thread,
 };
+use strum::{Display, EnumIter, IntoEnumIterator};
 
 enum CheckUpdateStatus {
     NotDone,
@@ -19,11 +22,57 @@ enum CheckUpdateStatus {
     Done(UpdateStatus),
 }
 
+#[derive(Clone, Copy, Display, IntoPrimitive, Serialize, Deserialize, PartialEq, EnumIter)]
+#[repr(i32)]
+pub enum Month {
+    Granite,
+    Slate,
+    Felsite,
+    Hematite,
+    Malachite,
+    Galena,
+    Limestone,
+    Sandstone,
+    Timber,
+    Moonstone,
+    Opal,
+    Obsidian,
+}
+
+impl Month {
+    pub fn year_tick(self) -> i32 {
+        let index: i32 = self.into();
+        index * 33600
+    }
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum MonthChoice {
+    Current,
+    Manual(Month),
+}
+
+impl Display for MonthChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MonthChoice::Current => f.write_str("Current"),
+            MonthChoice::Manual(month) => month.fmt(f),
+        }
+    }
+}
+
+impl Default for MonthChoice {
+    fn default() -> Self {
+        Self::Current
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
     low_elevation: i32,
     high_elevation: i32,
+    month: MonthChoice,
 
     #[serde(skip)]
     error: Option<String>,
@@ -121,6 +170,19 @@ impl App {
                     {
                         self.high_elevation = self.high_elevation.max(self.low_elevation);
                     }
+                    egui::ComboBox::from_label("Time of the year")
+                        .selected_text(format!("{}", self.month))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.month, MonthChoice::Current, "Current");
+                            for month in Month::iter() {
+                                ui.selectable_value(
+                                    &mut self.month,
+                                    MonthChoice::Manual(month),
+                                    format!("{}", month),
+                                );
+                            }
+                        });
+
                     ui.separator();
                     let button = Button::new(RichText::new("💾 Export").heading());
                     if ui
@@ -145,8 +207,27 @@ impl App {
                                     let range = self.low_elevation..self.high_elevation + 1;
                                     self.progress =
                                         Some((Progress::Connecting, progress_rx, cancel_tx));
+                                    let tick = match self.month {
+                                        MonthChoice::Current => {
+                                            if let Ok(map) =
+                                                df.remote_fortress_reader().get_world_map()
+                                            {
+                                                map.cur_year_tick()
+                                            } else {
+                                                0
+                                            }
+                                        }
+                                        MonthChoice::Manual(month) => month.year_tick(),
+                                    };
                                     thread::spawn(move || {
-                                        export_voxels(&mut df, range, path, progress_tx, cancel_rx);
+                                        export_voxels(
+                                            &mut df,
+                                            range,
+                                            tick,
+                                            path,
+                                            progress_tx,
+                                            cancel_rx,
+                                        );
                                     });
                                     None
                                 } else {
@@ -241,6 +322,7 @@ impl Default for App {
         Self {
             low_elevation: 100,
             high_elevation: 110,
+            month: MonthChoice::Current,
             error: None,
             progress: None,
             exported_path: None,

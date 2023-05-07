@@ -6,7 +6,7 @@ use crate::{
     tile_plant::PlantTile,
     voxel::{voxels_from_uniform_shape, CollectVoxels},
 };
-use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
+use dfhack_remote::{PlantRawList, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use rand::Rng;
 
 #[derive(Debug)]
@@ -180,52 +180,7 @@ impl NormalTile {
 }
 
 impl Tile {
-    pub fn new_normal(coords: Coords, shape: Shape, material: Material) -> Self {
-        Self {
-            coords,
-            kind: TileKind::Normal(NormalTile { shape, material }),
-        }
-    }
-
-    pub fn new_water(coords: Coords, level: u8) -> Self {
-        Tile::new_normal(
-            coords,
-            Shape::Fluid(level),
-            Material::Default(DefaultMaterials::Water),
-        )
-    }
-
-    pub fn new_magma(coords: Coords, level: u8) -> Self {
-        Tile::new_normal(
-            coords,
-            Shape::Fluid(level),
-            Material::Default(DefaultMaterials::Magma),
-        )
-    }
-
-    pub fn new_plant(coords: Coords, tile: &BlockTile) -> Self {
-        Self {
-            coords,
-            kind: TileKind::Plant(PlantTile::from_block_tile(tile)),
-        }
-    }
-}
-
-impl CollectVoxels for Tile {
-    fn collect_voxels(&self, map: &Map) -> Vec<crate::voxel::Voxel> {
-        match &self.kind {
-            TileKind::Normal(tile) => voxels_from_uniform_shape(
-                tile.get_shape(&self.coords, map),
-                self.coords,
-                &tile.material,
-            ),
-            TileKind::Plant(plant) => plant.collect_voxels(&self.coords, map),
-        }
-    }
-}
-
-impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
-    fn from(tile: &BlockTile) -> Self {
+    pub fn from_df(tile: &BlockTile, year_tick: i32, plant_raws: &PlantRawList) -> Option<Self> {
         if tile.hidden() {
             return Some(Tile::new_normal(
                 tile.coords(),
@@ -269,7 +224,7 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
 
         // If it's a plant, build a plant material
         if tile.material().mat_type() == 419 {
-            return Some(Tile::new_plant(tile.coords(), tile));
+            return Some(Tile::new_plant(tile.coords(), tile, year_tick, plant_raws));
         }
 
         // Some fluid tile just have the fluid amount indic
@@ -312,5 +267,52 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
         }
 
         None
+    }
+    pub fn new_normal(coords: Coords, shape: Shape, material: Material) -> Self {
+        Self {
+            coords,
+            kind: TileKind::Normal(NormalTile { shape, material }),
+        }
+    }
+
+    pub fn new_water(coords: Coords, level: u8) -> Self {
+        Tile::new_normal(
+            coords,
+            Shape::Fluid(level),
+            Material::Default(DefaultMaterials::Water),
+        )
+    }
+
+    pub fn new_magma(coords: Coords, level: u8) -> Self {
+        Tile::new_normal(
+            coords,
+            Shape::Fluid(level),
+            Material::Default(DefaultMaterials::Magma),
+        )
+    }
+
+    pub fn new_plant(
+        coords: Coords,
+        tile: &BlockTile,
+        year_tick: i32,
+        raws: &PlantRawList,
+    ) -> Self {
+        Self {
+            coords,
+            kind: TileKind::Plant(PlantTile::from_block_tile(tile, year_tick, raws)),
+        }
+    }
+}
+
+impl CollectVoxels for Tile {
+    fn collect_voxels(&self, map: &Map) -> Vec<crate::voxel::Voxel> {
+        match &self.kind {
+            TileKind::Normal(tile) => voxels_from_uniform_shape(
+                tile.get_shape(&self.coords, map),
+                self.coords,
+                &tile.material,
+            ),
+            TileKind::Plant(plant) => plant.collect_voxels(&self.coords, map),
+        }
     }
 }

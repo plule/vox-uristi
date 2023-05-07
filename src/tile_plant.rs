@@ -5,10 +5,10 @@ use crate::{
     rfr::{BlockTile, GetTiming},
     shape::{self, Box3D},
     tile::TileKind,
-    voxel::{voxels_from_uniform_shape, Voxel},
+    voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
 };
 use dfhack_remote::{MatPair, PlantRawList, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 
 #[derive(Debug)]
 pub struct PlantTile {
@@ -16,6 +16,7 @@ pub struct PlantTile {
     pub part: PlantPart,
     pub alive: bool,
     pub wood_material: Material,
+    pub growth_materials: Vec<Material>,
     pub origin: Coords,
 }
 
@@ -64,7 +65,7 @@ fn connectivity_from_direction_string(direction_string: &str) -> NeighbouringFla
 }
 
 impl PlantTile {
-    pub fn from_block_tile(tile: &BlockTile) -> Self {
+    pub fn from_block_tile(tile: &BlockTile, year_tick: i32, raws: &PlantRawList) -> Self {
         let plant_index = tile.material().mat_index();
         let tile_type = tile.tile_type();
         let part = match (
@@ -93,49 +94,132 @@ impl PlantTile {
             ..Default::default()
         });
         let origin = tile.tree_origin();
-        Self {
+        let mut ret = Self {
             plant_index,
             wood_material,
             part,
             alive,
             origin,
-        }
+            growth_materials: vec![],
+        };
+        ret.growth_materials = ret
+            .growth_colors(raws, year_tick)
+            .into_iter()
+            .map(Material::Console)
+            .collect();
+        ret
     }
 
     pub fn growth_colors(&self, raws: &PlantRawList, year_tick: i32) -> Vec<ConsoleColor> {
-        raws.plant_raws[self.plant_index as usize]
-            .growths
-            .iter()
-            .filter(|growth| {
-                growth.timing().contains(&year_tick)
-                    && match self.part {
-                        PlantPart::Cap => growth.cap(),
-                        PlantPart::Root => growth.roots(),
-                        PlantPart::Sapling => growth.sapling(),
-                        PlantPart::Trunk => growth.trunk(),
-                        PlantPart::HeavyBranch { .. } => growth.heavy_branches(),
-                        PlantPart::LightBranch => growth.light_branches(),
-                        PlantPart::Twig => growth.twigs(),
-                    }
-            })
-            .flat_map(|growth| {
-                growth
-                    .prints
-                    .iter()
-                    .filter(|print| print.timing().contains(&year_tick))
-                    .map(|print| print.color().into())
-            })
-            .collect()
+        if let Some(plant_raw) = raws.plant_raws.get(self.plant_index as usize) {
+            plant_raw
+                .growths
+                .iter()
+                .filter(|growth| {
+                    growth.timing().contains(&year_tick)
+                        && match self.part {
+                            PlantPart::Cap => growth.cap(),
+                            PlantPart::Root => growth.roots(),
+                            PlantPart::Sapling => growth.sapling(),
+                            PlantPart::Trunk => growth.trunk(),
+                            PlantPart::HeavyBranch { .. } => growth.heavy_branches(),
+                            PlantPart::LightBranch => growth.light_branches(),
+                            PlantPart::Twig => growth.twigs(),
+                        }
+                })
+                .flat_map(|growth| {
+                    growth
+                        .prints
+                        .iter()
+                        .filter(|print| print.timing().contains(&year_tick))
+                        .map(|print| print.color().into())
+                })
+                .collect()
+        } else {
+            vec![]
+        }
     }
 
     pub fn collect_voxels(&self, coords: &Coords, map: &Map) -> Vec<Voxel> {
-        let structure = voxels_from_uniform_shape(
+        let mut rng = rand::thread_rng();
+        let mut voxels = voxels_from_uniform_shape(
             self.structure_shape(coords, map),
             *coords,
             &self.wood_material,
         );
+        if !self.growth_materials.is_empty() {
+            let growth = self.growth().map(|slice| {
+                slice.map(|col| {
+                    col.map(|t| {
+                        if t {
+                            self.growth_materials.choose(&mut rng)
+                        } else {
+                            None
+                        }
+                    })
+                })
+            });
+            voxels.append(&mut voxels_from_shape(growth, *coords));
+        }
 
-        structure
+        voxels
+    }
+
+    pub fn growth(&self) -> Box3D<3, bool> {
+        let mut r = rand::thread_rng();
+        match &self.part {
+            PlantPart::Root
+            | PlantPart::Trunk
+            | PlantPart::Cap
+            | PlantPart::HeavyBranch { .. }
+            | PlantPart::LightBranch => [
+                [
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                    [false, false, false],
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                ],
+                [
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                    [false, false, false],
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                ],
+                [
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                    [false, false, false],
+                    [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                ],
+            ],
+            PlantPart::Sapling => [
+                [
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                ],
+                [
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), true, r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                ],
+                [
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                ],
+            ],
+            PlantPart::Twig => [
+                [
+                    [false, false, false],
+                    [false, r.gen_ratio(1, 5), false],
+                    [false, false, false],
+                ],
+                [
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                ],
+                shape::slice_empty(),
+            ],
+        }
     }
 
     pub fn structure_shape(&self, coords: &Coords, map: &Map) -> Box3D<3, bool> {

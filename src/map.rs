@@ -5,7 +5,7 @@ use crate::{
     rfr,
     tile::{Shape, Tile, TileKind},
 };
-use dfhack_remote::{Coord, MapBlock, TiletypeList};
+use dfhack_remote::{Coord, MapBlock, PlantRawList, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display, ops::Add};
 
@@ -44,11 +44,17 @@ impl<T> IsSomeAnd<T> for Option<T> {
 }
 
 impl Map {
-    pub fn add_block(&mut self, block: MapBlock, tiletypes: &TiletypeList) {
+    pub fn add_block(
+        &mut self,
+        block: MapBlock,
+        tiletypes: &TiletypeList,
+        year_tick: i32,
+        plant_raws: &PlantRawList,
+    ) {
         for tile in rfr::TileIterator::new(&block, tiletypes) {
-            let df_tile = &tile;
-            if let Some(tile) = df_tile.into() {
-                self.tiles.insert(df_tile.coords(), tile);
+            let df_tile = Tile::from_df(&tile, year_tick, plant_raws);
+            if let Some(tile) = df_tile {
+                self.tiles.insert(tile.coords, tile);
             }
         }
 
