@@ -13,6 +13,7 @@ mod palette;
 mod rfr;
 mod shape;
 mod tile;
+mod tile_plant;
 mod update;
 mod voxel;
 use app::App;

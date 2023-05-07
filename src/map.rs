@@ -3,7 +3,7 @@ use crate::{
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     flow::Flow,
     rfr,
-    tile::{Shape, Tile},
+    tile::{Shape, Tile, TileKind},
 };
 use dfhack_remote::{Coord, MapBlock, TiletypeList};
 use itertools::Itertools;
@@ -114,7 +114,12 @@ impl Map {
                 let wally = self
                     .tiles
                     .get(&Coords::new(coords.x + x, coords.y + y, z))
-                    .some_and(|tile| matches!(tile.shape, Shape::Fortification | Shape::Full));
+                    .some_and(|tile| match &tile.kind {
+                        TileKind::Normal(tile) => {
+                            matches!(tile.shape, Shape::Fortification | Shape::Full)
+                        }
+                        _ => false,
+                    });
                 if wally {
                     if x == -1 {
                         wallyness[W] += 1;

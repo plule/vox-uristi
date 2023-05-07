@@ -1,9 +1,12 @@
-use crate::map::Coords;
+use crate::{map::Coords};
 use anyhow::Result;
-use dfhack_remote::{BlockList, BlockRequest, MapBlock, MatPair, Tiletype, TiletypeList};
+use dfhack_remote::{
+    BlockList, BlockRequest, ColorDefinition, GrowthPrint, MapBlock, MatPair, Tiletype,
+    TiletypeList, TreeGrowth,
+};
 use std::{
     fmt::{Debug, Display},
-    ops::Range,
+    ops::{Range, RangeInclusive},
 };
 
 /// Wrapper around dwarf fortress blocks to help access individual tile properties
@@ -27,6 +30,10 @@ pub struct TileIterator<'a> {
     block: &'a MapBlock,
     index: Range<usize>,
     tiletypes: &'a TiletypeList,
+}
+
+pub trait RGBColor {
+    fn get_rgb(&self) -> (u8, u8, u8);
 }
 
 impl<'a> TileIterator<'a> {
@@ -207,5 +214,51 @@ impl Display for BlockTile<'_> {
         writeln!(f, "tree_percent: {}", self.tree_percent())?;
         writeln!(f, "grass: {}", self.grass_percent())?;
         Ok(())
+    }
+}
+
+impl RGBColor for ColorDefinition {
+    fn get_rgb(&self) -> (u8, u8, u8) {
+        (
+            self.red().try_into().unwrap_or_default(),
+            self.green().try_into().unwrap_or_default(),
+            self.blue().try_into().unwrap_or_default(),
+        )
+    }
+}
+
+pub trait GetTiming {
+    fn timing(&self) -> RangeInclusive<i32>;
+}
+
+impl GetTiming for GrowthPrint {
+    fn timing(&self) -> RangeInclusive<i32> {
+        let start = if self.timing_start().is_negative() {
+            i32::MIN
+        } else {
+            self.timing_start()
+        };
+        let end = if self.timing_end().is_negative() {
+            i32::MAX
+        } else {
+            self.timing_end()
+        };
+        start..=end
+    }
+}
+
+impl GetTiming for TreeGrowth {
+    fn timing(&self) -> RangeInclusive<i32> {
+        let start = if self.timing_start().is_negative() {
+            i32::MIN
+        } else {
+            self.timing_start()
+        };
+        let end = if self.timing_end().is_negative() {
+            i32::MAX
+        } else {
+            self.timing_end()
+        };
+        start..=end
     }
 }

@@ -1,6 +1,7 @@
+use crate::rfr::RGBColor;
 use dfhack_remote::{MatPair, MaterialDefinition};
-use num_enum::IntoPrimitive;
-use rand::seq::SliceRandom;
+use num_enum::{FromPrimitive, IntoPrimitive};
+use palette::{named, Srgb};
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter};
 use vox_writer::VoxWriter;
@@ -8,8 +9,10 @@ use vox_writer::VoxWriter;
 /// A material to be exported as an entry in the palette
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Material {
-    /// Default material with hard-coded color
+    /// Default colors for which Dwarf Fortress does not give indication (water, magma, smoke...)
     Default(DefaultMaterials),
+    /// 16 colors defined by Dwarf Fortress for console colors
+    Console(ConsoleColor),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
 }
@@ -30,52 +33,80 @@ pub enum DefaultMaterials {
     LightGrass,
 }
 
+#[derive(Debug, Clone, Copy, FromPrimitive, Hash, PartialEq, Eq)]
+#[repr(i32)]
+pub enum ConsoleColor {
+    #[default]
+    Black,
+    Blue,
+    Green,
+    Cyan,
+    Red,
+    Magenta,
+    Brown,
+    Grey,
+    DarkGrey,
+    LightBlue,
+    LightGreen,
+    LightCyan,
+    LightRed,
+    LightMagenta,
+    Yellow,
+    White,
+}
+
+impl From<ConsoleColor> for palette::Srgb<u8> {
+    fn from(value: ConsoleColor) -> Self {
+        match value {
+            ConsoleColor::Black => named::BLACK,
+            ConsoleColor::Blue => named::BLUE,
+            ConsoleColor::Green => named::GREEN,
+            ConsoleColor::Cyan => named::CYAN,
+            ConsoleColor::Red => named::DARKRED,
+            ConsoleColor::Magenta => named::DARKMAGENTA,
+            ConsoleColor::Brown => named::BROWN,
+            ConsoleColor::Grey => named::GRAY,
+            ConsoleColor::DarkGrey => named::DARKGRAY,
+            ConsoleColor::LightBlue => named::LIGHTBLUE,
+            ConsoleColor::LightGreen => named::LIGHTGREEN,
+            ConsoleColor::LightCyan => named::LIGHTCYAN,
+            ConsoleColor::LightRed => named::RED,
+            ConsoleColor::LightMagenta => named::MAGENTA,
+            ConsoleColor::Yellow => named::YELLOW,
+            ConsoleColor::White => named::WHITE,
+        }
+    }
+}
+
+pub trait RGBAColor {
+    fn get_rgba(&self) -> (u8, u8, u8, u8);
+}
+
+impl<T: RGBColor> RGBAColor for T {
+    fn get_rgba(&self) -> (u8, u8, u8, u8) {
+        let rgb = self.get_rgb();
+        (rgb.0, rgb.1, rgb.2, 255)
+    }
+}
+
 impl Material {
     pub fn get_color(&self, materials: &[MaterialDefinition]) -> (u8, u8, u8, u8) {
         match self {
-            Material::Default(default) => default.get_color(),
+            Material::Default(default) => default.get_rgba(),
             Material::Generic(matpair) => materials
                 .iter()
                 .find(|m| matpair == m.mat_pair.get_or_default())
                 .map_or((0, 0, 0, 0), |material| {
-                    let color = &material.state_color;
-                    (
-                        color.red().try_into().unwrap_or_default(),
-                        color.green().try_into().unwrap_or_default(),
-                        color.blue().try_into().unwrap_or_default(),
-                        255,
-                    )
+                    let rgb = material.state_color.get_rgba();
+                    (rgb.0, rgb.1, rgb.2, 255)
                 }),
+            Material::Console(console_color) => console_color.get_rgba(),
         }
     }
 }
 
-// temp for trees
-#[derive(Debug, Clone)]
-pub struct RandomMaterial {
-    pub materials: Vec<Material>,
-}
-
-impl RandomMaterial {
-    pub fn new(materials: Vec<Material>) -> Self {
-        Self { materials }
-    }
-
-    pub fn pick(&self) -> &Material {
-        self.materials.choose(&mut rand::thread_rng()).unwrap()
-    }
-}
-
-impl From<Material> for RandomMaterial {
-    fn from(value: Material) -> Self {
-        Self {
-            materials: vec![value],
-        }
-    }
-}
-
-impl DefaultMaterials {
-    pub fn get_color(&self) -> (u8, u8, u8, u8) {
+impl RGBAColor for DefaultMaterials {
+    fn get_rgba(&self) -> (u8, u8, u8, u8) {
         match self {
             DefaultMaterials::Hidden => (0, 0, 0, 255),
             DefaultMaterials::Water => (0, 0, 255, 64),
@@ -87,6 +118,13 @@ impl DefaultMaterials {
             DefaultMaterials::DarkGrass => (0, 102, 0, 255),
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
         }
+    }
+}
+
+impl RGBColor for ConsoleColor {
+    fn get_rgb(&self) -> (u8, u8, u8) {
+        let color = Srgb::<u8>::from(*self);
+        (color.red, color.green, color.blue)
     }
 }
 

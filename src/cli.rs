@@ -1,4 +1,4 @@
-use crate::{export, map::Coords, rfr, update};
+use crate::{export, map::Coords, rfr, tile_plant::PlantTile, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;
@@ -106,17 +106,25 @@ fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Resu
 fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let mut client = dfhack_remote::connect()?;
     let view_info = client.remote_fortress_reader().get_view_info()?;
+    let world_map = client.remote_fortress_reader().get_world_map()?;
     let x = view_info.cursor_pos_x();
     let y = view_info.cursor_pos_y();
     let z = view_info.cursor_pos_z();
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
     let probe = Coords::new(x, y, z);
+    let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
     for block_list in rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?
     {
         for block in block_list?.map_blocks {
             for tile in rfr::TileIterator::new(&block, &tile_type_list) {
                 if tile.coords() == probe {
                     println!("{}", tile);
+
+                    if tile.material().mat_type() == 419 {
+                        let plant = PlantTile::from_block_tile(&tile);
+                        dbg!(&plant);
+                        dbg!(&plant.growth_colors(&plant_raws, world_map.cur_year_tick()));
+                    }
                 }
             }
 

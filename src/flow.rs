@@ -2,10 +2,9 @@ use crate::{
     map::Coords,
     palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
-    voxel::{CollectVoxels, Voxel},
+    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
 };
 use dfhack_remote::{FlowInfo, FlowType};
-use itertools::Itertools;
 use rand::Rng;
 
 pub struct Flow {
@@ -48,28 +47,6 @@ impl Flow {
 
 impl CollectVoxels for Flow {
     fn collect_voxels<'a>(&'a self, _map: &crate::map::Map) -> Vec<Voxel<'a>> {
-        let coords = self.coords();
-        let shape = self.shape();
-        (0_usize..3_usize)
-            .flat_map(move |x| {
-                (0_usize..3_usize).flat_map(move |y| {
-                    (0_usize..3_usize).filter_map(move |z| {
-                        if shape[2 - z][y][x] {
-                            Some((x, y, z))
-                        } else {
-                            None
-                        }
-                    })
-                })
-            })
-            .map(|(local_x, local_y, local_z)| {
-                Coords::new(
-                    coords.x * 3 + local_x as i32,
-                    coords.y * 3 + local_y as i32,
-                    coords.z * 3 + local_z as i32,
-                )
-            })
-            .map(|coords| Voxel::new(coords, &self.material))
-            .collect_vec()
+        voxels_from_uniform_shape(self.shape(), self.coords(), &self.material)
     }
 }

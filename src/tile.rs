@@ -1,18 +1,17 @@
 use crate::{
-    map::{Coords, IsSomeAnd, Map},
-    palette::{DefaultMaterials, Material, RandomMaterial},
+    map::{Coords, Map},
+    palette::{DefaultMaterials, Material},
     rfr::BlockTile,
     shape::{self, Box3D, Rotating},
-    voxel::{CollectVoxels, Voxel},
+    tile_plant::PlantTile,
+    voxel::{voxels_from_uniform_shape, CollectVoxels},
 };
-use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
-use itertools::Itertools;
+use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use rand::Rng;
 
 #[derive(Debug)]
 pub struct Tile {
-    pub shape: Shape,
-    pub material: RandomMaterial,
+    pub kind: TileKind,
     pub coords: Coords,
 }
 
@@ -21,17 +20,21 @@ pub enum Shape {
     Fluid(u8),
     Floor { smooth: bool },
     Stair(StairPart),
-    Tree { origin: Coords, part: TreePart },
     Fortification,
     Full,
     Ramp,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum TreePart {
-    Trunk,
-    Branch,
-    Twig,
+#[derive(Debug)]
+pub enum TileKind {
+    Normal(NormalTile),
+    Plant(PlantTile),
+}
+
+#[derive(Debug)]
+pub struct NormalTile {
+    pub shape: Shape,
+    pub material: Material,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,58 +69,8 @@ fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> usize {
     }
 }
 
-impl Tile {
-    pub fn new_water(coords: Coords, level: u8) -> Self {
-        Self {
-            shape: Shape::Fluid(level),
-            material: Material::Default(DefaultMaterials::Water).into(),
-            coords,
-        }
-    }
-
-    pub fn new_magma(coords: Coords, level: u8) -> Self {
-        Self {
-            shape: Shape::Fluid(level),
-            material: Material::Default(DefaultMaterials::Magma).into(),
-            coords,
-        }
-    }
-
-    pub fn new_tree(coords: Coords, mat_index: i32, origin: Coords, part: TreePart) -> Self {
-        let shape = Shape::Tree { origin, part };
-        let wood = MatPair {
-            mat_type: Some(420),
-            mat_index: Some(mat_index),
-            ..Default::default()
-        };
-        let leaves = MatPair {
-            mat_type: Some(421),
-            mat_index: Some(mat_index),
-            ..Default::default()
-        };
-        match part {
-            TreePart::Trunk => Tile {
-                shape,
-                material: Material::Generic(wood).into(),
-                coords,
-            },
-            TreePart::Branch => Tile {
-                shape,
-                material: RandomMaterial::new(vec![
-                    Material::Generic(wood),
-                    Material::Generic(leaves),
-                ]),
-                coords,
-            },
-            TreePart::Twig => Tile {
-                shape,
-                material: Material::Generic(leaves).into(),
-                coords,
-            },
-        }
-    }
-
-    fn get_shape(&self, map: &Map) -> Box3D<3, bool> {
+impl NormalTile {
+    fn get_shape(&self, coords: &Coords, map: &Map) -> Box3D<3, bool> {
         let mut rng = rand::thread_rng();
         match &self.shape {
             Shape::Fluid(level) => [
@@ -159,17 +112,25 @@ impl Tile {
                         [down || floor, down || floor, floor]
                     ],
                 ];
-                shape.rotated_by((self.coords.z % 4) as usize)
+                shape.rotated_by((coords.z % 4) as usize)
             }
 
             Shape::Ramp => {
-                let c = map.neighbouring_flat(self.coords, |tile, _| match tile {
+                let c = map.neighbouring_flat(*coords, |tile, _| match tile {
                     Some(Tile {
-                        shape: Shape::Full | Shape::Fortification,
+                        kind:
+                            TileKind::Normal(NormalTile {
+                                shape: Shape::Full | Shape::Fortification,
+                                ..
+                            }),
                         ..
                     }) => RampContactKind::Wall,
                     Some(Tile {
-                        shape: Shape::Ramp, ..
+                        kind:
+                            TileKind::Normal(NormalTile {
+                                shape: Shape::Ramp, ..
+                            }),
+                        ..
                     }) => RampContactKind::Ramp,
                     _ => RampContactKind::Empty,
                 });
@@ -183,60 +144,15 @@ impl Tile {
 
                 shape::box_from_levels(levels)
             }
-            Shape::Tree { origin, part } => {
-                let connectivity = map.neighbouring(self.coords, |tile, _| {
-                    tile.some_and(|t| match &t.shape {
-                        Shape::Tree {
-                            origin: other_origin,
-                            part: _,
-                        } => origin == other_origin,
-                        _ => false,
-                    })
-                });
-                match part {
-                    TreePart::Trunk => shape::box_full(),
-                    TreePart::Branch => [
-                        [
-                            [rng.gen(), rng.gen(), rng.gen()],
-                            [rng.gen(), connectivity.a, rng.gen()],
-                            [rng.gen(), rng.gen(), rng.gen()],
-                        ],
-                        [
-                            [rng.gen(), connectivity.n, rng.gen()],
-                            [connectivity.w, true, connectivity.e],
-                            [rng.gen(), connectivity.s, rng.gen()],
-                        ],
-                        [
-                            [rng.gen(), rng.gen(), rng.gen()],
-                            [rng.gen(), connectivity.b, rng.gen()],
-                            [rng.gen(), rng.gen(), rng.gen()],
-                        ],
-                    ],
-                    TreePart::Twig => [
-                        [
-                            [rng.gen(), false, rng.gen()],
-                            [false, connectivity.a, false],
-                            [rng.gen(), false, rng.gen()],
-                        ],
-                        [
-                            [rng.gen(), connectivity.n, rng.gen()],
-                            [connectivity.w, true, connectivity.e],
-                            [rng.gen(), connectivity.s, rng.gen()],
-                        ],
-                        [
-                            [rng.gen(), false, rng.gen()],
-                            [false, connectivity.b, false],
-                            [rng.gen(), false, rng.gen()],
-                        ],
-                    ],
-                }
-            }
             Shape::Fortification => {
-                let conn = map.neighbouring_flat(self.coords, |tile, _| {
+                let conn = map.neighbouring_flat(*coords, |tile, _| {
                     matches!(
                         tile,
                         Some(Tile {
-                            shape: Shape::Full | Shape::Fortification,
+                            kind: TileKind::Normal(NormalTile {
+                                shape: Shape::Full | Shape::Fortification,
+                                ..
+                            }),
                             ..
                         })
                     )
@@ -263,41 +179,59 @@ impl Tile {
     }
 }
 
+impl Tile {
+    pub fn new_normal(coords: Coords, shape: Shape, material: Material) -> Self {
+        Self {
+            coords,
+            kind: TileKind::Normal(NormalTile { shape, material }),
+        }
+    }
+
+    pub fn new_water(coords: Coords, level: u8) -> Self {
+        Tile::new_normal(
+            coords,
+            Shape::Fluid(level),
+            Material::Default(DefaultMaterials::Water),
+        )
+    }
+
+    pub fn new_magma(coords: Coords, level: u8) -> Self {
+        Tile::new_normal(
+            coords,
+            Shape::Fluid(level),
+            Material::Default(DefaultMaterials::Magma),
+        )
+    }
+
+    pub fn new_plant(coords: Coords, tile: &BlockTile) -> Self {
+        Self {
+            coords,
+            kind: TileKind::Plant(PlantTile::from_block_tile(tile)),
+        }
+    }
+}
+
 impl CollectVoxels for Tile {
     fn collect_voxels(&self, map: &Map) -> Vec<crate::voxel::Voxel> {
-        let shape = self.get_shape(map);
-        (0_usize..3_usize)
-            .flat_map(move |x| {
-                (0_usize..3_usize).flat_map(move |y| {
-                    (0_usize..3_usize).filter_map(move |z| {
-                        if shape[2 - z][y][x] {
-                            Some((x, y, z))
-                        } else {
-                            None
-                        }
-                    })
-                })
-            })
-            .map(|(local_x, local_y, local_z)| {
-                Coords::new(
-                    self.coords.x * 3 + local_x as i32,
-                    self.coords.y * 3 + local_y as i32,
-                    self.coords.z * 3 + local_z as i32,
-                )
-            })
-            .map(|coords| Voxel::new(coords, self.material.pick()))
-            .collect_vec()
+        match &self.kind {
+            TileKind::Normal(tile) => voxels_from_uniform_shape(
+                tile.get_shape(&self.coords, map),
+                self.coords,
+                &tile.material,
+            ),
+            TileKind::Plant(plant) => plant.collect_voxels(&self.coords, map),
+        }
     }
 }
 
 impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
     fn from(tile: &BlockTile) -> Self {
         if tile.hidden() {
-            return Some(Tile {
-                shape: Shape::Full,
-                material: Material::Default(DefaultMaterials::Hidden).into(),
-                coords: tile.coords(),
-            });
+            return Some(Tile::new_normal(
+                tile.coords(),
+                Shape::Full,
+                Material::Default(DefaultMaterials::Hidden),
+            ));
         }
         // Check if it's a fluid, in that case, ignore what's below
         match tile.tile_type().material() {
@@ -313,52 +247,30 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
                     tile.water().try_into().unwrap_or_default(),
                 ))
             }
-            TiletypeMaterial::TREE_MATERIAL => {
-                let mat_pair_index = tile.material().mat_index();
-                match tile.tile_type().shape() {
-                    TiletypeShape::WALL | TiletypeShape::TRUNK_BRANCH => {
-                        return Some(Tile::new_tree(
-                            tile.coords(),
-                            mat_pair_index,
-                            tile.tree_origin(),
-                            TreePart::Trunk,
-                        ));
-                    }
-                    TiletypeShape::BRANCH | TiletypeShape::RAMP => {
-                        return Some(Tile::new_tree(
-                            tile.coords(),
-                            mat_pair_index,
-                            tile.tree_origin(),
-                            TreePart::Branch,
-                        ));
-                    }
-                    TiletypeShape::TWIG => {
-                        return Some(Tile::new_tree(
-                            tile.coords(),
-                            mat_pair_index,
-                            tile.tree_origin(),
-                            TreePart::Twig,
-                        ));
-                    }
-                    _ => {}
-                }
-            }
+            // Grass should likely be handled the same way as plants?
             TiletypeMaterial::GRASS_DARK => {
-                return Some(Tile {
-                    coords: tile.coords(),
-                    shape: Shape::Floor { smooth: false },
-                    material: Material::Default(DefaultMaterials::DarkGrass).into(),
-                })
+                return Some(Tile::new_normal(
+                    tile.coords(),
+                    Shape::Floor { smooth: false },
+                    Material::Default(DefaultMaterials::DarkGrass),
+                ));
             }
-            TiletypeMaterial::GRASS_LIGHT => {
-                return Some(Tile {
-                    coords: tile.coords(),
-                    shape: Shape::Floor { smooth: false },
-                    material: Material::Default(DefaultMaterials::LightGrass).into(),
-                })
+            TiletypeMaterial::GRASS_LIGHT
+            | TiletypeMaterial::GRASS_DEAD
+            | TiletypeMaterial::GRASS_DRY => {
+                return Some(Tile::new_normal(
+                    tile.coords(),
+                    Shape::Floor { smooth: false },
+                    Material::Default(DefaultMaterials::LightGrass),
+                ));
             }
             _ => {}
         };
+
+        // If it's a plant, build a plant material
+        if tile.material().mat_type() == 419 {
+            return Some(Tile::new_plant(tile.coords(), tile));
+        }
 
         // Some fluid tile just have the fluid amount indic
         if tile.water() == 7 {
@@ -392,11 +304,11 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
             TiletypeShape::WALL => Some(Shape::Full),
             _ => None,
         } {
-            return Some(Tile {
-                coords: tile.coords(),
+            return Some(Tile::new_normal(
+                tile.coords(),
                 shape,
-                material: Material::Generic(tile.material().clone()).into(),
-            });
+                Material::Generic(tile.material().clone()),
+            ));
         }
 
         None

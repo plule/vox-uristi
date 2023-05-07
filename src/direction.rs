@@ -20,6 +20,7 @@ pub enum DirectionFlat {
     West,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct NeighbouringFlat<T> {
     pub n: T,
     pub e: T,

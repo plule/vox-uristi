@@ -1,14 +1,13 @@
 use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
-    map::{Coords, IsSomeAnd, Map},
+    map::{Coords, Map},
     palette::Material,
     shape::{self, Box3D, Rotating},
-    tile::Shape,
-    voxel::{CollectVoxels, Voxel},
+    tile::{NormalTile, Shape, Tile, TileKind},
+    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
 };
 use dfhack_remote::BuildingInstance;
-use itertools::Itertools;
 use std::ops::RangeInclusive;
 
 #[derive(Debug)]
@@ -67,7 +66,16 @@ impl Building {
                     b.building_type,
                     BuildingType::WindowGem | BuildingType::WindowGlass
                 )
-            }) || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+            }) || matches!(
+                tile,
+                Some(Tile {
+                    kind: TileKind::Normal(NormalTile {
+                        shape: Shape::Fortification | Shape::Full,
+                        ..
+                    }),
+                    ..
+                })
+            )
         });
         [
             [
@@ -93,7 +101,16 @@ impl Building {
             buildings
                 .iter()
                 .any(|b| matches!(b.building_type, BuildingType::Door))
-                || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+                || matches!(
+                    tile,
+                    Some(Tile {
+                        kind: TileKind::Normal(NormalTile {
+                            shape: Shape::Fortification | Shape::Full,
+                            ..
+                        }),
+                        ..
+                    })
+                )
         });
         [
             [
@@ -150,8 +167,11 @@ impl Building {
                     [[w || n, n, e || n], [w, false, e], [w || s, s, e || s]],
                     shape::slice_full(),
                 ];
-                let mut shape_voxels =
-                    collect_shape_voxels(&Coords::new(x, y, self.origin.z), &self.material, shape);
+                let mut shape_voxels = voxels_from_uniform_shape(
+                    shape,
+                    Coords::new(x, y, self.origin.z),
+                    &self.material,
+                );
                 voxels.append(&mut shape_voxels);
             }
         }
@@ -285,34 +305,6 @@ impl CollectVoxels for Building {
             }
             _ => return vec![],
         };
-        collect_shape_voxels(&self.origin, &self.material, shape)
+        voxels_from_uniform_shape(shape, self.origin, &self.material)
     }
-}
-
-fn collect_shape_voxels<'a>(
-    coords: &Coords,
-    material: &'a Material,
-    shape: Box3D<3, bool>,
-) -> Vec<Voxel<'a>> {
-    (0_usize..3_usize)
-        .flat_map(move |x| {
-            (0_usize..3_usize).flat_map(move |y| {
-                (0_usize..3_usize).filter_map(move |z| {
-                    if shape[2 - z][y][x] {
-                        Some((x, y, z))
-                    } else {
-                        None
-                    }
-                })
-            })
-        })
-        .map(|(local_x, local_y, local_z)| {
-            Coords::new(
-                coords.x * 3 + local_x as i32,
-                coords.y * 3 + local_y as i32,
-                coords.z * 3 + local_z as i32,
-            )
-        })
-        .map(|coords| Voxel::new(coords, material))
-        .collect_vec()
 }
