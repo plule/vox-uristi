@@ -6,14 +6,36 @@ use strum::{EnumCount, EnumIter, IntoEnumIterator};
 use vox_writer::VoxWriter;
 
 /// A material to be exported as an entry in the palette
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Material {
     /// Default material with hard-coded color
     Default(DefaultMaterials),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
-    /// Generic material randomly picked from a list
-    Random(Vec<MatPair>),
+}
+
+// temp for trees
+#[derive(Debug, Clone)]
+pub struct RandomMaterial {
+    pub materials: Vec<Material>,
+}
+
+impl RandomMaterial {
+    pub fn new(materials: Vec<Material>) -> Self {
+        Self { materials }
+    }
+
+    pub fn pick(&self) -> &Material {
+        self.materials.choose(&mut rand::thread_rng()).unwrap()
+    }
+}
+
+impl From<Material> for RandomMaterial {
+    fn from(value: Material) -> Self {
+        Self {
+            materials: vec![value],
+        }
+    }
 }
 
 /// The default hard-coded materials
@@ -54,16 +76,16 @@ pub struct Palette {
 }
 
 impl Palette {
-    pub fn build_palette<'a>(&mut self, materials: impl Iterator<Item = &'a Material>) {
-        self.colors.clear();
-        for material in materials {
-            for mat_pair in material.list_mat_pairs() {
+    pub fn get_palette_color(&mut self, material: &Material) -> u8 {
+        1 + match material {
+            Material::Default(default_mat) => (*default_mat).into(),
+            Material::Generic(mat_pair) => {
                 let palette_size = self.colors.len();
-                self.colors.entry(mat_pair.to_owned()).or_insert_with(|| {
+                *self.colors.entry(mat_pair.to_owned()).or_insert_with(|| {
                     (DefaultMaterials::COUNT + palette_size)
                         .try_into()
                         .unwrap_or_default() // would be nice to warn in case of palette overflow
-                });
+                })
             }
         }
     }
@@ -91,28 +113,5 @@ impl Palette {
                 );
             }
         }
-    }
-}
-
-impl Material {
-    pub fn list_mat_pairs(&self) -> Vec<MatPair> {
-        match self {
-            Material::Random(matpairs) => matpairs.clone(),
-            Material::Generic(matpair) => vec![matpair.clone()],
-            _ => vec![],
-        }
-    }
-
-    #[allow(clippy::mutable_key_type)] // possibly an actual issue?
-    pub fn pick_color(&self, palette: &HashMap<MatPair, u8>) -> u8 {
-        (match self {
-            Material::Default(material) => Into::<u8>::into(*material),
-            Material::Generic(pair) => *palette.get(pair).unwrap(),
-            Material::Random(s) => {
-                let mut rng = rand::thread_rng();
-                let pair = s.choose(&mut rng).unwrap();
-                *palette.get(pair).unwrap()
-            }
-        }) + 1
     }
 }

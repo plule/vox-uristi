@@ -1,10 +1,11 @@
-use crate::{map::Map, palette::Palette, rfr};
+use crate::{map::Map, palette::Palette, rfr, voxel::CollectVoxels};
 use anyhow::Result;
 use std::{
     ops::Range,
     path::PathBuf,
     sync::mpsc::{Receiver, Sender},
 };
+use vox_writer::VoxWriter;
 
 pub enum Progress {
     Connecting,
@@ -61,16 +62,8 @@ pub fn try_export_voxels(
     let total = map.tiles.len();
     progress_tx.send(Progress::StartBuilding { total })?;
 
-    let mut vox = vox_writer::VoxWriter::create_empty();
+    let mut vox = VoxWriter::create_empty();
     let mut palette = Palette::default();
-    palette.build_palette(
-        map.tiles.values().map(|tile| &tile.material).chain(
-            map.buildings
-                .values()
-                .flat_map(|v| v.iter().map(|b| &b.material)),
-        ),
-    );
-    palette.write_palette(&mut vox, &material_list.material_list);
 
     let max_y = map_info.block_size_y() * 16 * 3;
     let min_z = elevation_range.start;
@@ -84,32 +77,45 @@ pub fn try_export_voxels(
             curr: progress,
             to: total,
         })?;
-        let voxels = tile.collect_voxels(&palette, &map);
-        for (coord, color) in voxels {
-            vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
-        }
+        add_voxels(tile, &map, &mut palette, &mut vox, max_y, min_z);
     }
 
     for building_list in map.buildings.values() {
         for building in building_list {
-            let voxels = building.collect_voxels(&palette, &map);
-            for (coord, color) in voxels {
-                vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
-            }
+            add_voxels(building, &map, &mut palette, &mut vox, max_y, min_z);
         }
     }
 
     for flow in map.flows.values() {
-        let voxels = flow.collect_voxels(&palette);
-        for (coord, color) in voxels {
-            vox.add_voxel(coord.x, max_y - coord.y, coord.z - min_z, color.into());
-        }
+        add_voxels(flow, &map, &mut palette, &mut vox, max_y, min_z);
     }
+    palette.write_palette(&mut vox, &material_list.material_list);
 
     progress_tx.send(Progress::Writing)?;
     vox.save_to_file(path_str).expect("Fail to save vox file");
     progress_tx.send(Progress::Done { path })?;
     Ok(())
+}
+
+fn add_voxels<T>(
+    item: &T,
+    map: &Map,
+    palette: &mut Palette,
+    vox: &mut VoxWriter,
+    max_y: i32,
+    min_z: i32,
+) where
+    T: CollectVoxels,
+{
+    for voxel in item.collect_voxels(map) {
+        let color = palette.get_palette_color(voxel.material);
+        vox.add_voxel(
+            voxel.coord.x,
+            max_y - voxel.coord.y,
+            voxel.coord.z - min_z,
+            color.into(),
+        );
+    }
 }
 
 pub fn export_voxels(

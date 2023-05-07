@@ -1,7 +1,8 @@
 use crate::{
     map::Coords,
-    palette::{DefaultMaterials, Material, Palette},
+    palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
+    voxel::{CollectVoxels, Voxel},
 };
 use dfhack_remote::{FlowInfo, FlowType};
 use itertools::Itertools;
@@ -9,25 +10,12 @@ use rand::Rng;
 
 pub struct Flow {
     pub info: FlowInfo,
+    pub material: Material,
 }
 
 impl Flow {
     pub fn new(info: FlowInfo) -> Self {
-        Self { info }
-    }
-
-    pub fn coords(&self) -> Coords {
-        self.info.pos.get_or_default().into()
-    }
-
-    pub fn shape(&self) -> Box3D<3, bool> {
-        shape::box_from_fn(|_, _, _| {
-            rand::thread_rng().gen_ratio(self.info.density().abs().min(100).max(0) as u32, 100)
-        })
-    }
-
-    pub fn collect_voxels(&self, palette: &Palette) -> Vec<(Coords, u8)> {
-        let material = match self.info.type_() {
+        let material = match info.type_() {
             FlowType::Mist | FlowType::SeaFoam | FlowType::Steam => {
                 Material::Default(DefaultMaterials::Mist)
             }
@@ -42,9 +30,24 @@ impl Flow {
             | FlowType::MaterialDust
             | FlowType::MaterialGas
             | FlowType::MaterialVapor
-            | FlowType::Web => Material::Generic(self.info.material.get_or_default().to_owned()),
+            | FlowType::Web => Material::Generic(info.material.get_or_default().to_owned()),
         };
+        Self { info, material }
+    }
 
+    pub fn coords(&self) -> Coords {
+        self.info.pos.get_or_default().into()
+    }
+
+    pub fn shape(&self) -> Box3D<3, bool> {
+        shape::box_from_fn(|_, _, _| {
+            rand::thread_rng().gen_ratio(self.info.density().abs().min(100).max(0) as u32, 200)
+        })
+    }
+}
+
+impl CollectVoxels for Flow {
+    fn collect_voxels<'a>(&'a self, _map: &crate::map::Map) -> Vec<Voxel<'a>> {
         let coords = self.coords();
         let shape = self.shape();
         (0_usize..3_usize)
@@ -66,7 +69,7 @@ impl Flow {
                     coords.z * 3 + local_z as i32,
                 )
             })
-            .map(|coords| (coords, material.pick_color(&palette.colors)))
+            .map(|coords| Voxel::new(coords, &self.material))
             .collect_vec()
     }
 }

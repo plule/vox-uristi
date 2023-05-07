@@ -2,9 +2,10 @@ use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
     map::{Coords, IsSomeAnd, Map},
-    palette::{Material, Palette},
+    palette::Material,
     shape::{self, Box3D, Rotating},
     tile::Shape,
+    voxel::{CollectVoxels, Voxel},
 };
 use dfhack_remote::BuildingInstance;
 use itertools::Itertools;
@@ -59,7 +60,107 @@ impl Building {
         })
     }
 
-    pub fn collect_voxels(&self, palette: &Palette, map: &Map) -> Vec<(Coords, u8)> {
+    fn window_shape(&self, map: &Map) -> Box3D<3, bool> {
+        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
+            buildings.iter().any(|b| {
+                matches!(
+                    b.building_type,
+                    BuildingType::WindowGem | BuildingType::WindowGlass
+                )
+            }) || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+        });
+        [
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+        ]
+    }
+
+    fn door_shape(&self, map: &Map) -> Box3D<3, bool> {
+        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
+            buildings
+                .iter()
+                .any(|b| matches!(b.building_type, BuildingType::Door))
+                || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
+        });
+        [
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+        ]
+    }
+
+    fn archery_shape(&self, direction: DirectionFlat) -> Box3D<3, bool> {
+        [
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, false, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
+        ]
+        .looking_at(direction)
+    }
+
+    fn bridge_collect_voxels(&self, direction: Option<DirectionFlat>) -> Vec<Voxel> {
+        let mut voxels = Vec::new();
+        let sn = matches!(direction, Some(DirectionFlat::North | DirectionFlat::South));
+        let ew = matches!(direction, Some(DirectionFlat::East | DirectionFlat::West));
+        for x in self.bounding_box.x.clone() {
+            for y in self.bounding_box.y.clone() {
+                let w = sn && x == *self.bounding_box.x.start();
+                let e = sn && x == *self.bounding_box.x.end();
+                let n = ew && y == *self.bounding_box.y.start();
+                let s = ew && y == *self.bounding_box.y.end();
+                let shape = [
+                    shape::slice_empty(),
+                    [[w || n, n, e || n], [w, false, e], [w || s, s, e || s]],
+                    shape::slice_full(),
+                ];
+                let mut shape_voxels =
+                    collect_shape_voxels(&Coords::new(x, y, self.origin.z), &self.material, shape);
+                voxels.append(&mut shape_voxels);
+            }
+        }
+        voxels
+    }
+}
+
+impl CollectVoxels for Building {
+    fn collect_voxels<'a>(&'a self, map: &Map) -> Vec<crate::voxel::Voxel<'a>> {
         let shape = match self.building_type {
             BuildingType::ArcheryTarget { direction } => self.archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
@@ -180,126 +281,19 @@ impl Building {
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
             BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
-                return self.bridge_collect_voxels(palette, direction);
+                return self.bridge_collect_voxels(direction);
             }
             _ => return vec![],
         };
-        collect_shape_voxels(&self.origin, &self.material, palette, shape)
-    }
-
-    fn window_shape(&self, map: &Map) -> Box3D<3, bool> {
-        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
-            buildings.iter().any(|b| {
-                matches!(
-                    b.building_type,
-                    BuildingType::WindowGem | BuildingType::WindowGlass
-                )
-            }) || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
-        });
-        [
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-        ]
-    }
-
-    fn door_shape(&self, map: &Map) -> Box3D<3, bool> {
-        let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
-            buildings
-                .iter()
-                .any(|b| matches!(b.building_type, BuildingType::Door))
-                || tile.some_and(|t| matches!(t.shape, Shape::Fortification | Shape::Full))
-        });
-        [
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-        ]
-    }
-
-    fn archery_shape(&self, direction: DirectionFlat) -> Box3D<3, bool> {
-        [
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, false, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-        ]
-        .looking_at(direction)
-    }
-
-    fn bridge_collect_voxels(
-        &self,
-        palette: &Palette,
-        direction: Option<DirectionFlat>,
-    ) -> Vec<(Coords, u8)> {
-        let mut voxels = Vec::new();
-        let sn = matches!(direction, Some(DirectionFlat::North | DirectionFlat::South));
-        let ew = matches!(direction, Some(DirectionFlat::East | DirectionFlat::West));
-        for x in self.bounding_box.x.clone() {
-            for y in self.bounding_box.y.clone() {
-                let w = sn && x == *self.bounding_box.x.start();
-                let e = sn && x == *self.bounding_box.x.end();
-                let n = ew && y == *self.bounding_box.y.start();
-                let s = ew && y == *self.bounding_box.y.end();
-                let shape = [
-                    shape::slice_empty(),
-                    [[w || n, n, e || n], [w, false, e], [w || s, s, e || s]],
-                    shape::slice_full(),
-                ];
-                let mut shape_voxels = collect_shape_voxels(
-                    &Coords::new(x, y, self.origin.z),
-                    &self.material,
-                    palette,
-                    shape,
-                );
-                voxels.append(&mut shape_voxels);
-            }
-        }
-        voxels
+        collect_shape_voxels(&self.origin, &self.material, shape)
     }
 }
 
-fn collect_shape_voxels(
+fn collect_shape_voxels<'a>(
     coords: &Coords,
-    material: &Material,
-    palette: &Palette,
+    material: &'a Material,
     shape: Box3D<3, bool>,
-) -> Vec<(Coords, u8)> {
+) -> Vec<Voxel<'a>> {
     (0_usize..3_usize)
         .flat_map(move |x| {
             (0_usize..3_usize).flat_map(move |y| {
@@ -319,6 +313,6 @@ fn collect_shape_voxels(
                 coords.z * 3 + local_z as i32,
             )
         })
-        .map(|coords| (coords, material.pick_color(&palette.colors)))
+        .map(|coords| Voxel::new(coords, material))
         .collect_vec()
 }

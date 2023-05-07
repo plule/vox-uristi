@@ -1,8 +1,9 @@
 use crate::{
     map::{Coords, IsSomeAnd, Map},
-    palette::{DefaultMaterials, Material, Palette},
+    palette::{DefaultMaterials, Material, RandomMaterial},
     rfr::BlockTile,
     shape::{self, Box3D, Rotating},
+    voxel::{CollectVoxels, Voxel},
 };
 use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use itertools::Itertools;
@@ -11,7 +12,7 @@ use rand::Rng;
 #[derive(Debug)]
 pub struct Tile {
     pub shape: Shape,
-    pub material: Material,
+    pub material: RandomMaterial,
     pub coords: Coords,
 }
 
@@ -69,7 +70,7 @@ impl Tile {
     pub fn new_water(coords: Coords, level: u8) -> Self {
         Self {
             shape: Shape::Fluid(level),
-            material: Material::Default(DefaultMaterials::Water),
+            material: Material::Default(DefaultMaterials::Water).into(),
             coords,
         }
     }
@@ -77,7 +78,7 @@ impl Tile {
     pub fn new_magma(coords: Coords, level: u8) -> Self {
         Self {
             shape: Shape::Fluid(level),
-            material: Material::Default(DefaultMaterials::Magma),
+            material: Material::Default(DefaultMaterials::Magma).into(),
             coords,
         }
     }
@@ -97,17 +98,20 @@ impl Tile {
         match part {
             TreePart::Trunk => Tile {
                 shape,
-                material: Material::Generic(wood),
+                material: Material::Generic(wood).into(),
                 coords,
             },
             TreePart::Branch => Tile {
                 shape,
-                material: Material::Random(vec![wood, leaves]),
+                material: RandomMaterial::new(vec![
+                    Material::Generic(wood),
+                    Material::Generic(leaves),
+                ]),
                 coords,
             },
             TreePart::Twig => Tile {
                 shape,
-                material: Material::Generic(leaves),
+                material: Material::Generic(leaves).into(),
                 coords,
             },
         }
@@ -257,8 +261,10 @@ impl Tile {
             Shape::Full => shape::box_full(),
         }
     }
+}
 
-    pub fn collect_voxels(&self, palette: &Palette, map: &Map) -> Vec<(Coords, u8)> {
+impl CollectVoxels for Tile {
+    fn collect_voxels(&self, map: &Map) -> Vec<crate::voxel::Voxel> {
         let shape = self.get_shape(map);
         (0_usize..3_usize)
             .flat_map(move |x| {
@@ -279,7 +285,7 @@ impl Tile {
                     self.coords.z * 3 + local_z as i32,
                 )
             })
-            .map(|coords| (coords, self.material.pick_color(&palette.colors)))
+            .map(|coords| Voxel::new(coords, self.material.pick()))
             .collect_vec()
     }
 }
@@ -289,7 +295,7 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
         if tile.hidden() {
             return Some(Tile {
                 shape: Shape::Full,
-                material: Material::Default(DefaultMaterials::Hidden),
+                material: Material::Default(DefaultMaterials::Hidden).into(),
                 coords: tile.coords(),
             });
         }
@@ -341,14 +347,14 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
                 return Some(Tile {
                     coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
-                    material: Material::Default(DefaultMaterials::DarkGrass),
+                    material: Material::Default(DefaultMaterials::DarkGrass).into(),
                 })
             }
             TiletypeMaterial::GRASS_LIGHT => {
                 return Some(Tile {
                     coords: tile.coords(),
                     shape: Shape::Floor { smooth: false },
-                    material: Material::Default(DefaultMaterials::LightGrass),
+                    material: Material::Default(DefaultMaterials::LightGrass).into(),
                 })
             }
             _ => {}
@@ -389,7 +395,7 @@ impl<'a> From<&'a BlockTile<'a>> for Option<Tile> {
             return Some(Tile {
                 coords: tile.coords(),
                 shape,
-                material: Material::Generic(tile.material().clone()),
+                material: Material::Generic(tile.material().clone()).into(),
             });
         }
 

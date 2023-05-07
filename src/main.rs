@@ -14,6 +14,7 @@ mod rfr;
 mod shape;
 mod tile;
 mod update;
+mod voxel;
 use app::App;
 use eframe::egui;
 
