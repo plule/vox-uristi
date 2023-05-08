@@ -1,9 +1,9 @@
 use crate::{
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     map::{Coords, Map},
-    palette::{ConsoleColor, Material},
+    palette::{DefaultMaterials, Material},
     rfr::{BlockTile, GetTiming},
-    shape::{self, Box3D},
+    shape::{self, slice_empty, Box3D},
     tile::TileKind,
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
 };
@@ -15,7 +15,7 @@ pub struct PlantTile {
     pub plant_index: i32,
     pub part: PlantPart,
     pub alive: bool,
-    pub wood_material: Material,
+    pub structure_material: Material,
     pub growth_materials: Vec<Material>,
     pub origin: Coords,
 }
@@ -24,6 +24,7 @@ pub struct PlantTile {
 pub enum PlantPart {
     Root,
     Sapling,
+    Shrub,
     Trunk,
     HeavyBranch {
         connectivity: NeighbouringFlat<bool>,
@@ -78,6 +79,7 @@ impl PlantTile {
             (TiletypeMaterial::MUSHROOM, _, _) => PlantPart::Cap,
             (_, TiletypeShape::SAPLING, _) => PlantPart::Sapling,
             (_, TiletypeShape::TWIG, _) => PlantPart::Twig,
+            (_, TiletypeShape::SHRUB, _) => PlantPart::Shrub,
             (_, TiletypeShape::BRANCH, "--------") => PlantPart::LightBranch,
             (_, TiletypeShape::BRANCH, direction) => PlantPart::HeavyBranch {
                 connectivity: connectivity_from_direction_string(direction),
@@ -88,29 +90,39 @@ impl PlantTile {
             tile_type.special(),
             TiletypeSpecial::DEAD | TiletypeSpecial::SMOOTH_DEAD
         );
-        let wood_material = Material::Generic(MatPair {
-            mat_type: Some(420),
-            mat_index: Some(plant_index),
-            ..Default::default()
-        });
+        // The "structure material" for plants looks like it's always an ugly default brown.
+        // For tree, in mat_type 420 is generally the wood, which is nicer.
+        // For other plants, use the hard-coded grass one.
+        let structure_material = match part {
+            PlantPart::Root
+            | PlantPart::HeavyBranch { .. }
+            | PlantPart::LightBranch
+            | PlantPart::Trunk => Material::Generic(MatPair {
+                mat_type: Some(420),
+                mat_index: Some(plant_index),
+                ..Default::default()
+            }),
+            _ => Material::Default(if alive {
+                DefaultMaterials::LightGrass
+            } else {
+                DefaultMaterials::DeadGrass
+            }),
+        };
+
         let origin = tile.tree_origin();
         let mut ret = Self {
             plant_index,
-            wood_material,
+            structure_material,
             part,
             alive,
             origin,
             growth_materials: vec![],
         };
-        ret.growth_materials = ret
-            .growth_colors(raws, year_tick)
-            .into_iter()
-            .map(Material::Console)
-            .collect();
+        ret.growth_materials = ret.growth_colors(raws, year_tick).into_iter().collect();
         ret
     }
 
-    pub fn growth_colors(&self, raws: &PlantRawList, year_tick: i32) -> Vec<ConsoleColor> {
+    pub fn growth_colors(&self, raws: &PlantRawList, year_tick: i32) -> Vec<Material> {
         if let Some(plant_raw) = raws.plant_raws.get(self.plant_index as usize) {
             plant_raw
                 .growths
@@ -121,19 +133,14 @@ impl PlantTile {
                             PlantPart::Cap => growth.cap(),
                             PlantPart::Root => growth.roots(),
                             PlantPart::Sapling => growth.sapling(),
+                            PlantPart::Shrub => true,
                             PlantPart::Trunk => growth.trunk(),
                             PlantPart::HeavyBranch { .. } => growth.heavy_branches(),
                             PlantPart::LightBranch => growth.light_branches(),
                             PlantPart::Twig => growth.twigs(),
                         }
                 })
-                .flat_map(|growth| {
-                    growth
-                        .prints
-                        .iter()
-                        .filter(|print| print.timing().contains(&year_tick))
-                        .map(|print| print.color().into())
-                })
+                .map(|growth| Material::Generic(growth.mat.clone().unwrap_or_default()))
                 .collect()
         } else {
             vec![]
@@ -145,9 +152,9 @@ impl PlantTile {
         let mut voxels = voxels_from_uniform_shape(
             self.structure_shape(coords, map),
             *coords,
-            &self.wood_material,
+            &self.structure_material,
         );
-        if !self.growth_materials.is_empty() {
+        if self.alive && !self.growth_materials.is_empty() {
             let growth = self.growth_shape().map(|slice| {
                 slice.map(|col| {
                     col.map(|t| {
@@ -204,12 +211,8 @@ impl PlantTile {
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                 ],
             ],
-            PlantPart::Sapling => [
-                [
-                    [false, false, false],
-                    [false, r.gen_ratio(1, 5), false],
-                    [false, false, false],
-                ],
+            PlantPart::Sapling | PlantPart::Shrub => [
+                slice_empty(),
                 [
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
@@ -224,7 +227,8 @@ impl PlantTile {
         let mut r = rand::thread_rng();
         // The horror
         match &self.part {
-            PlantPart::Root | PlantPart::Trunk | PlantPart::Cap => [
+            PlantPart::Trunk | PlantPart::Root => shape::box_full(),
+            PlantPart::Cap => [
                 [
                     [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
                     [true, true, true],
@@ -241,7 +245,15 @@ impl PlantTile {
                     [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
                 ],
             ],
-            PlantPart::Sapling => shape::box_from_levels([[1, 1, 1], [1, 2, 1], [1, 1, 1]]),
+            PlantPart::Sapling | PlantPart::Shrub => [
+                slice_empty(),
+                [
+                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
+                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
+                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
+                ],
+                shape::slice_full(),
+            ],
             PlantPart::HeavyBranch { connectivity: d } => {
                 let c = map.neighbouring(*coords, |tile, _| {
                     if let Some(tile) = tile {

@@ -47,23 +47,34 @@ impl Month {
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum MonthChoice {
+pub enum TimeOfTheYear {
     Current,
     Manual(Month),
 }
 
-impl Display for MonthChoice {
+impl Display for TimeOfTheYear {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MonthChoice::Current => f.write_str("Current"),
-            MonthChoice::Manual(month) => month.fmt(f),
+            TimeOfTheYear::Current => f.write_str("Current"),
+            TimeOfTheYear::Manual(month) => month.fmt(f),
         }
     }
 }
 
-impl Default for MonthChoice {
+impl Default for TimeOfTheYear {
     fn default() -> Self {
         Self::Current
+    }
+}
+
+impl Month {
+    pub fn color(&self) -> egui::Color32 {
+        match self {
+            Month::Granite | Month::Slate | Month::Felsite => egui::Color32::GREEN,
+            Month::Hematite | Month::Malachite | Month::Galena => egui::Color32::YELLOW,
+            Month::Limestone | Month::Sandstone | Month::Timber => egui::Color32::RED,
+            Month::Moonstone | Month::Opal | Month::Obsidian => egui::Color32::BLUE,
+        }
     }
 }
 
@@ -72,7 +83,7 @@ impl Default for MonthChoice {
 pub struct App {
     low_elevation: i32,
     high_elevation: i32,
-    month: MonthChoice,
+    month: TimeOfTheYear,
 
     #[serde(skip)]
     error: Option<String>,
@@ -170,15 +181,21 @@ impl App {
                     {
                         self.high_elevation = self.high_elevation.max(self.low_elevation);
                     }
-                    egui::ComboBox::from_label("Time of the year")
+                    let current_tick = match self.month {
+                        TimeOfTheYear::Current => 0, // todo
+                        TimeOfTheYear::Manual(month) => month.year_tick(),
+                    };
+                    egui::ComboBox::from_label(format!("Time of the year: {}", current_tick))
                         .selected_text(format!("{}", self.month))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.month, MonthChoice::Current, "Current");
+                            ui.selectable_value(&mut self.month, TimeOfTheYear::Current, "Current");
                             for month in Month::iter() {
+                                let text =
+                                    egui::RichText::new(format!("{}", month)).color(month.color());
                                 ui.selectable_value(
                                     &mut self.month,
-                                    MonthChoice::Manual(month),
-                                    format!("{}", month),
+                                    TimeOfTheYear::Manual(month),
+                                    text,
                                 );
                             }
                         });
@@ -208,7 +225,7 @@ impl App {
                                     self.progress =
                                         Some((Progress::Connecting, progress_rx, cancel_tx));
                                     let tick = match self.month {
-                                        MonthChoice::Current => {
+                                        TimeOfTheYear::Current => {
                                             if let Ok(map) =
                                                 df.remote_fortress_reader().get_world_map()
                                             {
@@ -217,7 +234,7 @@ impl App {
                                                 0
                                             }
                                         }
-                                        MonthChoice::Manual(month) => month.year_tick(),
+                                        TimeOfTheYear::Manual(month) => month.year_tick(),
                                     };
                                     thread::spawn(move || {
                                         export_voxels(
@@ -322,7 +339,7 @@ impl Default for App {
         Self {
             low_elevation: 100,
             high_elevation: 110,
-            month: MonthChoice::Current,
+            month: TimeOfTheYear::Current,
             error: None,
             progress: None,
             exported_path: None,

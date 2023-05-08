@@ -83,7 +83,7 @@ impl NormalTile {
                 let r = !smooth;
                 [
                     shape::slice_empty(),
-                    shape::slice_from_fn(|_,_| r && rng.gen()),
+                    shape::slice_from_fn(|_,_| r && rng.gen_bool(1.0 / 7.0)),
                     shape::slice_full(),
                 ]
             }
@@ -210,13 +210,18 @@ impl Tile {
                     Material::Default(DefaultMaterials::DarkGrass),
                 ));
             }
-            TiletypeMaterial::GRASS_LIGHT
-            | TiletypeMaterial::GRASS_DEAD
-            | TiletypeMaterial::GRASS_DRY => {
+            TiletypeMaterial::GRASS_LIGHT => {
                 return Some(Tile::new_normal(
                     tile.coords(),
                     Shape::Floor { smooth: false },
                     Material::Default(DefaultMaterials::LightGrass),
+                ));
+            }
+            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
+                return Some(Tile::new_normal(
+                    tile.coords(),
+                    Shape::Floor { smooth: false },
+                    Material::Default(DefaultMaterials::DeadGrass),
                 ));
             }
             _ => {}

@@ -31,6 +31,7 @@ pub enum DefaultMaterials {
     Miasma,
     DarkGrass,
     LightGrass,
+    DeadGrass,
 }
 
 #[derive(Debug, Clone, Copy, FromPrimitive, Hash, PartialEq, Eq)]
@@ -117,6 +118,7 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::Miasma => (208, 89, 255, 64),
             DefaultMaterials::DarkGrass => (0, 102, 0, 255),
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
+            DefaultMaterials::DeadGrass => (102, 102, 0, 255),
         }
     }
 }
