@@ -22,7 +22,7 @@ pub struct Cancel;
 
 pub fn try_export_voxels(
     client: &mut dfhack_remote::Client,
-    elevation_range: Range<i32>,
+    z_range: Range<i32>,
     yeah_tick: i32,
     path: PathBuf,
     progress_tx: Sender<Progress>,
@@ -36,9 +36,6 @@ pub fn try_export_voxels(
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let map_info = client.remote_fortress_reader().get_map_info()?;
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
-
-    let ground_z = map_info.block_size_z() + map_info.block_pos_z();
-    let z_range = (elevation_range.start + ground_z)..(elevation_range.end + ground_z);
 
     let block_list_iterator =
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, z_range.clone())?;

@@ -252,8 +252,8 @@ impl Default for App {
             })
             .unwrap_or_default();
         Self {
-            low_elevation: 0,
-            high_elevation: 10,
+            low_elevation: 100,
+            high_elevation: 110,
             time: TimeOfTheYear::Tick(time),
             error: None,
             progress: None,
@@ -305,9 +305,7 @@ fn elevation_picker(
             .button("☉")
             .on_hover_text("Set the elevation from the current view.");
         if button.clicked() {
-            let map_info = df.remote_fortress_reader().get_map_info()?;
-            let ground_z = map_info.block_size_z() + map_info.block_pos_z();
-            *elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z() - ground_z;
+            *elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z();
         }
         let mut resp = ui
             .add(DragValue::new(elevation).clamp_range(0..=300))
