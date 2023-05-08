@@ -37,8 +37,11 @@ pub fn try_export_voxels(
     let map_info = client.remote_fortress_reader().get_map_info()?;
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
 
+    let ground_z = map_info.block_size_z() + map_info.block_pos_z();
+    let z_range = (elevation_range.start + ground_z)..(elevation_range.end + ground_z);
+
     let block_list_iterator =
-        rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, elevation_range.clone())?;
+        rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, z_range.clone())?;
     let (block_list_count, _) = block_list_iterator.size_hint();
 
     let mut map = Map::default();
@@ -68,7 +71,7 @@ pub fn try_export_voxels(
     let mut palette = Palette::default();
 
     let max_y = map_info.block_size_y() * 16 * 3;
-    let min_z = elevation_range.start;
+    let min_z = z_range.start;
 
     for (progress, tile) in map.tiles.values().enumerate() {
         if cancel_rx.try_iter().next().is_some() {

@@ -364,10 +364,6 @@ impl eframe::App for App {
     }
 }
 
-fn try_get_current_elevation(df: &mut dfhack_remote::Client) -> Result<i32> {
-    Ok(df.remote_fortress_reader().get_view_info()?.view_pos_z())
-}
-
 fn elevation_picker(
     ui: &mut Ui,
     text: &str,
@@ -380,11 +376,13 @@ fn elevation_picker(
             .button("☉")
             .on_hover_text("Set the elevation from the current view.");
         if button.clicked() {
-            *elevation = try_get_current_elevation(df)?;
+            let map_info = df.remote_fortress_reader().get_map_info()?;
+            let ground_z = map_info.block_size_z() + map_info.block_pos_z();
+            *elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z() - ground_z;
         }
         let mut resp = ui
             .add(DragValue::new(elevation).clamp_range(0..=300))
-            .on_hover_text("Defines the altitude range that will be exported.");
+            .on_hover_text("Defines the elevation range that will be exported.");
         if button.clicked() {
             resp.mark_changed();
         }

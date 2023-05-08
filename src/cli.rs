@@ -1,4 +1,4 @@
-use crate::{export, map::Coords, rfr, tile_plant::PlantTile, update};
+use crate::{export, map::Coords, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;
@@ -17,9 +17,9 @@ pub struct Cli {
 pub enum Command {
     /// Export the map in the .vox folder
     Export {
-        /// Lower elevation bound to export
+        /// Lower point to export
         elevation_low: i32,
-        /// Higher elevation bound to export
+        /// Higher point to export
         elevation_high: i32,
         /// Destination file
         destination: PathBuf,
