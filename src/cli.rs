@@ -1,10 +1,11 @@
-use crate::{export, map::Coords, rfr, update};
+use crate::{calendar::Month, export, map::Coords, rfr, update};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;
 use indicatif::{ProgressBar, ProgressStyle};
 use protobuf::MessageDyn;
 use std::{path::PathBuf, thread};
+use strum::IntoEnumIterator;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -22,6 +23,17 @@ pub enum Command {
         /// Higher point to export
         elevation_high: i32,
         /// Destination file
+        destination: PathBuf,
+        /// Season for export
+        #[arg(short, long)]
+        month: Option<Month>,
+    },
+    ExportYear {
+        /// Lower point to export
+        elevation_low: i32,
+        /// Higher point to export
+        elevation_high: i32,
+        /// Destination folder
         destination: PathBuf,
     },
     /// Debug the tile under the cursor
@@ -44,14 +56,25 @@ pub fn run_cli_command(command: Command) -> Result<()> {
             elevation_low,
             elevation_high,
             destination,
-        } => export(elevation_low, elevation_high, destination),
+            month,
+        } => export(elevation_low, elevation_high, destination, month),
+        Command::ExportYear {
+            elevation_low,
+            elevation_high,
+            destination,
+        } => export_year(elevation_low, elevation_high, destination),
         Command::DumpLists { destination } => dump_lists(destination),
         Command::Probe { destination } => probe(destination),
         Command::CheckUpdate => check_update(),
     }
 }
 
-fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Result<()> {
+fn export(
+    elevation_low: i32,
+    elevation_high: i32,
+    destination: PathBuf,
+    month: Option<Month>,
+) -> Result<()> {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}]")
@@ -59,7 +82,10 @@ fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Resu
             .progress_chars("#>-"),
     );
     let mut df = dfhack_remote::connect()?;
-    let year_tick = df.remote_fortress_reader().get_world_map()?.cur_year_tick();
+    let year_tick = match month {
+        Some(month) => month.year_tick(),
+        None => df.remote_fortress_reader().get_world_map()?.cur_year_tick(),
+    };
     let range = elevation_low..elevation_high + 1;
     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
     let (_cancel_tx, cancel_rx) = std::sync::mpsc::channel();
@@ -108,6 +134,15 @@ fn export(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Resu
         }
     }
     task.join().unwrap();
+    Ok(())
+}
+
+fn export_year(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Result<()> {
+    for (index, month) in Month::iter().enumerate() {
+        let mut destination = destination.clone();
+        destination.push(format!("{:02}-{}.vox", index + 1, month));
+        export(elevation_low, elevation_high, destination, Some(month))?;
+    }
     Ok(())
 }
 

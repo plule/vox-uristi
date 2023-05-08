@@ -1,8 +1,9 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 mod app;
 mod building;
 mod building_type;
+mod calendar;
 #[cfg(feature = "cli")]
 mod cli;
 mod direction;
