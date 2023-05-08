@@ -241,14 +241,17 @@ impl App {
         if let Some(path) = &self.exported_path {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
+                    if ui.button("🗁 Show in explorer").clicked() {
+                        if let Err(err) = opener::reveal(path) {
+                            self.error = Some(err.to_string());
+                        }
+                    }
+                    ui.label(format!(
+                        "'{}' exported",
+                        path.file_name().unwrap_or_default().to_string_lossy()
+                    ));
                     ui.add_space(ui.available_width());
                 });
-                ui.label("Fortress Exported");
-                if let Some(parent) = path.parent() {
-                    if ui.button("🗁 Open Folder").clicked() {
-                        let _ = open::that(parent);
-                    }
-                }
             });
         }
 
