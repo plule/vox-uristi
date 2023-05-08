@@ -252,8 +252,8 @@ impl Default for App {
             })
             .unwrap_or_default();
         Self {
-            low_elevation: 100,
-            high_elevation: 110,
+            low_elevation: 0,
+            high_elevation: 10,
             time: TimeOfTheYear::Tick(time),
             error: None,
             progress: None,
