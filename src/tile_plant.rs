@@ -2,7 +2,7 @@ use crate::{
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     map::{Coords, Map},
     palette::{DefaultMaterials, Material},
-    rfr::{BlockTile, GetTiming},
+    rfr::{BlockTile, ConsoleColor, GetTiming},
     shape::{self, slice_empty, Box3D},
     tile::TileKind,
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
@@ -118,11 +118,11 @@ impl PlantTile {
             origin,
             growth_materials: vec![],
         };
-        ret.growth_materials = ret.growth_colors(raws, year_tick).into_iter().collect();
+        ret.growth_materials = ret.growth_materials(raws, year_tick).into_iter().collect();
         ret
     }
 
-    pub fn growth_colors(&self, raws: &PlantRawList, year_tick: i32) -> Vec<Material> {
+    pub fn growth_materials(&self, raws: &PlantRawList, year_tick: i32) -> Vec<Material> {
         if let Some(plant_raw) = raws.plant_raws.get(self.plant_index as usize) {
             plant_raw
                 .growths
@@ -140,7 +140,25 @@ impl PlantTile {
                             PlantPart::Twig => growth.twigs(),
                         }
                 })
-                .map(|growth| Material::Generic(growth.mat.clone().unwrap_or_default()))
+                .map(|growth| {
+                    let material = growth.mat.clone().unwrap_or_default();
+                    let current_print = growth
+                        .prints
+                        .iter()
+                        .find(|print| print.timing().contains(&year_tick));
+                    let fresh_print = growth
+                        .prints
+                        .iter()
+                        .min_by_key(|print| print.timing_start());
+                    match (current_print, fresh_print) {
+                        (Some(current_print), Some(fresh_print)) => Material::Plant {
+                            material,
+                            source_color: fresh_print.get_console_color(),
+                            dest_color: current_print.get_console_color(),
+                        },
+                        _ => Material::Generic(material),
+                    }
+                })
                 .collect()
         } else {
             vec![]

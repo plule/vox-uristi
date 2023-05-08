@@ -1,9 +1,11 @@
-use crate::{map::Coords};
+use crate::map::Coords;
 use anyhow::Result;
 use dfhack_remote::{
-    BlockList, BlockRequest, ColorDefinition, GrowthPrint, MapBlock, MatPair, Tiletype,
-    TiletypeList, TreeGrowth,
+    core_text_fragment::Color, BlockList, BlockRequest, ColorDefinition, GrowthPrint, MapBlock,
+    MatPair, Tiletype, TiletypeList, TreeGrowth,
 };
+use palette::{named, Srgb};
+use protobuf::Enum;
 use std::{
     fmt::{Debug, Display},
     ops::{Range, RangeInclusive},
@@ -33,7 +35,11 @@ pub struct TileIterator<'a> {
 }
 
 pub trait RGBColor {
-    fn get_rgb(&self) -> (u8, u8, u8);
+    fn rgb(&self) -> palette::Srgb<u8>;
+}
+
+pub trait ConsoleColor {
+    fn get_console_color(&self) -> Color;
 }
 
 impl<'a> TileIterator<'a> {
@@ -218,8 +224,8 @@ impl Display for BlockTile<'_> {
 }
 
 impl RGBColor for ColorDefinition {
-    fn get_rgb(&self) -> (u8, u8, u8) {
-        (
+    fn rgb(&self) -> Srgb<u8> {
+        Srgb::new(
             self.red().try_into().unwrap_or_default(),
             self.green().try_into().unwrap_or_default(),
             self.blue().try_into().unwrap_or_default(),
@@ -260,5 +266,34 @@ impl GetTiming for TreeGrowth {
             self.timing_end()
         };
         start..=end
+    }
+}
+
+impl ConsoleColor for GrowthPrint {
+    fn get_console_color(&self) -> Color {
+        Color::from_i32(self.color()).unwrap_or(Color::COLOR_BLACK)
+    }
+}
+
+impl RGBColor for Color {
+    fn rgb(&self) -> palette::Srgb<u8> {
+        match self {
+            Color::COLOR_BLACK => named::BLACK,
+            Color::COLOR_BLUE => named::BLUE,
+            Color::COLOR_GREEN => named::GREEN,
+            Color::COLOR_CYAN => named::CYAN,
+            Color::COLOR_RED => named::RED,
+            Color::COLOR_MAGENTA => named::DARKMAGENTA,
+            Color::COLOR_BROWN => named::BROWN,
+            Color::COLOR_GREY => named::GRAY,
+            Color::COLOR_DARKGREY => named::DARKGRAY,
+            Color::COLOR_LIGHTBLUE => named::LIGHTBLUE,
+            Color::COLOR_LIGHTGREEN => named::LIGHTGREEN,
+            Color::COLOR_LIGHTCYAN => named::LIGHTCYAN,
+            Color::COLOR_LIGHTRED => named::PINK,
+            Color::COLOR_LIGHTMAGENTA => named::MAGENTA,
+            Color::COLOR_YELLOW => named::YELLOW,
+            Color::COLOR_WHITE => named::WHITE,
+        }
     }
 }

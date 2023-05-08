@@ -1,6 +1,7 @@
 use crate::rfr::RGBColor;
-use dfhack_remote::{MatPair, MaterialDefinition};
+use dfhack_remote::{core_text_fragment::Color, MatPair, MaterialDefinition};
 use num_enum::IntoPrimitive;
+use palette::{named, rgb::Rgb, FromColor, Hsv};
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter};
 use vox_writer::VoxWriter;
@@ -12,6 +13,12 @@ pub enum Material {
     Default(DefaultMaterials),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
+    /// Generic material with a growth console color associated to it
+    Plant {
+        material: MatPair,
+        source_color: Color,
+        dest_color: Color,
+    },
 }
 
 /// The default hard-coded materials
@@ -37,8 +44,8 @@ pub trait RGBAColor {
 
 impl<T: RGBColor> RGBAColor for T {
     fn get_rgba(&self) -> (u8, u8, u8, u8) {
-        let rgb = self.get_rgb();
-        (rgb.0, rgb.1, rgb.2, 255)
+        let rgb = self.rgb();
+        (rgb.red, rgb.green, rgb.blue, 255)
     }
 }
 
@@ -49,10 +56,37 @@ impl Material {
             Material::Generic(matpair) => materials
                 .iter()
                 .find(|m| matpair == m.mat_pair.get_or_default())
-                .map_or((0, 0, 0, 0), |material| {
-                    let rgb = material.state_color.get_rgba();
-                    (rgb.0, rgb.1, rgb.2, 255)
-                }),
+                .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba()),
+            Material::Plant {
+                material,
+                source_color,
+                dest_color,
+            } => {
+                let main_color = materials
+                    .iter()
+                    .find(|m| material == m.mat_pair.get_or_default())
+                    .map_or(named::BLACK, |material| material.state_color.rgb());
+                if source_color == dest_color {
+                    return (main_color.red, main_color.green, main_color.blue, 255);
+                }
+                let mut color = Hsv::from_color(main_color.into_linear::<f32>());
+                let source_color = Hsv::from_color(source_color.rgb().into_linear::<f32>());
+                let dest_color = Hsv::from_color(dest_color.rgb().into_linear::<f32>());
+                // I have no idea what's going on here, I just did my best to replicate what is done in Armok Vision
+                // https://github.com/RosaryMala/armok-vision/blob/3027c785a54d7a8d9a7a9f7f2a10a1815c3bb500/Assets/Scripts/MapGen/DfColor.cs#L37
+                // and the result looks fairly similar to in-game colors.
+                color.hue += dest_color.hue - source_color.hue;
+                if source_color.value > dest_color.value {
+                    color.value *= dest_color.value / source_color.value;
+                } else {
+                    color.value = 1.0
+                        - ((1.0 - color.value)
+                            * ((1.0 - dest_color.value) / (1.0 - source_color.value)));
+                }
+                let color = Rgb::from_color(color);
+                let color: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(color);
+                (color.red, color.green, color.blue, 255)
+            }
         }
     }
 }
