@@ -2,9 +2,9 @@ use crate::{
     export::{export_voxels, Cancel, Progress},
     update::{check_update, UpdateStatus},
 };
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use eframe::{
-    egui::{self, Button, DragValue, ProgressBar, RichText, Ui},
+    egui::{self, Button, DragValue, ProgressBar, Response, RichText, Ui},
     epaint::Vec2,
 };
 use num_enum::IntoPrimitive;
@@ -94,7 +94,7 @@ pub struct App {
     #[serde(skip)]
     update_status: CheckUpdateStatus,
     #[serde(skip)]
-    df: Option<dfhack_remote::Client>,
+    df: Result<dfhack_remote::Client>,
 }
 
 impl App {
@@ -157,106 +157,92 @@ impl App {
             }
             None => {
                 ui.group(|ui| {
-                    ui.label("Pick the elevation range to export");
-                    ui.label("It works best by covering the surface layer.");
-                    ui.horizontal(|ui| {
-                        ui.add_space(ui.available_width());
-                    });
-                    if (ui.add(elevation_picker(
-                        "⏶".to_string(),
-                        &mut self.high_elevation,
-                        &mut self.df,
-                    )))
-                    .changed()
-                    {
-                        self.low_elevation = self.low_elevation.min(self.high_elevation);
-                    }
-                    if ui
-                        .add(elevation_picker(
-                            "⏷".to_string(),
-                            &mut self.low_elevation,
-                            &mut self.df,
-                        ))
-                        .changed()
-                    {
-                        self.high_elevation = self.high_elevation.max(self.low_elevation);
-                    }
-                    let current_tick = match self.month {
-                        TimeOfTheYear::Current => 0, // todo
-                        TimeOfTheYear::Manual(month) => month.year_tick(),
-                    };
-                    egui::ComboBox::from_label(format!("Time of the year: {}", current_tick))
-                        .selected_text(format!("{}", self.month))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.month, TimeOfTheYear::Current, "Current");
-                            for month in Month::iter() {
-                                let text =
-                                    egui::RichText::new(format!("{}", month)).color(month.color());
+                    ui.add(df_client_group(&mut self.df, |ui, df| {
+                        ui.label("Pick the elevation range to export");
+                        ui.label("It works best by covering the surface layer.");
+                        ui.horizontal(|ui| {
+                            ui.add_space(ui.available_width());
+                        });
+                        if elevation_picker(ui, "⏶", &mut self.high_elevation, df)?.changed() {
+                            self.low_elevation = self.low_elevation.min(self.high_elevation);
+                        }
+                        if elevation_picker(ui, "⏷", &mut self.low_elevation, df)?.changed() {
+                            self.high_elevation = self.high_elevation.max(self.low_elevation);
+                        }
+                        let current_tick = match self.month {
+                            TimeOfTheYear::Current => 0, // todo
+                            TimeOfTheYear::Manual(month) => month.year_tick(),
+                        };
+                        egui::ComboBox::from_label(format!("Time of the year: {}", current_tick))
+                            .selected_text(format!("{}", self.month))
+                            .show_ui(ui, |ui| {
                                 ui.selectable_value(
                                     &mut self.month,
-                                    TimeOfTheYear::Manual(month),
-                                    text,
+                                    TimeOfTheYear::Current,
+                                    "Current",
                                 );
-                            }
-                        });
-
-                    ui.separator();
-                    let button = Button::new(RichText::new("💾 Export").heading());
-                    if ui
-                        .add_sized(Vec2::new(ui.available_width(), 40.0), button)
-                        .clicked()
-                    {
-                        self.error = None;
-                        let df = match self.df.take() {
-                            Some(df) => Ok(df),
-                            None => dfhack_remote::connect(),
-                        };
-                        self.df = match df {
-                            Ok(mut df) => {
-                                if let Some(path) = rfd::FileDialog::new()
-                                    .set_title("Model destination")
-                                    .set_file_name(&default_filename(&mut df))
-                                    .add_filter("MagicaVoxel", &["vox"])
-                                    .save_file()
-                                {
-                                    let (progress_tx, progress_rx) = std::sync::mpsc::channel();
-                                    let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
-                                    let range = self.low_elevation..self.high_elevation + 1;
-                                    self.progress =
-                                        Some((Progress::Connecting, progress_rx, cancel_tx));
-                                    let tick = match self.month {
-                                        TimeOfTheYear::Current => {
-                                            if let Ok(map) =
-                                                df.remote_fortress_reader().get_world_map()
-                                            {
-                                                map.cur_year_tick()
-                                            } else {
-                                                0
-                                            }
-                                        }
-                                        TimeOfTheYear::Manual(month) => month.year_tick(),
-                                    };
-                                    thread::spawn(move || {
-                                        export_voxels(
-                                            &mut df,
-                                            range,
-                                            tick,
-                                            path,
-                                            progress_tx,
-                                            cancel_rx,
-                                        );
-                                    });
-                                    None
-                                } else {
-                                    Some(df)
+                                for month in Month::iter() {
+                                    let text = egui::RichText::new(format!("{}", month))
+                                        .color(month.color());
+                                    ui.selectable_value(
+                                        &mut self.month,
+                                        TimeOfTheYear::Manual(month),
+                                        text,
+                                    );
                                 }
-                            }
-                            Err(err) => {
-                                self.error = Some(err.to_string());
-                                None
+                            });
+
+                        ui.separator();
+                        let button = Button::new(RichText::new("💾 Export").heading());
+                        if ui
+                            .add_sized(Vec2::new(ui.available_width(), 40.0), button)
+                            .clicked()
+                        {
+                            self.error = None;
+                            let world_map = df.remote_fortress_reader().get_world_map()?;
+                            let file_name = format!(
+                                "{}_{}.vox",
+                                world_map.name_english(),
+                                world_map.cur_year()
+                            );
+
+                            if let Some(path) = rfd::FileDialog::new()
+                                .set_title("Model destination")
+                                .set_file_name(&file_name)
+                                .add_filter("MagicaVoxel", &["vox"])
+                                .save_file()
+                            {
+                                let (progress_tx, progress_rx) = std::sync::mpsc::channel();
+                                let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
+                                let range = self.low_elevation..self.high_elevation + 1;
+                                self.progress =
+                                    Some((Progress::Connecting, progress_rx, cancel_tx));
+                                let tick = match self.month {
+                                    TimeOfTheYear::Current => {
+                                        if let Ok(map) = df.remote_fortress_reader().get_world_map()
+                                        {
+                                            map.cur_year_tick()
+                                        } else {
+                                            0
+                                        }
+                                    }
+                                    TimeOfTheYear::Manual(month) => month.year_tick(),
+                                };
+                                let mut df = dfhack_remote::connect()?;
+                                thread::spawn(move || {
+                                    export_voxels(
+                                        &mut df,
+                                        range,
+                                        tick,
+                                        path,
+                                        progress_tx,
+                                        cancel_rx,
+                                    );
+                                });
                             }
                         }
-                    }
+                        Ok(())
+                    }));
                 });
             }
         }
@@ -344,7 +330,10 @@ impl Default for App {
             progress: None,
             exported_path: None,
             update_status: CheckUpdateStatus::NotDone,
-            df: None,
+            df: match dfhack_remote::connect() {
+                Ok(df) => Ok(df),
+                Err(err) => Err(anyhow!(err)),
+            },
         }
     }
 }
@@ -378,57 +367,65 @@ impl eframe::App for App {
     }
 }
 
-fn default_filename(df: &mut dfhack_remote::Client) -> String {
-    maybe_default_filename(df).unwrap_or_else(|| "model.vox".to_string())
+fn try_get_current_elevation(df: &mut dfhack_remote::Client) -> Result<i32> {
+    Ok(df.remote_fortress_reader().get_view_info()?.view_pos_z())
 }
 
-fn maybe_default_filename(df: &mut dfhack_remote::Client) -> Option<String> {
-    let world_map = df.remote_fortress_reader().get_world_map().ok()?;
-    Some(format!(
-        "{}_{}.vox",
-        world_map.name_english(),
-        world_map.cur_year()
-    ))
-}
-
-fn try_get_current_elevation(df: &mut Option<dfhack_remote::Client>) -> Result<i32> {
-    let client = if let Some(current_client) = df {
-        current_client
-    } else {
-        let new_client = dfhack_remote::connect()?;
-        *df = Some(new_client);
-        df.as_mut().unwrap()
-    };
-    match client.remote_fortress_reader().get_view_info() {
-        Ok(view) => Ok(view.view_pos_z()),
-        Err(err) => {
-            *df = None;
-            Err(anyhow::Error::from(err))
-        }
-    }
-}
-
-fn elevation_picker<'a>(
-    text: String,
-    elevation: &'a mut i32,
-    df: &'a mut Option<dfhack_remote::Client>,
-) -> impl egui::Widget + 'a {
-    move |ui: &mut Ui| {
-        ui.horizontal(|ui| {
-            ui.label(text);
-            let mut resp = ui.add(DragValue::new(elevation).clamp_range(0..=300));
-            if ui
-                .button("⛶ Current")
-                .on_hover_text("Set the elevation from the current view.")
-                .clicked()
-            {
-                if let Ok(current_elevation) = try_get_current_elevation(df) {
+fn elevation_picker(
+    ui: &mut Ui,
+    text: &str,
+    elevation: &mut i32,
+    df: &mut dfhack_remote::Client,
+) -> Result<Response> {
+    ui.horizontal(|ui| {
+        ui.label(text);
+        let mut resp = ui.add(DragValue::new(elevation).clamp_range(0..=300));
+        if ui
+            .button("⛶ Current")
+            .on_hover_text("Set the elevation from the current view.")
+            .clicked()
+        {
+            match try_get_current_elevation(df) {
+                Ok(current_elevation) => {
                     resp.mark_changed();
                     *elevation = current_elevation;
                 }
+                Err(err) => return Err(err),
             }
-            resp
-        })
-        .inner
+        }
+        Ok(resp)
+    })
+    .inner
+}
+
+fn df_client_group<'a, R>(
+    df: &'a mut Result<dfhack_remote::Client>,
+    add_contents: impl FnOnce(&mut Ui, &mut dfhack_remote::Client) -> Result<R> + 'a,
+) -> impl egui::Widget + 'a {
+    move |ui: &mut Ui| {
+        let mut new_df = None;
+        let response = match df {
+            Ok(df) => {
+                ui.add_enabled_ui(true, |ui| {
+                    if let Err(err) = add_contents(ui, df) {
+                        new_df = Some(Err(err));
+                    }
+                })
+                .response
+            }
+            Err(err) => ui.vertical(|ui| {
+                ui.label("Failed to communicate with Dwarf Fortress. Is it running with DFHack installed?");
+                ui.label(err.to_string());
+                if ui.button("Reconnect").clicked() {
+                    new_df = Some(dfhack_remote::connect().context("Connecting to DFHack"));
+                }
+            }).response,
+        };
+
+        if let Some(new_df) = new_df {
+            *df = new_df;
+        }
+
+        response
     }
 }
