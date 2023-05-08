@@ -1,7 +1,6 @@
 use crate::rfr::RGBColor;
 use dfhack_remote::{MatPair, MaterialDefinition};
-use num_enum::{FromPrimitive, IntoPrimitive};
-use palette::{named, Srgb};
+use num_enum::IntoPrimitive;
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter};
 use vox_writer::VoxWriter;
@@ -11,8 +10,6 @@ use vox_writer::VoxWriter;
 pub enum Material {
     /// Default colors for which Dwarf Fortress does not give indication (water, magma, smoke...)
     Default(DefaultMaterials),
-    /// 16 colors defined by Dwarf Fortress for console colors
-    Console(ConsoleColor),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
 }
@@ -32,51 +29,6 @@ pub enum DefaultMaterials {
     DarkGrass,
     LightGrass,
     DeadGrass,
-}
-
-#[derive(Debug, Clone, Copy, FromPrimitive, Hash, PartialEq, Eq)]
-#[repr(i32)]
-pub enum ConsoleColor {
-    #[default]
-    Black,
-    Blue,
-    Green,
-    Cyan,
-    Red,
-    Magenta,
-    Brown,
-    Grey,
-    DarkGrey,
-    LightBlue,
-    LightGreen,
-    LightCyan,
-    LightRed,
-    LightMagenta,
-    Yellow,
-    White,
-}
-
-impl From<ConsoleColor> for palette::Srgb<u8> {
-    fn from(value: ConsoleColor) -> Self {
-        match value {
-            ConsoleColor::Black => named::BLACK,
-            ConsoleColor::Blue => named::BLUE,
-            ConsoleColor::Green => named::GREEN,
-            ConsoleColor::Cyan => named::CYAN,
-            ConsoleColor::Red => named::DARKRED,
-            ConsoleColor::Magenta => named::DARKMAGENTA,
-            ConsoleColor::Brown => named::BROWN,
-            ConsoleColor::Grey => named::GRAY,
-            ConsoleColor::DarkGrey => named::DARKGRAY,
-            ConsoleColor::LightBlue => named::LIGHTBLUE,
-            ConsoleColor::LightGreen => named::LIGHTGREEN,
-            ConsoleColor::LightCyan => named::LIGHTCYAN,
-            ConsoleColor::LightRed => named::RED,
-            ConsoleColor::LightMagenta => named::MAGENTA,
-            ConsoleColor::Yellow => named::YELLOW,
-            ConsoleColor::White => named::WHITE,
-        }
-    }
 }
 
 pub trait RGBAColor {
@@ -101,7 +53,6 @@ impl Material {
                     let rgb = material.state_color.get_rgba();
                     (rgb.0, rgb.1, rgb.2, 255)
                 }),
-            Material::Console(console_color) => console_color.get_rgba(),
         }
     }
 }
@@ -120,13 +71,6 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
             DefaultMaterials::DeadGrass => (102, 102, 0, 255),
         }
-    }
-}
-
-impl RGBColor for ConsoleColor {
-    fn get_rgb(&self) -> (u8, u8, u8) {
-        let color = Srgb::<u8>::from(*self);
-        (color.red, color.green, color.blue)
     }
 }
 
