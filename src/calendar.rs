@@ -1,4 +1,3 @@
-use clap::ValueEnum;
 use eframe::egui;
 use itertools::Itertools;
 use num_enum::IntoPrimitive;
@@ -6,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(
-    Clone, Copy, Display, IntoPrimitive, Serialize, Deserialize, PartialEq, EnumIter, ValueEnum,
-)]
+#[derive(Clone, Copy, Display, IntoPrimitive, Serialize, Deserialize, PartialEq, EnumIter)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 #[repr(i32)]
 pub enum Month {
     Granite,
