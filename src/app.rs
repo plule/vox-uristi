@@ -12,6 +12,7 @@ use num_enum::IntoPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
+    path::PathBuf,
     sync::mpsc::{Receiver, Sender},
     thread,
 };
@@ -108,7 +109,7 @@ pub struct App {
     #[serde(skip)]
     progress: Option<(Progress, Receiver<Progress>, Sender<Cancel>)>,
     #[serde(skip)]
-    exported_path: Option<String>,
+    exported_path: Option<PathBuf>,
     #[serde(skip)]
     update_status: CheckUpdateStatus,
     #[serde(skip)]
@@ -162,7 +163,7 @@ impl App {
                         ui.spinner();
                     }
                     Progress::Done { path } => {
-                        self.exported_path = Some(path.to_string_lossy().to_string());
+                        self.exported_path = Some(path.to_path_buf());
                         self.progress = None;
                     }
                     Progress::Error(err) => {
@@ -243,12 +244,11 @@ impl App {
                     ui.add_space(ui.available_width());
                 });
                 ui.label("Fortress Exported");
-                ui.horizontal(|ui| {
-                    if ui.button("📋").on_hover_text("Click to copy").clicked() {
-                        ui.output_mut(|o| o.copied_text = path.to_string());
+                if let Some(parent) = path.parent() {
+                    if ui.button("🗁 Open Folder").clicked() {
+                        let _ = open::that(parent);
                     }
-                    ui.label(path);
-                });
+                }
             });
         }
 
