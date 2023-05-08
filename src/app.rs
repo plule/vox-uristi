@@ -7,6 +7,7 @@ use eframe::{
     egui::{self, Button, DragValue, ProgressBar, Response, RichText, Ui},
     epaint::Vec2,
 };
+use itertools::Itertools;
 use num_enum::IntoPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -48,22 +49,38 @@ impl Month {
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TimeOfTheYear {
-    Current,
-    Manual(Month),
+    Tick(i32),
+    Month(Month),
+}
+
+impl TimeOfTheYear {
+    pub fn ticks(&self) -> i32 {
+        match self {
+            TimeOfTheYear::Tick(tick) => *tick,
+            TimeOfTheYear::Month(month) => month.year_tick(),
+        }
+    }
 }
 
 impl Display for TimeOfTheYear {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TimeOfTheYear::Current => f.write_str("Current"),
-            TimeOfTheYear::Manual(month) => month.fmt(f),
+            TimeOfTheYear::Tick(tick) => {
+                for (month, next_month) in Month::iter().circular_tuple_windows() {
+                    if (month.year_tick()..=next_month.year_tick()).contains(tick) {
+                        return f.write_fmt(format_args!("~{}", month));
+                    }
+                }
+                f.write_str("?")
+            }
+            TimeOfTheYear::Month(month) => month.fmt(f),
         }
     }
 }
 
 impl Default for TimeOfTheYear {
     fn default() -> Self {
-        Self::Current
+        Self::Tick(0)
     }
 }
 
@@ -83,8 +100,9 @@ impl Month {
 pub struct App {
     low_elevation: i32,
     high_elevation: i32,
-    month: TimeOfTheYear,
 
+    #[serde(skip)]
+    time: TimeOfTheYear,
     #[serde(skip)]
     error: Option<String>,
     #[serde(skip)]
@@ -165,33 +183,12 @@ impl App {
                         });
                         if elevation_picker(ui, "⏶", &mut self.high_elevation, df)?.changed() {
                             self.low_elevation = self.low_elevation.min(self.high_elevation);
-                        }
+                        };
                         if elevation_picker(ui, "⏷", &mut self.low_elevation, df)?.changed() {
                             self.high_elevation = self.high_elevation.max(self.low_elevation);
                         }
-                        let current_tick = match self.month {
-                            TimeOfTheYear::Current => 0, // todo
-                            TimeOfTheYear::Manual(month) => month.year_tick(),
-                        };
-                        egui::ComboBox::from_label(format!("Time of the year: {}", current_tick))
-                            .selected_text(format!("{}", self.month))
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut self.month,
-                                    TimeOfTheYear::Current,
-                                    "Current",
-                                );
-                                for month in Month::iter() {
-                                    let text = egui::RichText::new(format!("{}", month))
-                                        .color(month.color());
-                                    ui.selectable_value(
-                                        &mut self.month,
-                                        TimeOfTheYear::Manual(month),
-                                        text,
-                                    );
-                                }
-                            });
 
+                        time_picker(ui, &mut self.time, df)?;
                         ui.separator();
                         let button = Button::new(RichText::new("💾 Export").heading());
                         if ui
@@ -217,17 +214,7 @@ impl App {
                                 let range = self.low_elevation..self.high_elevation + 1;
                                 self.progress =
                                     Some((Progress::Connecting, progress_rx, cancel_tx));
-                                let tick = match self.month {
-                                    TimeOfTheYear::Current => {
-                                        if let Ok(map) = df.remote_fortress_reader().get_world_map()
-                                        {
-                                            map.cur_year_tick()
-                                        } else {
-                                            0
-                                        }
-                                    }
-                                    TimeOfTheYear::Manual(month) => month.year_tick(),
-                                };
+                                let tick = self.time.ticks();
                                 let mut df = dfhack_remote::connect()?;
                                 thread::spawn(move || {
                                     export_voxels(
@@ -322,18 +309,28 @@ impl App {
 
 impl Default for App {
     fn default() -> Self {
+        let mut df = match dfhack_remote::connect() {
+            Ok(df) => Ok(df),
+            Err(err) => Err(anyhow!(err)),
+        };
+        let time = df
+            .as_mut()
+            .map(|df| {
+                df.remote_fortress_reader()
+                    .get_world_map()
+                    .map(|wm| wm.cur_year_tick())
+                    .unwrap_or_default()
+            })
+            .unwrap_or_default();
         Self {
             low_elevation: 100,
             high_elevation: 110,
-            month: TimeOfTheYear::Current,
+            time: TimeOfTheYear::Tick(time),
             error: None,
             progress: None,
             exported_path: None,
             update_status: CheckUpdateStatus::NotDone,
-            df: match dfhack_remote::connect() {
-                Ok(df) => Ok(df),
-                Err(err) => Err(anyhow!(err)),
-            },
+            df,
         }
     }
 }
@@ -379,21 +376,48 @@ fn elevation_picker(
 ) -> Result<Response> {
     ui.horizontal(|ui| {
         ui.label(text);
-        let mut resp = ui.add(DragValue::new(elevation).clamp_range(0..=300));
-        if ui
-            .button("⛶ Current")
-            .on_hover_text("Set the elevation from the current view.")
-            .clicked()
-        {
-            match try_get_current_elevation(df) {
-                Ok(current_elevation) => {
-                    resp.mark_changed();
-                    *elevation = current_elevation;
-                }
-                Err(err) => return Err(err),
-            }
+        let button = ui
+            .button("☉")
+            .on_hover_text("Set the elevation from the current view.");
+        if button.clicked() {
+            *elevation = try_get_current_elevation(df)?;
+        }
+        let mut resp = ui
+            .add(DragValue::new(elevation).clamp_range(0..=300))
+            .on_hover_text("Defines the altitude range that will be exported.");
+        if button.clicked() {
+            resp.mark_changed();
         }
         Ok(resp)
+    })
+    .inner
+}
+
+fn time_picker(
+    ui: &mut Ui,
+    time: &mut TimeOfTheYear,
+    df: &mut dfhack_remote::Client,
+) -> Result<()> {
+    ui.horizontal(|ui| {
+        ui.label("📆");
+        if ui
+            .button("☉")
+            .on_hover_text("Set the time of the year to the current time.")
+            .clicked()
+        {
+            let world_map = df.remote_fortress_reader().get_world_map()?;
+            *time = TimeOfTheYear::Tick(world_map.cur_year_tick());
+        }
+        egui::ComboBox::from_label("")
+            .selected_text(format!("{}", time))
+            .show_ui(ui, |ui| {
+                for month in Month::iter() {
+                    let text = egui::RichText::new(format!("{}", month)).color(month.color());
+                    ui.selectable_value(time, TimeOfTheYear::Month(month), text);
+                }
+            }).response.on_hover_text("Define the time of the year of the export. This affects the vegetation appearance.");
+
+        Ok(())
     })
     .inner
 }
