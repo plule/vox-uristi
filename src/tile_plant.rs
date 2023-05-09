@@ -1,9 +1,9 @@
 use crate::{
-    direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
+    direction::{DirectionFlat, NeighbouringFlat},
     map::{Coords, Map},
     palette::{DefaultMaterials, Material},
     rfr::{BlockTile, ConsoleColor, GetTiming},
-    shape::{self, slice_empty, Box3D},
+    shape::{self, Box3D},
     tile::TileKind,
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
 };
@@ -195,6 +195,7 @@ impl PlantTile {
         match &self.part {
             PlantPart::Root | PlantPart::Trunk | PlantPart::Cap | PlantPart::HeavyBranch { .. } => {
                 [
+                    shape::slice_empty(),
                     [
                         [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
                         [false, false, false],
@@ -210,9 +211,11 @@ impl PlantTile {
                         [false, false, false],
                         [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
                     ],
+                    shape::slice_empty(),
                 ]
             }
             PlantPart::Twig | PlantPart::LightBranch => [
+                shape::slice_empty(),
                 [
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
@@ -228,9 +231,12 @@ impl PlantTile {
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                 ],
+                shape::slice_empty(),
             ],
             PlantPart::Sapling | PlantPart::Shrub => [
-                slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
                     [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
@@ -245,26 +251,40 @@ impl PlantTile {
         let mut r = rand::thread_rng();
         // The horror
         match &self.part {
-            PlantPart::Trunk | PlantPart::Root => shape::box_full(),
-            PlantPart::Cap => [
+            PlantPart::Trunk | PlantPart::Root | PlantPart::Cap => {
+                let on_floor = *coords == self.origin;
                 [
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                    [true, true, true],
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                ],
-                [
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                    [true, true, true],
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                ],
-                [
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                    [true, true, true],
-                    [r.gen_ratio(1, 3), true, r.gen_ratio(1, 3)],
-                ],
-            ],
+                    [
+                        [false, true, false],
+                        [true, true, true],
+                        [false, true, false],
+                    ],
+                    [
+                        [false, true, false],
+                        [true, true, true],
+                        [false, true, false],
+                    ],
+                    [
+                        [false, true, false],
+                        [true, true, true],
+                        [false, true, false],
+                    ],
+                    [
+                        [false, true, false],
+                        [true, true, true],
+                        [false, true, false],
+                    ],
+                    [
+                        [on_floor, true, on_floor],
+                        [true, true, true],
+                        [on_floor, true, on_floor],
+                    ],
+                ]
+            }
             PlantPart::Sapling | PlantPart::Shrub => [
-                slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
                     [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
                     [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
@@ -272,8 +292,9 @@ impl PlantTile {
                 ],
                 shape::slice_full(),
             ],
-            PlantPart::HeavyBranch { connectivity: d } => {
-                let c = map.neighbouring(*coords, |tile, _| {
+            PlantPart::HeavyBranch { connectivity: from } => {
+                // light branch connections
+                let to = map.neighbouring(*coords, |tile, _| {
                     if let Some(tile) = tile {
                         if let TileKind::Plant(plant) = &tile.kind {
                             if matches!(
@@ -289,38 +310,30 @@ impl PlantTile {
                     }
                     false
                 });
-                let c = Neighbouring {
-                    a: c.a,
-                    b: c.b,
-                    n: c.n || d.n,
-                    e: c.e || d.e,
-                    s: c.s || d.s,
-                    w: c.w || d.w,
-                };
-
-                let a = rand::thread_rng().gen_range(0..=4);
-                let w = rand::thread_rng().gen_range(0..=2);
-                let e = rand::thread_rng().gen_range(0..=2);
-                let s = rand::thread_rng().gen_range(0..=2);
-                let n = rand::thread_rng().gen_range(0..=2);
 
                 #[rustfmt::skip]
                 let shape = [
                     [
-                        [false, c.a && a == 0, false],
-                        [c.a && a == 1, c.a && a == 2, c.a && a == 3],
-                        [false, c.a && a == 4, false],
-                    ],
-                    [
-                        [c.w && w == 0 || c.n && n == 0, c.n && n == 1, c.e && e == 0 || c.n && n == 2],
-                        [c.w && w == 1, true, c.e && e == 1],
-                        [c.w && w == 2 || c.s && s == 0, c.s && s == 1, c.e && e == 2 || c.s && s == 2],
+                        [false, false, false],
+                        [false, to.a, false],
+                        [false, false, false],
                     ],
                     [
                         [false, false, false],
+                        [false, to.a, false],
                         [false, false, false],
-                        [false, false, false]
                     ],
+                    [
+                        [false, to.n | from.n, false],
+                        [to.w | from.w, true, to.e | from.e],
+                        [false, to.s | from.s, false],
+                    ],
+                    [
+                        [false, from.n, false],
+                        [from.w, false, from.e],
+                        [false, from.s, false],
+                    ],
+                    shape::slice_empty(),
                 ];
 
                 shape
@@ -332,7 +345,7 @@ impl PlantTile {
                             if matches!(
                                 plant,
                                 PlantTile {
-                                    part: PlantPart::HeavyBranch { .. },
+                                    part: PlantPart::HeavyBranch { .. } | PlantPart::Twig,
                                     ..
                                 }
                             ) {
@@ -343,35 +356,38 @@ impl PlantTile {
                     false
                 });
 
-                let a = rand::thread_rng().gen_range(0..=8);
-                let w = rand::thread_rng().gen_range(0..=4);
-                let e = rand::thread_rng().gen_range(0..=4);
-                let s = rand::thread_rng().gen_range(0..=4);
-                let n = rand::thread_rng().gen_range(0..=4);
-
                 #[rustfmt::skip]
                 let shape = [
                     [
-                        [false, c.a && a == 0, false],
-                        [c.a && a == 1, c.a && a == 2, c.a && a == 3],
-                        [false, c.a && a == 4, false],
+                        [false, false, false],
+                        [false, c.a, false],
+                        [false, false, false],
                     ],
                     [
-                        [c.w && w == 0 || c.n && n == 0, c.n && n == 1, c.e && e == 0 || c.n && n == 2],
-                        [c.w && w == 1, false, c.e && e == 1],
-                        [c.w && w == 2 || c.s && s == 0, c.s && s == 1, c.e && e == 2 || c.s && s == 2],
+                        [false, c.n, false],
+                        [c.w, true, c.e],
+                        [false, c.s, false],
                     ],
                     [
                         [false, false, false],
+                        [false, c.b, false],
                         [false, false, false],
+                    ],
+                    [
+                        [false, false, false],
+                        [false, c.b, false],
+                        [false, false, false],
+                    ],
+                    [
+                        [false, false, false],
+                        [false, c.b, false],
                         [false, false, false],
                     ],
                 ];
                 shape
             }
             PlantPart::Twig => {
-                shape::box_const(false)
-                /*let c = map.neighbouring(*coords, |tile, _| {
+                let c = map.neighbouring(*coords, |tile, _| {
                     if let Some(tile) = tile {
                         if let TileKind::Plant(plant) = &tile.kind {
                             return plant.part == PlantPart::LightBranch
@@ -384,22 +400,20 @@ impl PlantTile {
                 #[rustfmt::skip]
                 let shape = [
                     [
-                        [false, false, false],
-                        [false, false, false],
-                        [false, false, false],
+                        [false, c.n, false],
+                        [c.w, false, c.e],
+                        [false, c.s, false],
                     ],
-                    [
-                        [false, c.n && r.gen_ratio(1, 2), false],
-                        [c.w && r.gen_ratio(1, 2), false, c.e && r.gen_ratio(1, 2)],
-                        [false, c.s && r.gen_ratio(1, 2), false],
-                    ],
+                    shape::slice_empty(),
+                    shape::slice_empty(),
+                    shape::slice_empty(),
                     [
                         [false, false, false],
-                        [false, c.b && r.gen_ratio(1, 2), false],
+                        [false, c.b, false],
                         [false, false, false],
                     ],
                 ];
-                shape*/
+                shape
             }
         }
     }

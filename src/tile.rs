@@ -75,13 +75,17 @@ impl NormalTile {
         match &self.shape {
             Shape::Fluid(level) => [
                 shape::slice_const(*level >= 7),
-                shape::slice_const(*level >= 4),
+                shape::slice_const(*level >= 5),
+                shape::slice_const(*level >= 3),
+                shape::slice_const(*level >= 1),
                 shape::slice_full(),
             ],
             #[rustfmt::skip]
             Shape::Floor { smooth } => {
                 let r = !smooth;
                 [
+                    shape::slice_empty(),
+                    shape::slice_empty(),
                     shape::slice_empty(),
                     shape::slice_from_fn(|_,_| r && rng.gen_bool(1.0 / 7.0)),
                     shape::slice_full(),
@@ -97,19 +101,29 @@ impl NormalTile {
                 #[rustfmt::skip]
                 let shape = [
                     [
-                        [false, up, up],
                         [false, false, false],
                         [false, false, false],
+                        [up, up, up],
                     ],
                     [
-                        [false, false, false],
                         [false, false, middle],
-                        [false, false, middle]
+                        [false, false, middle],
+                        [false, false, middle],
+                    ],
+                    [
+                        [middle, middle, middle],
+                        [false, false, false],
+                        [false, false, false]
+                    ],
+                    [
+                        [middle, false, false],
+                        [middle, false, false],
+                        [middle, false, false]
                     ],
                     [
                         [floor, floor, floor],
                         [floor, floor, floor],
-                        [down || floor, down || floor, floor]
+                        [down || floor, down || floor, down || floor]
                     ],
                 ];
                 shape.rotated_by((coords.z % 4) as usize)
@@ -159,6 +173,16 @@ impl NormalTile {
                 });
                 #[rustfmt::skip]
                 let shape = [
+                    [
+                        [true, conn.n, true],
+                        [conn.w, false, conn.e],
+                        [true, conn.s, true]
+                    ],
+                    [
+                        [true, conn.n, true],
+                        [conn.w, false, conn.e],
+                        [true, conn.s, true]
+                    ],
                     [
                         [true, conn.n, true],
                         [conn.w, false, conn.e],

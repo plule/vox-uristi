@@ -93,6 +93,12 @@ impl Building {
                 [conn.w, true, conn.e],
                 [false, conn.s, false],
             ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            shape::slice_empty(),
         ]
     }
 
@@ -128,11 +134,18 @@ impl Building {
                 [conn.w, true, conn.e],
                 [false, conn.s, false],
             ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            shape::slice_empty(),
         ]
     }
 
     fn archery_shape(&self, direction: DirectionFlat) -> Box3D<bool> {
         [
+            shape::slice_empty(),
             [
                 [true, true, true],
                 [false, true, false],
@@ -148,6 +161,7 @@ impl Building {
                 [false, true, false],
                 [false, true, false],
             ],
+            shape::slice_empty(),
         ]
         .looking_at(direction)
     }
@@ -163,6 +177,8 @@ impl Building {
                 let n = ew && y == *self.bounding_box.y.start();
                 let s = ew && y == *self.bounding_box.y.end();
                 let shape = [
+                    shape::slice_empty(),
+                    shape::slice_empty(),
                     shape::slice_empty(),
                     [[w || n, n, e || n], [w, false, e], [w || s, s, e || s]],
                     shape::slice_full(),
@@ -186,11 +202,15 @@ impl CollectVoxels for Building {
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 shape::slice_empty(),
                 shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 shape::slice_from_fn(|x, y| {
                     (self.origin.x + x as i32) % 2 == 0 || (self.origin.y + y as i32) % 2 == 0
                 }),
             ],
             BuildingType::Hatch => [
+                shape::slice_empty(),
+                shape::slice_empty(),
                 shape::slice_empty(),
                 shape::slice_full(),
                 shape::slice_empty(),
@@ -202,7 +222,7 @@ impl CollectVoxels for Building {
             BuildingType::Bookcase | BuildingType::Cabinet => [
                 [
                     [true, true, true],
-                    [true, true, true],
+                    [false, false, false],
                     [false, false, false],
                 ],
                 [
@@ -212,12 +232,19 @@ impl CollectVoxels for Building {
                 ],
                 [
                     [true, true, true],
+                    [false, false, false],
+                    [false, false, false],
+                ],
+                [
+                    [true, true, true],
                     [true, true, true],
                     [false, false, false],
                 ],
+                shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(self.origin)),
             BuildingType::Statue | BuildingType::GearAssembly => [
+                shape::slice_empty(),
                 [
                     [false, false, false],
                     [false, true, false],
@@ -228,13 +255,12 @@ impl CollectVoxels for Building {
                     [true, true, true],
                     [false, true, false],
                 ],
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
+                shape::slice_full(),
+                shape::slice_empty(),
             ],
             BuildingType::Box => [
+                shape::slice_empty(),
+                shape::slice_empty(),
                 shape::slice_empty(),
                 [
                     [false, true, false],
@@ -250,6 +276,8 @@ impl CollectVoxels for Building {
             | BuildingType::DisplayFurniture
             | BuildingType::OfferingPlace => [
                 shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
                     [false, false, false],
                     [false, true, false],
@@ -259,14 +287,22 @@ impl CollectVoxels for Building {
             ],
             BuildingType::Table | BuildingType::TractionBench => [
                 shape::slice_empty(),
+                shape::slice_empty(),
                 shape::slice_full(),
+                [
+                    [false, false, false],
+                    [false, true, false],
+                    [false, false, false],
+                ],
                 shape::slice_empty(),
             ],
             BuildingType::Bed => [
                 shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
-                    [false, true, true],
-                    [false, false, false],
+                    [true, true, true],
+                    [true, true, true],
                     [false, false, false],
                 ],
                 shape::slice_empty(),
@@ -274,34 +310,96 @@ impl CollectVoxels for Building {
             .looking_at(map.wall_direction(self.origin)),
             BuildingType::Coffin => [
                 shape::slice_empty(),
+                shape::slice_empty(),
+                shape::slice_empty(),
                 [
-                    [false, true, false],
-                    [false, true, false],
+                    [true, true, true],
+                    [true, true, true],
                     [false, false, false],
                 ],
                 shape::slice_empty(),
             ],
-            BuildingType::Well => [
-                [
-                    [false, false, false],
-                    [true, true, true],
-                    [false, false, false],
-                ],
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-            ],
+            BuildingType::Well => {
+                #[rustfmt::skip]
+                let shape = [
+                    shape::slice_empty(),
+                    [
+                        [false, false, false],
+                        [true, true, true],
+                        [false, false, false],
+                    ],
+                    [
+                        [false, false, false],
+                        [true, false, true],
+                        [false, false, false],
+                    ],
+                    [
+                        [true, true, true],
+                        [true, false, true],
+                        [true, true, true],
+                    ],
+                    [
+                        [true, true, true],
+                        [true, false, true],
+                        [true, true, true]
+                    ],
+                ];
+                shape
+            }
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
             BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
                 return self.bridge_collect_voxels(direction);
+            }
+            BuildingType::ArmorStand => {
+                #[rustfmt::skip]
+                let shape = [
+                    shape::slice_empty(),
+                    [
+                        [true, true, true],
+                        [false, false, false],
+                        [false, false, false],
+                    ],
+                    [
+                        [false, true, false],
+                        [false, false, false],
+                        [false, false, false],
+                    ],
+                    [
+                        [true, true, true],
+                        [true, true, true],
+                        [false, false, false],
+                    ],
+                    shape::slice_empty(),
+                ];
+                shape.looking_at(map.wall_direction(self.origin))
+            }
+            BuildingType::WeaponRack => {
+                #[rustfmt::skip]
+                    let shape = [
+                        [
+                            [true, false, true],
+                            [false, false, false],
+                            [false, false, false],
+                        ],
+                        [
+                            [true, true, true],
+                            [false, false, false],
+                            [false, false, false],
+                        ],
+                        [
+                            [true, false, true],
+                            [false, false, false],
+                            [false, false, false],
+                        ],
+                        [
+                            [true, true, true],
+                            [true, false, true],
+                            [false, false, false],
+                        ],
+                        shape::slice_empty(),
+                    ];
+                shape.looking_at(map.wall_direction(self.origin))
             }
             _ => return vec![],
         };

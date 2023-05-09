@@ -20,19 +20,19 @@ pub trait CollectVoxels {
     fn collect_voxels<'a>(&'a self, map: &Map) -> Vec<Voxel<'a>>;
 }
 
-pub fn voxels_from_shape<const N: usize>(
-    shape: Box3D<Option<&Material>, N>,
+pub fn voxels_from_shape<const B: usize, const H: usize>(
+    shape: Box3D<Option<&Material>, B, H>,
     origin: Coords,
 ) -> Vec<Voxel> {
-    (0..N)
+    (0..B)
         .flat_map(move |x| {
-            (0..N).flat_map(move |y| {
-                (0..N).flat_map(move |z| {
-                    shape[N - 1 - z][y][x].map(|material| {
+            (0..B).flat_map(move |y| {
+                (0..H).flat_map(move |z| {
+                    shape[H - 1 - z][y][x].map(|material| {
                         let coords = Coords {
-                            x: origin.x * 3 + x as i32,
-                            y: origin.y * 3 + y as i32,
-                            z: origin.z * 3 + z as i32,
+                            x: origin.x * B as i32 + x as i32,
+                            y: origin.y * B as i32 + y as i32,
+                            z: origin.z * H as i32 + z as i32,
                         };
                         Voxel::new(coords, material)
                     })
@@ -42,8 +42,8 @@ pub fn voxels_from_shape<const N: usize>(
         .collect()
 }
 
-pub fn voxels_from_uniform_shape<const N: usize>(
-    shape: Box3D<bool, N>,
+pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
+    shape: Box3D<bool, B, H>,
     origin: Coords,
     material: &Material,
 ) -> Vec<Voxel> {
