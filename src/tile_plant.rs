@@ -190,7 +190,7 @@ impl PlantTile {
         voxels
     }
 
-    pub fn growth_shape(&self) -> Box3D<3, bool> {
+    pub fn growth_shape(&self) -> Box3D<bool> {
         let mut r = rand::thread_rng();
         match &self.part {
             PlantPart::Root | PlantPart::Trunk | PlantPart::Cap | PlantPart::HeavyBranch { .. } => {
@@ -241,7 +241,7 @@ impl PlantTile {
         }
     }
 
-    pub fn structure_shape(&self, coords: &Coords, map: &Map) -> Box3D<3, bool> {
+    pub fn structure_shape(&self, coords: &Coords, map: &Map) -> Box3D<bool> {
         let mut r = rand::thread_rng();
         // The horror
         match &self.part {

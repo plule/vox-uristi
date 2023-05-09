@@ -70,7 +70,7 @@ fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> usize {
 }
 
 impl NormalTile {
-    fn get_shape(&self, coords: &Coords, map: &Map) -> Box3D<3, bool> {
+    fn get_shape(&self, coords: &Coords, map: &Map) -> Box3D<bool> {
         let mut rng = rand::thread_rng();
         match &self.shape {
             Shape::Fluid(level) => [

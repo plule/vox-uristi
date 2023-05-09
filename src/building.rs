@@ -59,7 +59,7 @@ impl Building {
         })
     }
 
-    fn window_shape(&self, map: &Map) -> Box3D<3, bool> {
+    fn window_shape(&self, map: &Map) -> Box3D<bool> {
         let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
             buildings.iter().any(|b| {
                 matches!(
@@ -96,7 +96,7 @@ impl Building {
         ]
     }
 
-    fn door_shape(&self, map: &Map) -> Box3D<3, bool> {
+    fn door_shape(&self, map: &Map) -> Box3D<bool> {
         let conn = map.neighbouring_flat(self.origin, |tile, buildings| {
             buildings
                 .iter()
@@ -131,7 +131,7 @@ impl Building {
         ]
     }
 
-    fn archery_shape(&self, direction: DirectionFlat) -> Box3D<3, bool> {
+    fn archery_shape(&self, direction: DirectionFlat) -> Box3D<bool> {
         [
             [
                 [true, true, true],

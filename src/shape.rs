@@ -6,13 +6,13 @@ use std::array;
 use crate::direction::DirectionFlat;
 
 /// A 3D box of size NxNxN
-pub type Box3D<const N: usize, T> = [[[T; N]; N]; N];
+pub type Box3D<T, const N: usize = 3> = [[[T; N]; N]; N];
 
 /// A flat 2D slice of size NxN
-pub type Slice2D<const N: usize, T> = [[T; N]; N];
+pub type Slice2D<T, const N: usize = 3> = [[T; N]; N];
 
 /// Build a 3D box from a function
-pub fn box_from_fn<const N: usize, T: Copy, F>(mut func: F) -> Box3D<N, T>
+pub fn box_from_fn<const N: usize, T: Copy, F>(mut func: F) -> Box3D<T, N>
 where
     F: FnMut(usize, usize, usize) -> T,
 {
@@ -20,7 +20,7 @@ where
 }
 
 /// Build a 2D slice from a function
-pub fn slice_from_fn<const N: usize, T: Copy, F>(mut func: F) -> Slice2D<N, T>
+pub fn slice_from_fn<const N: usize, T: Copy, F>(mut func: F) -> Slice2D<T, N>
 where
     F: FnMut(usize, usize) -> T,
 {
@@ -28,12 +28,12 @@ where
 }
 
 /// Build a constant 3D box
-pub const fn box_const<const N: usize, T: Copy>(value: T) -> Box3D<N, T> {
+pub const fn box_const<const N: usize, T: Copy>(value: T) -> Box3D<T, N> {
     [[[value; N]; N]; N]
 }
 
 /// Completely full 3D box
-pub const fn box_full<const N: usize>() -> Box3D<N, bool> {
+pub const fn box_full<const N: usize>() -> Box3D<bool, N> {
     box_const(true)
 }
 
@@ -42,32 +42,32 @@ pub const fn box_full<const N: usize>() -> Box3D<N, bool> {
 /// The input is a 2D slice of levels, and the resulting box will have
 /// vertical columns of the size given by the input 2D slice.
 /// A value of 0 will lead to no block in that column, a value of N will lead to a full column
-pub fn box_from_levels<const N: usize>(levels: Slice2D<N, usize>) -> Box3D<N, bool> {
+pub fn box_from_levels<const N: usize>(levels: Slice2D<usize, N>) -> Box3D<bool, N> {
     box_from_fn(|x, y, z| levels[y][x] > z)
 }
 
 /// Build a constant 2D slice
-pub const fn slice_const<const N: usize, T: Copy>(value: T) -> Slice2D<N, T> {
+pub const fn slice_const<const N: usize, T: Copy>(value: T) -> Slice2D<T, N> {
     [[value; N]; N]
 }
 
 /// Completely full 2D slice
-pub const fn slice_full<const N: usize>() -> Slice2D<N, bool> {
+pub const fn slice_full<const N: usize>() -> Slice2D<bool, N> {
     slice_const(true)
 }
 
 /// Empty 2D slice
-pub const fn slice_empty<const N: usize>() -> Slice2D<N, bool> {
+pub const fn slice_empty<const N: usize>() -> Slice2D<bool, N> {
     slice_const(false)
 }
 
 /// Rotate 90° a given 2D slice
-fn slice_rotated<T: Copy, const N: usize>(input: Slice2D<N, T>) -> Slice2D<N, T> {
+fn slice_rotated<T: Copy, const N: usize>(input: Slice2D<T, N>) -> Slice2D<T, N> {
     std::array::from_fn(|i| std::array::from_fn(|j| input[(N - 1) - j][i]))
 }
 
 /// Rotate 90° a given 3D box
-fn box_rotated<T: Copy, const N: usize>(input: Box3D<N, T>) -> Box3D<N, T> {
+fn box_rotated<T: Copy, const N: usize>(input: Box3D<T, N>) -> Box3D<T, N> {
     input.map(|m| slice_rotated(m))
 }
 
@@ -80,7 +80,7 @@ pub trait Rotating {
     fn rotated_by(self, amount: usize) -> Self;
 }
 
-impl<T: Copy, const N: usize> Rotating for Box3D<N, T> {
+impl<T: Copy, const N: usize> Rotating for Box3D<T, N> {
     fn looking_at(self, direction: DirectionFlat) -> Self {
         let n = match direction {
             DirectionFlat::North => 0,

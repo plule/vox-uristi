@@ -21,7 +21,7 @@ pub trait CollectVoxels {
 }
 
 pub fn voxels_from_shape<const N: usize>(
-    shape: Box3D<N, Option<&Material>>,
+    shape: Box3D<Option<&Material>, N>,
     origin: Coords,
 ) -> Vec<Voxel> {
     (0..N)
@@ -43,7 +43,7 @@ pub fn voxels_from_shape<const N: usize>(
 }
 
 pub fn voxels_from_uniform_shape<const N: usize>(
-    shape: Box3D<N, bool>,
+    shape: Box3D<bool, N>,
     origin: Coords,
     material: &Material,
 ) -> Vec<Voxel> {

@@ -38,7 +38,7 @@ impl Flow {
         self.info.pos.get_or_default().into()
     }
 
-    pub fn shape(&self) -> Box3D<3, bool> {
+    pub fn shape(&self) -> Box3D<bool> {
         shape::box_from_fn(|_, _, _| {
             rand::thread_rng().gen_ratio(self.info.density().abs().min(100).max(0) as u32, 200)
         })
