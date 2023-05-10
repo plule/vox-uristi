@@ -1,7 +1,7 @@
 use crate::direction::DirectionFlat;
 use dfhack_remote::BuildingInstance;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum BuildingType {
     Chair,
     Bed,
@@ -56,16 +56,17 @@ pub enum BuildingType {
     Bookcase,
     DisplayFurniture,
     OfferingPlace,
+    Unknown,
 }
 
 impl BuildingType {
-    pub fn maybe_from_df(instance: &BuildingInstance) -> Option<BuildingType> {
+    pub fn from_df(instance: &BuildingInstance) -> BuildingType {
         if instance.building_type.is_none() {
-            return None;
+            return BuildingType::Unknown;
         }
 
         let building_type = instance.building_type.get_or_default();
-        let t = match building_type.building_type() {
+        match building_type.building_type() {
             0 => BuildingType::Chair,
             1 => BuildingType::Bed,
             2 => BuildingType::Table,
@@ -136,8 +137,7 @@ impl BuildingType {
             52 => BuildingType::Bookcase,
             53 => BuildingType::DisplayFurniture,
             54 => BuildingType::OfferingPlace,
-            _ => return None,
-        };
-        Some(t)
+            _ => BuildingType::Unknown,
+        }
     }
 }

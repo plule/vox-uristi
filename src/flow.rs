@@ -46,7 +46,7 @@ impl Flow {
 }
 
 impl CollectVoxels for Flow {
-    fn collect_voxels<'a>(&'a self, _map: &crate::map::Map) -> Vec<Voxel<'a>> {
-        voxels_from_uniform_shape(self.shape(), self.coords(), &self.material)
+    fn collect_voxels(&self, _map: &crate::map::Map) -> Vec<Voxel> {
+        voxels_from_uniform_shape(self.shape(), self.coords(), self.material.to_owned())
     }
 }

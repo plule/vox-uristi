@@ -1,11 +1,12 @@
 use crate::{
-    building::Building,
+    building::BuildingExtensions,
+    building_type::BuildingType,
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     flow::Flow,
     rfr,
     tile::{Shape, Tile, TileKind},
 };
-use dfhack_remote::{Coord, MapBlock, PlantRawList, TiletypeList};
+use dfhack_remote::{BuildingInstance, Coord, MapBlock, PlantRawList, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display, ops::Add};
 
@@ -13,7 +14,7 @@ use std::{collections::HashMap, fmt::Display, ops::Add};
 #[derive(Default)]
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
-    pub buildings: HashMap<Coords, Vec<Building>>,
+    pub buildings: HashMap<Coords, Vec<BuildingInstance>>,
     pub flows: HashMap<Coords, Flow>,
 }
 
@@ -59,13 +60,11 @@ impl Map {
         }
 
         for building in block.buildings {
-            let coords = Coords::new(
-                building.pos_x_min(),
-                building.pos_y_min(),
-                building.pos_z_min(),
-            );
-            if let Some(building) = Building::from_df_building(building) {
-                self.buildings.entry(coords).or_default().push(building);
+            if building.building_type() != BuildingType::Unknown {
+                self.buildings
+                    .entry(building.origin())
+                    .or_default()
+                    .push(building);
             }
         }
 
@@ -78,7 +77,7 @@ impl Map {
     /// Compute a given function for all the neighbours including above and below
     pub fn neighbouring<F, T>(&self, coords: Coords, func: F) -> Neighbouring<T>
     where
-        F: Fn(Option<&Tile>, &Vec<Building>) -> T,
+        F: Fn(Option<&Tile>, &Vec<BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         Neighbouring::new(|direction| {
@@ -93,7 +92,7 @@ impl Map {
     /// Compute a given function for all the neighbours on the same plane
     pub fn neighbouring_flat<F, T>(&self, coords: Coords, func: F) -> NeighbouringFlat<T>
     where
-        F: Fn(Option<&Tile>, &Vec<Building>) -> T,
+        F: Fn(Option<&Tile>, &Vec<BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         NeighbouringFlat::new(|direction| {

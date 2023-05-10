@@ -5,50 +5,58 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Voxel<'a> {
+pub struct Voxel {
     pub coord: Coords,
-    pub material: &'a Material,
+    pub material: Material,
 }
 
-impl<'a> Voxel<'a> {
-    pub fn new(coord: Coords, material: &'a Material) -> Self {
+impl Voxel {
+    pub fn new(coord: Coords, material: Material) -> Self {
         Self { coord, material }
     }
 }
 
 pub trait CollectVoxels {
-    fn collect_voxels<'a>(&'a self, map: &Map) -> Vec<Voxel<'a>>;
+    fn collect_voxels(&self, map: &Map) -> Vec<Voxel>;
 }
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(
-    shape: Box3D<Option<&Material>, B, H>,
+    shape: Box3D<Option<Material>, B, H>,
     origin: Coords,
 ) -> Vec<Voxel> {
-    (0..B)
-        .flat_map(move |x| {
-            (0..B).flat_map(move |y| {
-                (0..H).flat_map(move |z| {
-                    shape[H - 1 - z][y][x].map(|material| {
-                        let coords = Coords {
-                            x: origin.x * B as i32 + x as i32,
-                            y: origin.y * B as i32 + y as i32,
-                            z: origin.z * H as i32 + z as i32,
-                        };
-                        Voxel::new(coords, material)
-                    })
-                })
-            })
-        })
-        .collect()
+    let mut ret = Vec::new();
+    for x in 0..B {
+        for y in 0..B {
+            for z in 0..H {
+                let coords = Coords {
+                    x: origin.x * B as i32 + x as i32,
+                    y: origin.y * B as i32 + y as i32,
+                    z: origin.z * H as i32 + z as i32,
+                };
+                if let Some(material) = &shape[H - 1 - z][y][x] {
+                    ret.push(Voxel::new(coords, material.clone()))
+                }
+            }
+        }
+    }
+    ret
 }
 
 pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     shape: Box3D<bool, B, H>,
     origin: Coords,
-    material: &Material,
+    material: Material,
 ) -> Vec<Voxel> {
     let shape = shape.map(|slice| {
-        slice.map(|col| col.map(|include| if include { Some(material) } else { None }))
+        slice.map(|col| {
+            col.map(|include| {
+                if include {
+                    Some(material.clone())
+                } else {
+                    None
+                }
+            })
+        })
     });
     voxels_from_shape(shape, origin)
 }

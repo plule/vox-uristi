@@ -110,7 +110,7 @@ fn add_voxels<T>(
     T: CollectVoxels,
 {
     for voxel in item.collect_voxels(map) {
-        let color = palette.get_palette_color(voxel.material);
+        let color = palette.get_palette_color(&voxel.material);
         vox.add_voxel(
             voxel.coord.x,
             max_y - voxel.coord.y,

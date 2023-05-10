@@ -339,7 +339,7 @@ impl CollectVoxels for Tile {
             TileKind::Normal(tile) => voxels_from_uniform_shape(
                 tile.get_shape(&self.coords, map),
                 self.coords,
-                &tile.material,
+                tile.material.to_owned(),
             ),
             TileKind::Plant(plant) => plant.collect_voxels(&self.coords, map),
         }

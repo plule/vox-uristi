@@ -170,14 +170,14 @@ impl PlantTile {
         let mut voxels = voxels_from_uniform_shape(
             self.structure_shape(coords, map),
             *coords,
-            &self.structure_material,
+            self.structure_material.to_owned(),
         );
         if self.alive && !self.growth_materials.is_empty() {
             let growth = self.growth_shape().map(|slice| {
                 slice.map(|col| {
                     col.map(|t| {
                         if t {
-                            self.growth_materials.choose(&mut rng)
+                            self.growth_materials.choose(&mut rng).cloned()
                         } else {
                             None
                         }
