@@ -334,7 +334,7 @@ impl Tile {
 }
 
 impl CollectVoxels for Tile {
-    fn collect_voxels(&self, map: &Map) -> Vec<crate::voxel::Voxel> {
+    fn collect_voxels(&self, _coords: Coords, map: &Map) -> Vec<crate::voxel::Voxel> {
         match &self.kind {
             TileKind::Normal(tile) => voxels_from_uniform_shape(
                 tile.get_shape(&self.coords, map),

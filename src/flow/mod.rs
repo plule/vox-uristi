@@ -7,14 +7,12 @@ use crate::{
 use dfhack_remote::{FlowInfo, FlowType};
 use rand::Rng;
 
-pub struct Flow {
-    pub info: FlowInfo,
-    pub material: Material,
-}
-
-impl Flow {
-    pub fn new(info: FlowInfo) -> Self {
-        let material = match info.type_() {
+impl CollectVoxels for FlowInfo {
+    fn collect_voxels(&self, coords: Coords, _map: &crate::map::Map) -> Vec<Voxel> {
+        let shape: Box3D<bool> = shape::box_from_fn(|_, _, _| {
+            rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 200)
+        });
+        let material = match self.type_() {
             FlowType::Mist | FlowType::SeaFoam | FlowType::Steam => {
                 Material::Default(DefaultMaterials::Mist)
             }
@@ -29,24 +27,19 @@ impl Flow {
             | FlowType::MaterialDust
             | FlowType::MaterialGas
             | FlowType::MaterialVapor
-            | FlowType::Web => Material::Generic(info.material.get_or_default().to_owned()),
+            | FlowType::Web => Material::Generic(self.material.get_or_default().to_owned()),
         };
-        Self { info, material }
-    }
 
-    pub fn coords(&self) -> Coords {
-        self.info.pos.get_or_default().into()
-    }
-
-    pub fn shape(&self) -> Box3D<bool> {
-        shape::box_from_fn(|_, _, _| {
-            rand::thread_rng().gen_ratio(self.info.density().abs().min(100).max(0) as u32, 200)
-        })
+        voxels_from_uniform_shape(shape, coords, material)
     }
 }
 
-impl CollectVoxels for Flow {
-    fn collect_voxels(&self, _map: &crate::map::Map) -> Vec<Voxel> {
-        voxels_from_uniform_shape(self.shape(), self.coords(), self.material.to_owned())
+pub trait FlowExtensions {
+    fn coords(&self) -> Coords;
+}
+
+impl FlowExtensions for FlowInfo {
+    fn coords(&self) -> Coords {
+        self.pos.get_or_default().into()
     }
 }

@@ -2,11 +2,11 @@ use crate::{
     building::BuildingExtensions,
     building_type::BuildingType,
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
-    flow::Flow,
+    flow::FlowExtensions,
     rfr,
     tile::{Shape, Tile, TileKind},
 };
-use dfhack_remote::{BuildingInstance, Coord, MapBlock, PlantRawList, TiletypeList};
+use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, PlantRawList, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display, ops::Add};
 
@@ -15,7 +15,7 @@ use std::{collections::HashMap, fmt::Display, ops::Add};
 pub struct Map {
     pub tiles: HashMap<Coords, Tile>,
     pub buildings: HashMap<Coords, Vec<BuildingInstance>>,
-    pub flows: HashMap<Coords, Flow>,
+    pub flows: HashMap<Coords, FlowInfo>,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -69,7 +69,6 @@ impl Map {
         }
 
         for flow in block.flows {
-            let flow = Flow::new(flow);
             self.flows.insert(flow.coords(), flow);
         }
     }

@@ -3,7 +3,7 @@ use dfhack_remote::BuildingInstance;
 use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
-    map::Map,
+    map::{Coords, Map},
     shape::{self, Box3D, Rotating},
     tile::{NormalTile, Shape, Tile, TileKind},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
@@ -12,8 +12,7 @@ use crate::{
 use super::BuildingExtensions;
 
 impl CollectVoxels for BuildingInstance {
-    fn collect_voxels(&self, map: &Map) -> Vec<Voxel> {
-        let origin = self.origin();
+    fn collect_voxels(&self, coords: Coords, map: &Map) -> Vec<Voxel> {
         let shape = match self.building_type() {
             BuildingType::ArcheryTarget { direction } => archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
@@ -22,7 +21,7 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_empty(),
                 shape::slice_empty(),
                 shape::slice_from_fn(|x, y| {
-                    (origin.x + x as i32) % 2 == 0 || (origin.y + y as i32) % 2 == 0
+                    (coords.x + x as i32) % 2 == 0 || (coords.y + y as i32) % 2 == 0
                 }),
             ],
             BuildingType::Hatch => [
@@ -59,7 +58,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(origin)),
+            .looking_at(map.wall_direction(coords)),
             BuildingType::Statue | BuildingType::GearAssembly => [
                 shape::slice_empty(),
                 [
@@ -86,7 +85,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(origin)),
+            .looking_at(map.wall_direction(coords)),
             BuildingType::AnimalTrap
             | BuildingType::Chair
             | BuildingType::Chain
@@ -124,7 +123,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(origin)),
+            .looking_at(map.wall_direction(coords)),
             BuildingType::Coffin => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -189,7 +188,7 @@ impl CollectVoxels for BuildingInstance {
                     ],
                     shape::slice_empty(),
                 ];
-                shape.looking_at(map.wall_direction(origin))
+                shape.looking_at(map.wall_direction(coords))
             }
             BuildingType::WeaponRack => {
                 #[rustfmt::skip]
@@ -216,11 +215,11 @@ impl CollectVoxels for BuildingInstance {
                         ],
                         shape::slice_empty(),
                     ];
-                shape.looking_at(map.wall_direction(origin))
+                shape.looking_at(map.wall_direction(coords))
             }
             _ => return vec![],
         };
-        voxels_from_uniform_shape(shape, origin, self.material())
+        voxels_from_uniform_shape(shape, coords, self.material())
     }
 }
 

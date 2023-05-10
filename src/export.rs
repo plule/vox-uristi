@@ -1,4 +1,9 @@
-use crate::{map::Map, palette::Palette, rfr, voxel::CollectVoxels};
+use crate::{
+    map::{Coords, Map},
+    palette::Palette,
+    rfr,
+    voxel::CollectVoxels,
+};
 use anyhow::Result;
 use std::{
     ops::Range,
@@ -70,7 +75,7 @@ pub fn try_export_voxels(
     let max_y = map_info.block_size_y() * 16 * 3;
     let min_z = z_range.start;
 
-    for (progress, tile) in map.tiles.values().enumerate() {
+    for (progress, (coords, tile)) in map.tiles.iter().enumerate() {
         if cancel_rx.try_iter().next().is_some() {
             return Ok(());
         }
@@ -79,17 +84,25 @@ pub fn try_export_voxels(
             curr: progress,
             to: total,
         })?;
-        add_voxels(tile, &map, &mut palette, &mut vox, max_y, min_z);
+        add_voxels(*coords, tile, &map, &mut palette, &mut vox, max_y, min_z);
     }
 
-    for building_list in map.buildings.values() {
+    for (coords, building_list) in map.buildings.iter() {
         for building in building_list {
-            add_voxels(building, &map, &mut palette, &mut vox, max_y, min_z);
+            add_voxels(
+                *coords,
+                building,
+                &map,
+                &mut palette,
+                &mut vox,
+                max_y,
+                min_z,
+            );
         }
     }
 
-    for flow in map.flows.values() {
-        add_voxels(flow, &map, &mut palette, &mut vox, max_y, min_z);
+    for (coords, flow) in map.flows.iter() {
+        add_voxels(*coords, flow, &map, &mut palette, &mut vox, max_y, min_z);
     }
     palette.write_palette(&mut vox, &material_list.material_list);
 
@@ -100,6 +113,7 @@ pub fn try_export_voxels(
 }
 
 fn add_voxels<T>(
+    coords: Coords,
     item: &T,
     map: &Map,
     palette: &mut Palette,
@@ -109,7 +123,7 @@ fn add_voxels<T>(
 ) where
     T: CollectVoxels,
 {
-    for voxel in item.collect_voxels(map) {
+    for voxel in item.collect_voxels(coords, map) {
         let color = palette.get_palette_color(&voxel.material);
         vox.add_voxel(
             voxel.coord.x,

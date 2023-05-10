@@ -17,7 +17,7 @@ impl Voxel {
 }
 
 pub trait CollectVoxels {
-    fn collect_voxels(&self, map: &Map) -> Vec<Voxel>;
+    fn collect_voxels(&self, coords: Coords, map: &Map) -> Vec<Voxel>;
 }
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(
