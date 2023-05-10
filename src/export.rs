@@ -1,16 +1,16 @@
-use crate::{
-    map::{Coords, Map},
-    palette::Palette,
-    rfr,
-    voxel::CollectVoxels,
-};
+use crate::{map::Map, palette::Palette, rfr, voxel::CollectVoxels};
 use anyhow::Result;
+use dfhack_remote::PlantRawList;
 use std::{
     ops::Range,
     path::PathBuf,
     sync::mpsc::{Receiver, Sender},
 };
 use vox_writer::VoxWriter;
+
+pub struct ExportSettings {
+    pub year_tick: i32,
+}
 
 pub enum Progress {
     Connecting,
@@ -28,7 +28,7 @@ pub struct Cancel;
 pub fn try_export_voxels(
     client: &mut dfhack_remote::Client,
     z_range: Range<i32>,
-    yeah_tick: i32,
+    year_tick: i32,
     path: PathBuf,
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
@@ -50,6 +50,9 @@ pub fn try_export_voxels(
     progress_tx.send(Progress::StartReading {
         total: block_list_count,
     })?;
+    let settings = ExportSettings { year_tick };
+
+    let mut blocks = Vec::new();
 
     for (progress, block_list) in block_list_iterator.enumerate() {
         if cancel_rx.try_iter().next().is_some() {
@@ -62,8 +65,12 @@ pub fn try_export_voxels(
         })?;
 
         for block in block_list?.map_blocks {
-            map.add_block(block, &tile_type_list, yeah_tick, &plant_raws);
+            blocks.push(block);
         }
+    }
+
+    for block in blocks.iter() {
+        map.add_block(block, &tile_type_list, year_tick, &plant_raws);
     }
 
     let total = map.tiles.len();
@@ -75,24 +82,13 @@ pub fn try_export_voxels(
     let max_y = map_info.block_size_y() * 16 * 3;
     let min_z = z_range.start;
 
-    for (progress, (coords, tile)) in map.tiles.iter().enumerate() {
-        if cancel_rx.try_iter().next().is_some() {
-            return Ok(());
-        }
-
-        progress_tx.send(Progress::Building {
-            curr: progress,
-            to: total,
-        })?;
-        add_voxels(*coords, tile, &map, &mut palette, &mut vox, max_y, min_z);
-    }
-
-    for (coords, building_list) in map.buildings.iter() {
+    for building_list in map.buildings.values() {
         for building in building_list {
             add_voxels(
-                *coords,
                 building,
                 &map,
+                &settings,
+                &plant_raws,
                 &mut palette,
                 &mut vox,
                 max_y,
@@ -101,8 +97,38 @@ pub fn try_export_voxels(
         }
     }
 
-    for (coords, flow) in map.flows.iter() {
-        add_voxels(*coords, flow, &map, &mut palette, &mut vox, max_y, min_z);
+    for (progress, tile) in map.tiles.values().enumerate() {
+        if cancel_rx.try_iter().next().is_some() {
+            return Ok(());
+        }
+
+        progress_tx.send(Progress::Building {
+            curr: progress,
+            to: total,
+        })?;
+        add_voxels(
+            tile,
+            &map,
+            &settings,
+            &plant_raws,
+            &mut palette,
+            &mut vox,
+            max_y,
+            min_z,
+        );
+    }
+
+    for flow in map.flows.values() {
+        add_voxels(
+            flow,
+            &map,
+            &settings,
+            &plant_raws,
+            &mut palette,
+            &mut vox,
+            max_y,
+            min_z,
+        );
     }
     palette.write_palette(&mut vox, &material_list.material_list);
 
@@ -113,9 +139,10 @@ pub fn try_export_voxels(
 }
 
 fn add_voxels<T>(
-    coords: Coords,
     item: &T,
     map: &Map,
+    settings: &ExportSettings,
+    plant_raws: &PlantRawList,
     palette: &mut Palette,
     vox: &mut VoxWriter,
     max_y: i32,
@@ -123,7 +150,7 @@ fn add_voxels<T>(
 ) where
     T: CollectVoxels,
 {
-    for voxel in item.collect_voxels(coords, map) {
+    for voxel in item.collect_voxels(map, settings, plant_raws) {
         let color = palette.get_palette_color(&voxel.material);
         vox.add_voxel(
             voxel.coord.x,

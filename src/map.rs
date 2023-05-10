@@ -3,8 +3,8 @@ use crate::{
     building_type::BuildingType,
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     flow::FlowExtensions,
-    rfr,
-    tile::{Shape, Tile, TileKind},
+    rfr::{self, BlockTile},
+    tile::TileExtensions,
 };
 use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, PlantRawList, TiletypeList};
 use itertools::Itertools;
@@ -12,10 +12,10 @@ use std::{collections::HashMap, fmt::Display, ops::Add};
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
-pub struct Map {
-    pub tiles: HashMap<Coords, Tile>,
-    pub buildings: HashMap<Coords, Vec<BuildingInstance>>,
-    pub flows: HashMap<Coords, FlowInfo>,
+pub struct Map<'a> {
+    pub tiles: HashMap<Coords, BlockTile<'a>>,
+    pub buildings: HashMap<Coords, Vec<&'a BuildingInstance>>,
+    pub flows: HashMap<Coords, &'a FlowInfo>,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -44,22 +44,15 @@ impl<T> IsSomeAnd<T> for Option<T> {
     }
 }
 
-impl Map {
+impl<'a> Map<'a> {
     pub fn add_block(
         &mut self,
-        block: MapBlock,
-        tiletypes: &TiletypeList,
-        year_tick: i32,
-        plant_raws: &PlantRawList,
+        block: &'a MapBlock,
+        tiletypes: &'a TiletypeList,
+        _year_tick: i32,
+        _plant_raws: &PlantRawList,
     ) {
-        for tile in rfr::TileIterator::new(&block, tiletypes) {
-            let df_tile = Tile::from_df(&tile, year_tick, plant_raws);
-            if let Some(tile) = df_tile {
-                self.tiles.insert(tile.coords, tile);
-            }
-        }
-
-        for building in block.buildings {
+        for building in &block.buildings {
             if building.building_type() != BuildingType::Unknown {
                 self.buildings
                     .entry(building.origin())
@@ -68,15 +61,18 @@ impl Map {
             }
         }
 
-        for flow in block.flows {
+        for flow in &block.flows {
             self.flows.insert(flow.coords(), flow);
+        }
+        for tile in rfr::TileIterator::new(block, tiletypes) {
+            self.tiles.insert(tile.coords(), tile);
         }
     }
 
     /// Compute a given function for all the neighbours including above and below
     pub fn neighbouring<F, T>(&self, coords: Coords, func: F) -> Neighbouring<T>
     where
-        F: Fn(Option<&Tile>, &Vec<BuildingInstance>) -> T,
+        F: Fn(Option<&BlockTile<'a>>, &Vec<&BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         Neighbouring::new(|direction| {
@@ -91,7 +87,7 @@ impl Map {
     /// Compute a given function for all the neighbours on the same plane
     pub fn neighbouring_flat<F, T>(&self, coords: Coords, func: F) -> NeighbouringFlat<T>
     where
-        F: Fn(Option<&Tile>, &Vec<BuildingInstance>) -> T,
+        F: Fn(Option<&BlockTile<'a>>, &Vec<&BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         NeighbouringFlat::new(|direction| {
@@ -118,12 +114,7 @@ impl Map {
                 let wally = self
                     .tiles
                     .get(&Coords::new(coords.x + x, coords.y + y, z))
-                    .some_and(|tile| match &tile.kind {
-                        TileKind::Normal(tile) => {
-                            matches!(tile.shape, Shape::Fortification | Shape::Full)
-                        }
-                        _ => false,
-                    });
+                    .some_and(|tile| tile.is_wall());
                 if wally {
                     if x == -1 {
                         wallyness[W] += 1;

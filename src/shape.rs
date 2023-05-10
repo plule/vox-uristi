@@ -32,6 +32,11 @@ pub const fn box_const<T: Copy, const B: usize, const H: usize>(value: T) -> Box
     [[[value; B]; B]; H]
 }
 
+/// Completely empty 3D box
+pub const fn box_empty<const B: usize, const H: usize>() -> Box3D<bool, B, H> {
+    box_const(false)
+}
+
 /// Completely full 3D box
 pub const fn box_full<const B: usize, const H: usize>() -> Box3D<bool, B, H> {
     box_const(true)

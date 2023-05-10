@@ -1,18 +1,24 @@
-use dfhack_remote::BuildingInstance;
-
 use crate::{
     building_type::BuildingType,
     direction::DirectionFlat,
-    map::{Coords, Map},
+    export::ExportSettings,
+    map::{IsSomeAnd, Map},
     shape::{self, Box3D, Rotating},
-    tile::{NormalTile, Shape, Tile, TileKind},
+    tile::TileExtensions,
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
 };
+use dfhack_remote::{BuildingInstance, PlantRawList};
 
 use super::BuildingExtensions;
 
-impl CollectVoxels for BuildingInstance {
-    fn collect_voxels(&self, coords: Coords, map: &Map) -> Vec<Voxel> {
+impl CollectVoxels for &BuildingInstance {
+    fn collect_voxels(
+        &self,
+        map: &Map,
+        _settings: &ExportSettings,
+        _plant_raws: &PlantRawList,
+    ) -> Vec<Voxel> {
+        let coords = self.origin();
         let shape = match self.building_type() {
             BuildingType::ArcheryTarget { direction } => archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
@@ -230,16 +236,7 @@ pub fn window_shape(building: &BuildingInstance, map: &Map) -> Box3D<bool> {
                 b.building_type(),
                 BuildingType::WindowGem | BuildingType::WindowGlass
             )
-        }) || matches!(
-            tile,
-            Some(Tile {
-                kind: TileKind::Normal(NormalTile {
-                    shape: Shape::Fortification | Shape::Full,
-                    ..
-                }),
-                ..
-            })
-        )
+        }) || tile.some_and(|tile| tile.is_wall())
     });
     [
         [
@@ -271,16 +268,7 @@ pub fn door_shape(building: &BuildingInstance, map: &Map) -> Box3D<bool> {
         buildings
             .iter()
             .any(|b| matches!(b.building_type(), BuildingType::Door))
-            || matches!(
-                tile,
-                Some(Tile {
-                    kind: TileKind::Normal(NormalTile {
-                        shape: Shape::Fortification | Shape::Full,
-                        ..
-                    }),
-                    ..
-                })
-            )
+            || tile.some_and(|t| t.is_wall())
     });
     [
         [

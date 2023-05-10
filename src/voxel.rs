@@ -1,4 +1,7 @@
+use dfhack_remote::PlantRawList;
+
 use crate::{
+    export::ExportSettings,
     map::{Coords, Map},
     palette::Material,
     shape::Box3D,
@@ -17,7 +20,12 @@ impl Voxel {
 }
 
 pub trait CollectVoxels {
-    fn collect_voxels(&self, coords: Coords, map: &Map) -> Vec<Voxel>;
+    fn collect_voxels(
+        &self,
+        map: &Map,
+        settings: &ExportSettings,
+        plant_raws: &PlantRawList,
+    ) -> Vec<Voxel>;
 }
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(

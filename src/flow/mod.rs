@@ -1,14 +1,21 @@
 use crate::{
+    export::ExportSettings,
     map::Coords,
     palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
 };
-use dfhack_remote::{FlowInfo, FlowType};
+use dfhack_remote::{FlowInfo, FlowType, PlantRawList};
 use rand::Rng;
 
-impl CollectVoxels for FlowInfo {
-    fn collect_voxels(&self, coords: Coords, _map: &crate::map::Map) -> Vec<Voxel> {
+impl CollectVoxels for &FlowInfo {
+    fn collect_voxels(
+        &self,
+        _map: &crate::map::Map,
+        _settings: &ExportSettings,
+        _plant_raws: &PlantRawList,
+    ) -> Vec<Voxel> {
+        let coords = self.coords();
         let shape: Box3D<bool> = shape::box_from_fn(|_, _, _| {
             rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 200)
         });
