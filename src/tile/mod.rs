@@ -1,7 +1,7 @@
 mod collect;
-mod extensions;
+mod generic;
 mod plant;
-pub use extensions::TileExtensions;
+use crate::rfr::BlockTile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RampContactKind {
@@ -19,6 +19,8 @@ impl RampContactKind {
         }
     }
 }
+
+pub struct Tile<'a>(pub BlockTile<'a>);
 
 fn corner_ramp_level(c1: RampContactKind, c2: RampContactKind) -> usize {
     match (c1, c2) {

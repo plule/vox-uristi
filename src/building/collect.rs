@@ -1,17 +1,14 @@
+use super::{building_type::BuildingType, Building};
 use crate::{
-    building_type::BuildingType,
     direction::DirectionFlat,
     export::ExportSettings,
     map::{IsSomeAnd, Map},
     shape::{self, Box3D, Rotating},
-    tile::TileExtensions,
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
 };
-use dfhack_remote::{BuildingInstance, PlantRawList};
+use dfhack_remote::PlantRawList;
 
-use super::BuildingExtensions;
-
-impl CollectVoxels for &BuildingInstance {
+impl CollectVoxels for Building<'_> {
     fn collect_voxels(
         &self,
         map: &Map,
@@ -20,7 +17,7 @@ impl CollectVoxels for &BuildingInstance {
     ) -> Vec<Voxel> {
         let coords = self.origin();
         let shape = match self.building_type() {
-            BuildingType::ArcheryTarget { direction } => archery_shape(direction),
+            BuildingType::ArcheryTarget { direction } => Building::archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -168,8 +165,8 @@ impl CollectVoxels for &BuildingInstance {
                 ];
                 shape
             }
-            BuildingType::WindowGem | BuildingType::WindowGlass => window_shape(self, map),
-            BuildingType::Door => door_shape(self, map),
+            BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
+            BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
                 return self.bridge_collect_voxels(direction);
             }
@@ -229,91 +226,93 @@ impl CollectVoxels for &BuildingInstance {
     }
 }
 
-pub fn window_shape(building: &BuildingInstance, map: &Map) -> Box3D<bool> {
-    let conn = map.neighbouring_flat(building.origin(), |tile, buildings| {
-        buildings.iter().any(|b| {
-            matches!(
-                b.building_type(),
-                BuildingType::WindowGem | BuildingType::WindowGlass
-            )
-        }) || tile.some_and(|tile| tile.is_wall())
-    });
-    [
+impl Building<'_> {
+    pub fn window_shape(&self, map: &Map) -> Box3D<bool> {
+        let conn = map.neighbouring_flat(self.origin(), |tile, buildings| {
+            buildings.iter().any(|b| {
+                matches!(
+                    b.building_type(),
+                    BuildingType::WindowGem | BuildingType::WindowGlass
+                )
+            }) || tile.some_and(|tile| tile.is_wall())
+        });
         [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        shape::slice_empty(),
-    ]
-}
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            shape::slice_empty(),
+        ]
+    }
 
-pub fn door_shape(building: &BuildingInstance, map: &Map) -> Box3D<bool> {
-    let conn = map.neighbouring_flat(building.origin(), |tile, buildings| {
-        buildings
-            .iter()
-            .any(|b| matches!(b.building_type(), BuildingType::Door))
-            || tile.some_and(|t| t.is_wall())
-    });
-    [
+    pub fn door_shape(&self, map: &Map) -> Box3D<bool> {
+        let conn = map.neighbouring_flat(self.origin(), |tile, buildings| {
+            buildings
+                .iter()
+                .any(|b| matches!(b.building_type(), BuildingType::Door))
+                || tile.some_and(|t| t.is_wall())
+        });
         [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        [
-            [false, conn.n, false],
-            [conn.w, true, conn.e],
-            [false, conn.s, false],
-        ],
-        shape::slice_empty(),
-    ]
-}
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            [
+                [false, conn.n, false],
+                [conn.w, true, conn.e],
+                [false, conn.s, false],
+            ],
+            shape::slice_empty(),
+        ]
+    }
 
-pub fn archery_shape(direction: DirectionFlat) -> Box3D<bool> {
-    [
-        shape::slice_empty(),
+    pub fn archery_shape(direction: DirectionFlat) -> Box3D<bool> {
         [
-            [true, true, true],
-            [false, true, false],
-            [false, false, false],
-        ],
-        [
-            [true, true, true],
-            [false, true, false],
-            [false, true, false],
-        ],
-        [
-            [true, true, true],
-            [false, true, false],
-            [false, true, false],
-        ],
-        shape::slice_empty(),
-    ]
-    .looking_at(direction)
+            shape::slice_empty(),
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, false, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
+            [
+                [true, true, true],
+                [false, true, false],
+                [false, true, false],
+            ],
+            shape::slice_empty(),
+        ]
+        .looking_at(direction)
+    }
 }

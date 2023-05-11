@@ -2,7 +2,6 @@
 
 mod app;
 mod building;
-mod building_type;
 mod calendar;
 #[cfg(feature = "cli")]
 mod cli;

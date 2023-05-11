@@ -1,12 +1,10 @@
 use super::{
     corner_ramp_level,
     plant::{connectivity_from_direction_string, PlantPart},
-    RampContactKind,
+    RampContactKind, Tile,
 };
 use crate::{
     map::{IsSomeAnd, Map},
-    palette::Material,
-    rfr::BlockTile,
     shape::{
         box_empty, box_from_levels, box_full, slice_empty, slice_from_fn, slice_full, Box3D,
         Rotating,
@@ -15,35 +13,27 @@ use crate::{
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use rand::Rng;
 
-pub trait TileExtensions {
-    fn is_wall(&self) -> bool;
-    fn ramp_contact_kind(&self) -> RampContactKind;
-    fn structure_shape(&self, map: &Map) -> Box3D<bool>;
-    fn structure_material(&self) -> Material;
-    fn plant_part(&self) -> PlantPart;
-}
-
-impl TileExtensions for BlockTile<'_> {
-    fn is_wall(&self) -> bool {
+impl Tile<'_> {
+    pub fn is_wall(&self) -> bool {
         matches!(
-            self.tile_type().shape(),
+            self.0.tile_type().shape(),
             TiletypeShape::WALL | TiletypeShape::FORTIFICATION
         )
     }
 
-    fn ramp_contact_kind(&self) -> RampContactKind {
+    pub fn ramp_contact_kind(&self) -> RampContactKind {
         if self.is_wall() {
             RampContactKind::Wall
-        } else if self.tile_type().shape() == TiletypeShape::RAMP {
+        } else if self.0.tile_type().shape() == TiletypeShape::RAMP {
             RampContactKind::Ramp
         } else {
             RampContactKind::Empty
         }
     }
 
-    fn structure_shape(&self, map: &Map) -> Box3D<bool> {
-        let coords = self.coords();
-        let tile_type = self.tile_type();
+    pub fn structure_shape(&self, map: &Map) -> Box3D<bool> {
+        let coords = self.0.coords();
+        let tile_type = self.0.tile_type();
         let mut rng = rand::thread_rng();
         match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
@@ -117,12 +107,8 @@ impl TileExtensions for BlockTile<'_> {
         }
     }
 
-    fn structure_material(&self) -> Material {
-        Material::Generic(self.material().clone())
-    }
-
-    fn plant_part(&self) -> PlantPart {
-        let tile_type = self.tile_type();
+    pub fn plant_part(&self) -> PlantPart {
+        let tile_type = self.0.tile_type();
         match (
             tile_type.material(),
             tile_type.shape(),

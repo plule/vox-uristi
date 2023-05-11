@@ -70,7 +70,7 @@ pub fn try_export_voxels(
     }
 
     for block in blocks.iter() {
-        map.add_block(block, &tile_type_list, year_tick, &plant_raws);
+        map.add_block(block, &tile_type_list);
     }
 
     let total = map.tiles.len();
@@ -138,6 +138,7 @@ pub fn try_export_voxels(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn add_voxels<T>(
     item: &T,
     map: &Map,
