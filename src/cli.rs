@@ -1,4 +1,4 @@
-use crate::{calendar::Month, export, map::Coords, rfr, update};
+use crate::{calendar::Month, export, rfr, update, Coords};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::BlockRequest;

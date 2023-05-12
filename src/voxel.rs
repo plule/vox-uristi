@@ -1,11 +1,6 @@
 use dfhack_remote::PlantRawList;
 
-use crate::{
-    export::ExportSettings,
-    map::{Coords, Map},
-    palette::Material,
-    shape::Box3D,
-};
+use crate::{export::ExportSettings, map::Map, palette::Material, shape::Box3D, Coords};
 
 #[derive(Debug)]
 pub struct Voxel {

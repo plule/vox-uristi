@@ -2,9 +2,10 @@ use super::{building_type::BuildingType, Building};
 use crate::{
     direction::DirectionFlat,
     export::ExportSettings,
-    map::{IsSomeAnd, Map},
+    map::Map,
     shape::{self, Box3D, Rotating},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    IsSomeAnd,
 };
 use dfhack_remote::PlantRawList;
 

@@ -2,11 +2,12 @@ use super::Tile;
 use crate::{
     direction::{DirectionFlat, NeighbouringFlat},
     export::ExportSettings,
-    map::{IsSomeAnd, Map},
+    map::Map,
     palette::{DefaultMaterials, Material},
     rfr::{ConsoleColor, GetTiming},
     shape::{self, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
+    IsSomeAnd,
 };
 use dfhack_remote::{MatPair, PlantRawList, TiletypeMaterial, TiletypeSpecial};
 use rand::{seq::SliceRandom, Rng};

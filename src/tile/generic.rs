@@ -4,11 +4,12 @@ use super::{
     RampContactKind, Tile,
 };
 use crate::{
-    map::{IsSomeAnd, Map},
+    map::Map,
     shape::{
         box_empty, box_from_levels, box_full, slice_empty, slice_from_fn, slice_full, Box3D,
         Rotating,
     },
+    IsSomeAnd,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use rand::Rng;

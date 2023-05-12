@@ -1,9 +1,9 @@
 use super::Building;
 use crate::{
     direction::DirectionFlat,
-    map::Coords,
     shape,
     voxel::{voxels_from_uniform_shape, Voxel},
+    Coords,
 };
 
 impl Building<'_> {

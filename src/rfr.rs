@@ -1,4 +1,4 @@
-use crate::map::Coords;
+use crate::Coords;
 use anyhow::Result;
 use dfhack_remote::{
     core_text_fragment::Color, BlockList, BlockRequest, ColorDefinition, GrowthPrint, MapBlock,

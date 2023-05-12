@@ -1,9 +1,9 @@
 use crate::{
     export::ExportSettings,
-    map::Coords,
     palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    Coords,
 };
 use dfhack_remote::{FlowInfo, FlowType, PlantRawList};
 use rand::Rng;

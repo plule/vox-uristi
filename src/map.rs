@@ -4,10 +4,11 @@ use crate::{
     flow::FlowExtensions,
     rfr,
     tile::Tile,
+    Coords, IsSomeAnd,
 };
 use dfhack_remote::{Coord, FlowInfo, MapBlock, TiletypeList};
 use itertools::Itertools;
-use std::{collections::HashMap, fmt::Display, ops::Add};
+use std::{collections::HashMap, ops::Add};
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
@@ -15,32 +16,6 @@ pub struct Map<'a> {
     pub tiles: HashMap<Coords, Tile<'a>>,
     pub buildings: HashMap<Coords, Vec<Building<'a>>>,
     pub flows: HashMap<Coords, &'a FlowInfo>,
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct Coords {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
-impl Display for Coords {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{},{})", self.x, self.y, self.z)
-    }
-}
-
-pub trait IsSomeAnd<T> {
-    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool;
-}
-
-impl<T> IsSomeAnd<T> for Option<T> {
-    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool {
-        match self {
-            None => false,
-            Some(x) => f(x),
-        }
-    }
 }
 
 impl<'a> Map<'a> {

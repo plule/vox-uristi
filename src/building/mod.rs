@@ -4,7 +4,7 @@ mod collect;
 mod workshop;
 
 pub use self::building_type::BuildingType;
-use crate::{map::Coords, palette::Material};
+use crate::{palette::Material, Coords};
 use dfhack_remote::BuildingInstance;
 use std::ops::RangeInclusive;
 

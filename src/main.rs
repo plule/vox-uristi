@@ -15,11 +15,39 @@ mod shape;
 mod tile;
 mod update;
 mod voxel;
+use std::fmt::Display;
+
 use app::App;
 use eframe::egui;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub struct Coords {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+}
+
+impl Display for Coords {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{},{})", self.x, self.y, self.z)
+    }
+}
+
+pub trait IsSomeAnd<T> {
+    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool;
+}
+
+impl<T> IsSomeAnd<T> for Option<T> {
+    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool {
+        match self {
+            None => false,
+            Some(x) => f(x),
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     #[cfg(feature = "cli")]

@@ -1,4 +1,4 @@
-use crate::map::Coords;
+use crate::Coords;
 use dfhack_remote::BuildingDirection;
 use std::ops::Add;
 
