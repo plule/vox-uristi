@@ -220,6 +220,9 @@ impl CollectVoxels for Building<'_> {
                     ];
                 shape.looking_at(map.wall_direction(coords))
             }
+            BuildingType::Workshop { subtype: _ } => {
+                return self.collect_workshop_voxels();
+            }
             _ => return vec![],
         };
         voxels_from_uniform_shape(shape, coords, self.material())

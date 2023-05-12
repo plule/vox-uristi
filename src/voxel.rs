@@ -37,9 +37,9 @@ pub fn voxels_from_shape<const B: usize, const H: usize>(
         for y in 0..B {
             for z in 0..H {
                 let coords = Coords {
-                    x: origin.x * B as i32 + x as i32,
-                    y: origin.y * B as i32 + y as i32,
-                    z: origin.z * H as i32 + z as i32,
+                    x: origin.x * 3 + x as i32,
+                    y: origin.y * 3 + y as i32,
+                    z: origin.z * 5 + z as i32,
                 };
                 if let Some(material) = &shape[H - 1 - z][y][x] {
                     ret.push(Voxel::new(coords, material.clone()))

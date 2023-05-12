@@ -1,13 +1,12 @@
 mod bridge;
 mod building_type;
 mod collect;
-
-use dfhack_remote::BuildingInstance;
-use std::ops::RangeInclusive;
-
-use crate::{map::Coords, palette::Material};
+mod workshop;
 
 pub use self::building_type::BuildingType;
+use crate::{map::Coords, palette::Material};
+use dfhack_remote::BuildingInstance;
+use std::ops::RangeInclusive;
 
 #[derive(Debug)]
 pub struct BoundingBox {
