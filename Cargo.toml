@@ -10,6 +10,7 @@ anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"], optional = true }
 dfhack-remote = "0.6.2"
 eframe = {version = "0.21.3", features = ["persistence"]}
+extend = "1.2.0"
 indicatif = "0.17.3"
 itertools = "0.10.5"
 num_enum = "0.6.1"

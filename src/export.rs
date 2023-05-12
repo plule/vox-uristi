@@ -85,7 +85,7 @@ pub fn try_export_voxels(
     for building_list in map.buildings.values() {
         for building in building_list {
             add_voxels(
-                building,
+                *building,
                 &map,
                 &settings,
                 &plant_raws,

@@ -1,25 +1,28 @@
-use super::Tile;
 use crate::{
     direction::{DirectionFlat, NeighbouringFlat},
     export::ExportSettings,
     map::Map,
     palette::{DefaultMaterials, Material},
-    rfr::{ConsoleColor, GetTiming},
+    rfr::{BlockTile, ConsoleColor, GetTiming},
     shape::{self, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
     IsSomeAnd,
 };
 use dfhack_remote::{MatPair, PlantRawList, TiletypeMaterial, TiletypeSpecial};
+use extend::ext;
 use rand::{seq::SliceRandom, Rng};
 
-impl Tile<'_> {
-    pub fn collect_plant_voxels(
+use super::BlockTile_Ext;
+
+#[ext(name = BlockTilePlantExt)]
+pub impl BlockTile<'_> {
+    fn collect_plant_voxels(
         &self,
         map: &Map,
         settings: &ExportSettings,
         raws: &PlantRawList,
     ) -> Vec<Voxel> {
-        let material = match self.0.tile_type().material() {
+        let material = match self.tile_type().material() {
             TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
             TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
             TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
@@ -38,20 +41,20 @@ impl Tile<'_> {
             slice_full(),
         ];
 
-        voxels_from_uniform_shape(shape, self.0.coords(), material)
+        voxels_from_uniform_shape(shape, self.coords(), material)
     }
 
-    pub fn collect_tree_voxels(
+    fn collect_tree_voxels(
         &self,
         map: &Map,
         settings: &ExportSettings,
         raws: &PlantRawList,
     ) -> Vec<Voxel> {
         let part = self.plant_part();
-        let coords = self.0.coords();
+        let coords = self.coords();
         let mut rng = rand::thread_rng();
-        let tile_type = self.0.tile_type();
-        let plant_index = self.0.material().mat_index();
+        let tile_type = self.tile_type();
+        let plant_index = self.material().mat_index();
         let alive = !matches!(
             tile_type.special(),
             TiletypeSpecial::DEAD | TiletypeSpecial::SMOOTH_DEAD
@@ -81,7 +84,7 @@ impl Tile<'_> {
         );
         let growth_materials = self.growth_materials(&part, raws, settings.year_tick);
         if alive && !growth_materials.is_empty() {
-            let growth = Tile::growth_shape(&part).map(|slice| {
+            let growth = BlockTile::growth_shape(&part).map(|slice| {
                 slice.map(|col| {
                     col.map(|t| {
                         if t {
@@ -97,10 +100,10 @@ impl Tile<'_> {
         voxels
     }
 
-    pub fn plant_structure_shape(&self, part: &PlantPart, map: &Map) -> Box3D<bool> {
+    fn plant_structure_shape(&self, part: &PlantPart, map: &Map) -> Box3D<bool> {
         let mut r = rand::thread_rng();
-        let coords = self.0.coords();
-        let origin = self.0.tree_origin();
+        let coords = self.coords();
+        let origin = self.tree_origin();
         // The horror
         match part {
             PlantPart::Trunk | PlantPart::Root | PlantPart::Cap => {
@@ -148,8 +151,7 @@ impl Tile<'_> {
                 // light branch connections
                 let to = map.neighbouring(coords, |tile, _| {
                     tile.some_and(|tile| {
-                        tile.0.tree_origin() == origin
-                            && tile.plant_part() == PlantPart::LightBranch
+                        tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
                     })
                 });
 
@@ -183,7 +185,7 @@ impl Tile<'_> {
             PlantPart::LightBranch => {
                 let c = map.neighbouring(coords, |tile, _| {
                     tile.some_and(|tile| {
-                        tile.0.tree_origin() == origin
+                        tile.tree_origin() == origin
                             && matches!(
                                 tile.plant_part(),
                                 PlantPart::HeavyBranch { .. } | PlantPart::Twig
@@ -224,8 +226,7 @@ impl Tile<'_> {
             PlantPart::Twig => {
                 let c = map.neighbouring(coords, |tile, _| {
                     tile.some_and(|tile| {
-                        tile.0.tree_origin() == origin
-                            && tile.plant_part() == PlantPart::LightBranch
+                        tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
                     })
                 });
 
@@ -250,7 +251,7 @@ impl Tile<'_> {
         }
     }
 
-    pub fn growth_shape(part: &PlantPart) -> Box3D<bool> {
+    fn growth_shape(part: &PlantPart) -> Box3D<bool> {
         let mut r = rand::thread_rng();
         match part {
             PlantPart::Root | PlantPart::Trunk | PlantPart::Cap | PlantPart::HeavyBranch { .. } => {
@@ -307,13 +308,13 @@ impl Tile<'_> {
         }
     }
 
-    pub fn growth_materials(
+    fn growth_materials(
         &self,
         part: &PlantPart,
         raws: &PlantRawList,
         year_tick: i32,
     ) -> Vec<Material> {
-        let plant_index = self.0.material().mat_index();
+        let plant_index = self.material().mat_index();
         if let Some(plant_raw) = raws.plant_raws.get(plant_index as usize) {
             plant_raw
                 .growths

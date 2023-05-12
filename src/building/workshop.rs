@@ -2,11 +2,14 @@ use crate::{
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, Voxel},
 };
+use dfhack_remote::BuildingInstance;
+use extend::ext;
 
-use super::Building;
+use super::RefBuildingInstanceExt;
 
-impl Building<'_> {
-    pub fn collect_workshop_voxels(&self) -> Vec<Voxel> {
+#[ext(name = BuildingInstanceWorkshopExt)]
+pub impl BuildingInstance {
+    fn collect_workshop_voxels(&self) -> Vec<Voxel> {
         #[rustfmt::skip]
         let shape: Box3D<bool, 9> = [
             shape::slice_empty(),

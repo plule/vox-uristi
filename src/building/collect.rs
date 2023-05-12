@@ -1,15 +1,16 @@
-use super::{building_type::BuildingType, Building};
+use super::{
+    BuildingInstanceBridgeExt, BuildingInstanceFurnitureExt, BuildingInstanceWorkshopExt,
+    BuildingType, RefBuildingInstanceExt,
+};
 use crate::{
-    direction::DirectionFlat,
     export::ExportSettings,
     map::Map,
-    shape::{self, Box3D, Rotating},
+    shape::{self, Rotating},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
-    IsSomeAnd,
 };
-use dfhack_remote::PlantRawList;
+use dfhack_remote::{BuildingInstance, PlantRawList};
 
-impl CollectVoxels for Building<'_> {
+impl CollectVoxels for BuildingInstance {
     fn collect_voxels(
         &self,
         map: &Map,
@@ -18,7 +19,7 @@ impl CollectVoxels for Building<'_> {
     ) -> Vec<Voxel> {
         let coords = self.origin();
         let shape = match self.building_type() {
-            BuildingType::ArcheryTarget { direction } => Building::archery_shape(direction),
+            BuildingType::ArcheryTarget { direction } => BuildingInstance::archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -227,96 +228,5 @@ impl CollectVoxels for Building<'_> {
             _ => return vec![],
         };
         voxels_from_uniform_shape(shape, coords, self.material())
-    }
-}
-
-impl Building<'_> {
-    pub fn window_shape(&self, map: &Map) -> Box3D<bool> {
-        let conn = map.neighbouring_flat(self.origin(), |tile, buildings| {
-            buildings.iter().any(|b| {
-                matches!(
-                    b.building_type(),
-                    BuildingType::WindowGem | BuildingType::WindowGlass
-                )
-            }) || tile.some_and(|tile| tile.is_wall())
-        });
-        [
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            shape::slice_empty(),
-        ]
-    }
-
-    pub fn door_shape(&self, map: &Map) -> Box3D<bool> {
-        let conn = map.neighbouring_flat(self.origin(), |tile, buildings| {
-            buildings
-                .iter()
-                .any(|b| matches!(b.building_type(), BuildingType::Door))
-                || tile.some_and(|t| t.is_wall())
-        });
-        [
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            [
-                [false, conn.n, false],
-                [conn.w, true, conn.e],
-                [false, conn.s, false],
-            ],
-            shape::slice_empty(),
-        ]
-    }
-
-    pub fn archery_shape(direction: DirectionFlat) -> Box3D<bool> {
-        [
-            shape::slice_empty(),
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, false, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-            shape::slice_empty(),
-        ]
-        .looking_at(direction)
     }
 }

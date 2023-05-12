@@ -1,10 +1,11 @@
 use super::{
     corner_ramp_level,
     plant::{connectivity_from_direction_string, PlantPart},
-    RampContactKind, Tile,
+    RampContactKind,
 };
 use crate::{
     map::Map,
+    rfr::BlockTile,
     shape::{
         box_empty, box_from_levels, box_full, slice_empty, slice_from_fn, slice_full, Box3D,
         Rotating,
@@ -12,29 +13,31 @@ use crate::{
     IsSomeAnd,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
+use extend::ext;
 use rand::Rng;
 
-impl Tile<'_> {
-    pub fn is_wall(&self) -> bool {
+#[ext]
+pub impl BlockTile<'_> {
+    fn is_wall(&self) -> bool {
         matches!(
-            self.0.tile_type().shape(),
+            self.tile_type().shape(),
             TiletypeShape::WALL | TiletypeShape::FORTIFICATION
         )
     }
 
-    pub fn ramp_contact_kind(&self) -> RampContactKind {
+    fn ramp_contact_kind(&self) -> RampContactKind {
         if self.is_wall() {
             RampContactKind::Wall
-        } else if self.0.tile_type().shape() == TiletypeShape::RAMP {
+        } else if self.tile_type().shape() == TiletypeShape::RAMP {
             RampContactKind::Ramp
         } else {
             RampContactKind::Empty
         }
     }
 
-    pub fn structure_shape(&self, map: &Map) -> Box3D<bool> {
-        let coords = self.0.coords();
-        let tile_type = self.0.tile_type();
+    fn structure_shape(&self, map: &Map) -> Box3D<bool> {
+        let coords = self.coords();
+        let tile_type = self.tile_type();
         let mut rng = rand::thread_rng();
         match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
@@ -108,8 +111,8 @@ impl Tile<'_> {
         }
     }
 
-    pub fn plant_part(&self) -> PlantPart {
-        let tile_type = self.0.tile_type();
+    fn plant_part(&self) -> PlantPart {
+        let tile_type = self.tile_type();
         match (
             tile_type.material(),
             tile_type.shape(),

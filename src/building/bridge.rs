@@ -1,13 +1,16 @@
-use super::Building;
+use super::RefBuildingInstanceExt;
 use crate::{
     direction::DirectionFlat,
     shape,
     voxel::{voxels_from_uniform_shape, Voxel},
     Coords,
 };
+use dfhack_remote::BuildingInstance;
+use extend::ext;
 
-impl Building<'_> {
-    pub fn bridge_collect_voxels(&self, direction: Option<DirectionFlat>) -> Vec<Voxel> {
+#[ext(name=BuildingInstanceBridgeExt)]
+pub impl BuildingInstance {
+    fn bridge_collect_voxels(&self, direction: Option<DirectionFlat>) -> Vec<Voxel> {
         let mut voxels = Vec::new();
         let sn = matches!(direction, Some(DirectionFlat::North | DirectionFlat::South));
         let ew = matches!(direction, Some(DirectionFlat::East | DirectionFlat::West));

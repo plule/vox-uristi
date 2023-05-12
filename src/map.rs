@@ -1,27 +1,26 @@
 use crate::{
-    building::{Building, BuildingType},
+    building::{BuildingType, RefBuildingInstanceExt},
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
     flow::FlowExtensions,
-    rfr,
-    tile::Tile,
+    rfr::{self, BlockTile},
+    tile::BlockTile_Ext,
     Coords, IsSomeAnd,
 };
-use dfhack_remote::{Coord, FlowInfo, MapBlock, TiletypeList};
+use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, TiletypeList};
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Add};
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
 pub struct Map<'a> {
-    pub tiles: HashMap<Coords, Tile<'a>>,
-    pub buildings: HashMap<Coords, Vec<Building<'a>>>,
+    pub tiles: HashMap<Coords, BlockTile<'a>>,
+    pub buildings: HashMap<Coords, Vec<&'a BuildingInstance>>,
     pub flows: HashMap<Coords, &'a FlowInfo>,
 }
 
 impl<'a> Map<'a> {
     pub fn add_block(&mut self, block: &'a MapBlock, tiletypes: &'a TiletypeList) {
         for building in &block.buildings {
-            let building = Building(building);
             if building.building_type() != BuildingType::Unknown {
                 self.buildings
                     .entry(building.origin())
@@ -34,14 +33,14 @@ impl<'a> Map<'a> {
             self.flows.insert(flow.coords(), flow);
         }
         for tile in rfr::TileIterator::new(block, tiletypes) {
-            self.tiles.insert(tile.coords(), Tile(tile));
+            self.tiles.insert(tile.coords(), tile);
         }
     }
 
     /// Compute a given function for all the neighbours including above and below
     pub fn neighbouring<F, T>(&self, coords: Coords, func: F) -> Neighbouring<T>
     where
-        F: Fn(Option<&Tile<'a>>, &Vec<Building<'a>>) -> T,
+        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         Neighbouring::new(|direction| {
@@ -56,7 +55,7 @@ impl<'a> Map<'a> {
     /// Compute a given function for all the neighbours on the same plane
     pub fn neighbouring_flat<F, T>(&self, coords: Coords, func: F) -> NeighbouringFlat<T>
     where
-        F: Fn(Option<&Tile<'a>>, &Vec<Building<'a>>) -> T,
+        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
     {
         let empty_vec = vec![];
         NeighbouringFlat::new(|direction| {
