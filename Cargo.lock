@@ -121,6 +121,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c99f64d1e06488f620f932677e24bc6e2897582980441ae90a671415bd7ec2f"
 dependencies = [
  "cfg-if",
+ "getrandom",
  "once_cell",
  "serde",
  "version_check",
@@ -1017,6 +1018,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac1b7517328c04c2aa68422fc60a41b92208182142ed04a25879c26c8f878794"
 dependencies = [
  "libloading",
+]
+
+[[package]]
+name = "dot_vox"
+version = "5.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd05cab02d6074145c6f92ddf1b57357e4bc1424f87c790c044de62bdc94c13a"
+dependencies = [
+ "ahash",
+ "lazy_static",
+ "log",
+ "nom",
 ]
 
 [[package]]
@@ -3728,6 +3741,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dfhack-remote",
+ "dot_vox",
  "eframe",
  "extend",
  "image",

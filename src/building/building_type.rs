@@ -1,5 +1,6 @@
 use crate::direction::DirectionFlat;
 use dfhack_remote::BuildingInstance;
+use num_enum::FromPrimitive;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum BuildingType {
@@ -19,7 +20,7 @@ pub enum BuildingType {
     Well,
     Cabinet,
     Statue,
-    Workshop { subtype: i32 },
+    Workshop(WorkshopType),
     Bridge { direction: Option<DirectionFlat> },
     RoadDirt,
     RoadPaved,
@@ -59,6 +60,73 @@ pub enum BuildingType {
     Unknown,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum WorkshopType {
+    Generic,
+    Carpenter,
+    Farmers,
+    Masons,
+    Craftdwarfs,
+    Jewelers,
+    MetalsmithsForge,
+    MagmaForge,
+    Bowyers,
+    Mechanics,
+    Siege,
+    Butchers,
+    Leatherworks,
+    Tanners,
+    Clothiers,
+    Fishery,
+    Still,
+    Loom,
+    Quern,
+    Kennels,
+    Kitchen,
+    Ashery,
+    Dyers,
+    Millstone,
+    Custom,
+    SoapMaker,
+    ScrewPress,
+    Tool,
+}
+
+impl From<(i32, i32)> for WorkshopType {
+    fn from((subtype, custom): (i32, i32)) -> Self {
+        match (subtype, custom) {
+            (0, _) => Self::Carpenter,
+            (1, _) => Self::Farmers,
+            (2, _) => Self::Masons,
+            (3, _) => Self::Craftdwarfs,
+            (4, _) => Self::Jewelers,
+            (5, _) => Self::MetalsmithsForge,
+            (6, _) => Self::MagmaForge,
+            (7, _) => Self::Bowyers,
+            (8, _) => Self::Mechanics,
+            (9, _) => Self::Siege,
+            (10, _) => Self::Butchers,
+            (11, _) => Self::Leatherworks,
+            (12, _) => Self::Tanners,
+            (13, _) => Self::Clothiers,
+            (14, _) => Self::Fishery,
+            (15, _) => Self::Still,
+            (16, _) => Self::Loom,
+            (17, _) => Self::Quern,
+            (18, _) => Self::Kennels,
+            (19, _) => Self::Kitchen,
+            (20, _) => Self::Ashery,
+            (21, _) => Self::Dyers,
+            (22, _) => Self::Millstone,
+            (23, 0) => Self::SoapMaker,
+            (23, 1) => Self::ScrewPress,
+            (23, _) => Self::Custom,
+            (24, _) => Self::Tool,
+            _ => Self::Generic,
+        }
+    }
+}
+
 impl BuildingType {
     pub fn from_df(instance: &BuildingInstance) -> BuildingType {
         if instance.building_type.is_none() {
@@ -80,9 +148,10 @@ impl BuildingType {
             10 => BuildingType::Box,
             11 => BuildingType::WeaponRack,
             12 => BuildingType::ArmorStand,
-            13 => BuildingType::Workshop {
-                subtype: building_type.building_subtype(),
-            },
+            13 => BuildingType::Workshop(WorkshopType::from((
+                building_type.building_subtype(),
+                building_type.building_custom(),
+            ))),
             14 => BuildingType::Cabinet,
             15 => BuildingType::Statue,
             16 => BuildingType::WindowGlass,

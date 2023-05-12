@@ -1,6 +1,6 @@
 use super::{
-    BuildingInstanceBridgeExt, BuildingInstanceFurnitureExt, BuildingInstanceWorkshopExt,
-    BuildingType, RefBuildingInstanceExt,
+    BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt,
+    BuildingInstanceWorkshopExt, BuildingType,
 };
 use crate::{
     export::ExportSettings,
@@ -222,8 +222,8 @@ impl CollectVoxels for BuildingInstance {
                     ];
                 shape.looking_at(map.wall_direction(coords))
             }
-            BuildingType::Workshop { subtype: _ } => {
-                return self.collect_workshop_voxels();
+            BuildingType::Workshop(workshop_type) => {
+                return self.collect_workshop_voxels(workshop_type);
             }
             _ => return vec![],
         };

@@ -1,6 +1,8 @@
 use dfhack_remote::PlantRawList;
 
-use crate::{export::ExportSettings, map::Map, palette::Material, shape::Box3D, Coords};
+use crate::{
+    export::ExportSettings, map::Map, palette::Material, shape::Box3D, Coords, WithCoords,
+};
 
 #[derive(Debug)]
 pub struct Voxel {
@@ -62,4 +64,48 @@ pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
         })
     });
     voxels_from_shape(shape, origin)
+}
+
+pub fn voxels_from_dot_vox(
+    voxels: &[dot_vox::Voxel],
+    origin: Coords,
+    materials: &[Material],
+) -> Vec<Voxel> {
+    let size_y = voxels.iter().max_by_key(|v| v.y).unwrap().y;
+    voxels
+        .iter()
+        .filter_map(|voxel| {
+            materials.get(voxel.i as usize).and_then(|material| {
+                Some(Voxel::new(
+                    Coords::new(
+                        voxel.x as i32 + origin.x * 3,
+                        (size_y - voxel.y) as i32 + origin.y * 3,
+                        voxel.z as i32 + origin.z * 5,
+                    ),
+                    material.clone(),
+                ))
+            })
+        })
+        .collect()
+}
+
+pub trait FromDotVox {
+    fn from_dot_vox(&self, voxels: &[u8]) -> Vec<Voxel>;
+}
+
+pub trait WithDotVoxMaterials {
+    fn dot_vox_materials(&self) -> Vec<Material>;
+}
+
+impl<T> FromDotVox for T
+where
+    T: WithCoords + WithDotVoxMaterials,
+{
+    fn from_dot_vox(&self, bytes: &[u8]) -> Vec<Voxel> {
+        voxels_from_dot_vox(
+            &dot_vox::load_bytes(bytes).expect("Invalid model").models[0].voxels,
+            self.coords(),
+            &self.dot_vox_materials(),
+        )
+    }
 }

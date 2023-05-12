@@ -36,6 +36,10 @@ impl Display for Coords {
     }
 }
 
+pub trait WithCoords {
+    fn coords(&self) -> Coords;
+}
+
 pub trait IsSomeAnd<T> {
     fn some_and(self, f: impl FnOnce(T) -> bool) -> bool;
 }

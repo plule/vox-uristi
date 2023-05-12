@@ -3,7 +3,7 @@ use crate::{
     palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
-    Coords,
+    Coords, WithCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType, PlantRawList};
 use rand::Rng;
@@ -41,11 +41,7 @@ impl CollectVoxels for &FlowInfo {
     }
 }
 
-pub trait FlowExtensions {
-    fn coords(&self) -> Coords;
-}
-
-impl FlowExtensions for FlowInfo {
+impl WithCoords for FlowInfo {
     fn coords(&self) -> Coords {
         self.pos.get_or_default().into()
     }

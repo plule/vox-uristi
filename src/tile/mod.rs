@@ -4,6 +4,14 @@ mod plant;
 pub use generic::BlockTile_Ext;
 pub use plant::BlockTilePlantExt;
 
+use crate::{rfr::BlockTile, WithCoords};
+
+impl WithCoords for BlockTile<'_> {
+    fn coords(&self) -> crate::Coords {
+        self.coords()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RampContactKind {
     Wall,

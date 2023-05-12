@@ -1,4 +1,4 @@
-use super::RefBuildingInstanceExt;
+use super::BuildingInstanceExt;
 use crate::{
     building::BuildingType,
     direction::DirectionFlat,

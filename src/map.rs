@@ -1,10 +1,9 @@
 use crate::{
-    building::{BuildingType, RefBuildingInstanceExt},
+    building::{BuildingInstanceExt, BuildingType},
     direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
-    flow::FlowExtensions,
     rfr::{self, BlockTile},
     tile::BlockTile_Ext,
-    Coords, IsSomeAnd,
+    Coords, IsSomeAnd, WithCoords,
 };
 use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, TiletypeList};
 use itertools::Itertools;

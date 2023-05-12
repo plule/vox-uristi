@@ -10,7 +10,7 @@ pub use furniture::BuildingInstanceFurnitureExt;
 pub use workshop::BuildingInstanceWorkshopExt;
 
 pub use self::building_type::BuildingType;
-use crate::{palette::Material, Coords};
+use crate::{palette::Material, Coords, WithCoords};
 use dfhack_remote::BuildingInstance;
 use extend::ext;
 use std::ops::RangeInclusive;
@@ -28,16 +28,14 @@ impl BoundingBox {
     }
 }
 
-#[ext]
-impl<T: Ord> Vec<T> {
-    fn sorted(mut self) -> Self {
-        self.sort();
-        self
+impl WithCoords for BuildingInstance {
+    fn coords(&self) -> Coords {
+        Coords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
     }
 }
 
 #[ext]
-pub impl &BuildingInstance {
+pub impl BuildingInstance {
     fn building_type(&self) -> BuildingType {
         BuildingType::from_df(self)
     }
@@ -55,6 +53,14 @@ pub impl &BuildingInstance {
             self.pos_x_min()..=self.pos_x_max(),
             self.pos_y_min()..=self.pos_y_max(),
             self.pos_z_min()..=self.pos_z_max(),
+        )
+    }
+
+    fn dimension(&self) -> (i32, i32) {
+        let bounding_box = self.bounding_box();
+        (
+            bounding_box.x.end() - bounding_box.x.start(),
+            bounding_box.y.end() - bounding_box.y.start(),
         )
     }
 }

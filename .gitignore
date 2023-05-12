@@ -1,5 +1,4 @@
 /target
-*.vox
 settings.json
 .vscode
 lists/
