@@ -1,7 +1,11 @@
 use dfhack_remote::PlantRawList;
 
 use crate::{
-    export::ExportSettings, map::Map, palette::Material, shape::Box3D, Coords, WithCoords,
+    export::ExportSettings,
+    map::Map,
+    palette::{DefaultMaterials, Material},
+    shape::Box3D,
+    Coords, WithCoords,
 };
 
 #[derive(Debug)]
@@ -75,14 +79,21 @@ pub fn voxels_from_dot_vox(
     voxels
         .iter()
         .filter_map(|voxel| {
-            materials.get(voxel.i as usize).map(|material| {
+            let material = match voxel.i {
+                i if i < 8 => materials.get(i as usize).cloned(),
+                8 => Some(Material::Default(DefaultMaterials::Fire)),
+                9 => Some(Material::Default(DefaultMaterials::Wood)),
+                _ => None,
+            };
+
+            material.map(|material| {
                 Voxel::new(
                     Coords::new(
                         voxel.x as i32 + origin.x * 3,
                         (size_y - voxel.y) as i32 + origin.y * 3,
                         voxel.z as i32 + origin.z * 5,
                     ),
-                    material.clone(),
+                    material,
                 )
             })
         })

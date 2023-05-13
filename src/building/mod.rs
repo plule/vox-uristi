@@ -59,8 +59,8 @@ pub impl BuildingInstance {
     fn dimension(&self) -> (i32, i32) {
         let bounding_box = self.bounding_box();
         (
-            bounding_box.x.end() - bounding_box.x.start(),
-            bounding_box.y.end() - bounding_box.y.start(),
+            1 + bounding_box.x.end() - bounding_box.x.start(),
+            1 + bounding_box.y.end() - bounding_box.y.start(),
         )
     }
 
