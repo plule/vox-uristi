@@ -10,7 +10,7 @@ ahash = "0.8.3"
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
-dot_vox = "5.1.1"
+dot_vox = { path = "../dot_vox" }
 eframe = {version = "0.21.3", features = ["persistence"]}
 extend = "1.2.0"
 indicatif = "0.17.3"

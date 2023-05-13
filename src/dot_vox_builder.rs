@@ -1,5 +1,6 @@
 use ahash::{AHashMap, HashMap};
-use dot_vox::{DotVoxData, Frame, Model, SceneNode, ShapeModel, Size, Voxel};
+use dot_vox::{Dict, DotVoxData, Frame, Material, Model, SceneNode, ShapeModel, Size, Voxel};
+use extend::ext;
 use num_integer::div_mod_floor;
 
 const MODEL_EDGE: i32 = 128;
@@ -28,8 +29,21 @@ impl Default for DotVoxBuilder {
             data: DotVoxData {
                 version: 150,
                 models: vec![],
-                palette: vec![],
-                materials: vec![],
+                palette: dot_vox::DEFAULT_PALETTE.to_vec(),
+                materials: (0..256)
+                    .into_iter()
+                    .map(|i| Material {
+                        id: i,
+                        properties: {
+                            let mut map = Dict::new();
+                            map.insert("_ior".to_owned(), "0.3".to_owned());
+                            map.insert("_rough".to_owned(), "0.1".to_owned());
+                            map.insert("_ior".to_owned(), "0.3".to_owned());
+                            map.insert("_d".to_owned(), "0.05".to_owned());
+                            map
+                        },
+                    })
+                    .collect(),
                 scenes: root_scene_graph,
                 layers: vec![],
             },
@@ -114,4 +128,54 @@ fn voxel_coords(x: i32, y: i32, z: i32) -> ((i32, i32, i32), (u8, u8, u8)) {
     let (z, sub_z) = div_mod_floor(z, MODEL_EDGE);
 
     ((x, y, z), (sub_x as u8, sub_y as u8, sub_z as u8))
+}
+
+#[ext]
+pub impl Material {
+    fn diffuse(id: u32) -> Self {
+        Self {
+            id,
+            properties: AHashMap::from([
+                ("_rough".to_string(), "0.1".to_string()),
+                ("_ior".to_string(), "0.3".to_string()),
+                ("_d".to_string(), "0.05".to_string()),
+            ]),
+        }
+    }
+    fn metal(id: u32, metal: f32, rough: f32, ior: f32, sp: f32) -> Self {
+        Self {
+            id,
+            properties: AHashMap::from([
+                ("_type".to_string(), "_metal".to_string()),
+                ("_metal".to_string(), metal.to_string()),
+                ("_rough".to_string(), rough.to_string()),
+                ("_ior".to_string(), ior.to_string()),
+                ("_sp".to_string(), sp.to_string()),
+            ]),
+        }
+    }
+    fn emit(id: u32, emit: f32, flux: u8, ldr: f32) -> Self {
+        Self {
+            id,
+            properties: AHashMap::from([
+                ("_type".to_string(), "_emit".to_string()),
+                ("_emit".to_string(), emit.to_string()),
+                ("_flux".to_string(), flux.to_string()),
+                ("_ldr".to_string(), ldr.to_string()),
+            ]),
+        }
+    }
+    fn glass(id: u32, rough: f32, ior: f32, trans: f32, density: f32) -> Self {
+        Self {
+            id,
+            properties: AHashMap::from([
+                ("_type".to_string(), "_glass".to_string()),
+                ("_trans".to_string(), trans.to_string()),
+                ("_alpha".to_string(), trans.to_string()),
+                ("_rough".to_string(), rough.to_string()),
+                ("_ior".to_string(), ior.to_string()),
+                ("_d".to_string(), density.to_string()),
+            ]),
+        }
+    }
 }

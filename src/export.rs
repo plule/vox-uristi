@@ -138,7 +138,6 @@ pub fn try_export_voxels(
     let mut vox: DotVoxData = vox.into();
 
     palette.write_palette(&mut vox, &material_list.material_list);
-
     progress_tx.send(Progress::Writing)?;
     let mut f = File::create(path.clone())?;
     vox.write_vox(&mut f)?;

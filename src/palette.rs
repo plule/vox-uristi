@@ -1,3 +1,4 @@
+use crate::dot_vox_builder::MaterialExt;
 use crate::rfr::RGBColor;
 use dfhack_remote::{core_text_fragment::Color, MatPair, MaterialDefinition};
 use dot_vox::DotVoxData;
@@ -51,24 +52,55 @@ impl<T: RGBColor> RGBAColor for T {
 }
 
 impl Material {
-    pub fn get_color(&self, materials: &[MaterialDefinition]) -> (u8, u8, u8, u8) {
+    pub fn get_material(
+        &self,
+        materials: &[MaterialDefinition],
+        id: u32,
+    ) -> ((u8, u8, u8, u8), dot_vox::Material) {
         match self {
-            Material::Default(default) => default.get_rgba(),
-            Material::Generic(matpair) => materials
-                .iter()
-                .find(|m| matpair == m.mat_pair.get_or_default())
-                .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba()),
+            Material::Default(default) => {
+                let color = default.get_rgba();
+                let mat = match default {
+                    DefaultMaterials::Water => dot_vox::Material::glass(id, 0.1, 0.3, 0.2, 0.05),
+                    DefaultMaterials::Magma => dot_vox::Material::emit(id, 0.5, 2, 0.0),
+                    DefaultMaterials::Fire => dot_vox::Material::emit(id, 0.5, 2, 0.0),
+                    _ => dot_vox::Material::diffuse(id),
+                };
+
+                (color, mat)
+            }
+            Material::Generic(matpair) => {
+                let color = materials
+                    .iter()
+                    .find(|m| matpair == m.mat_pair.get_or_default())
+                    .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba());
+                let material = match (matpair.mat_type(), matpair.mat_index()) {
+                    // Metals
+                    (0, i) if i <= 25 => dot_vox::Material::metal(id, 1.0, 0.1, 0.3, 0.05),
+                    // Green, clear and crystal glass
+                    (3 | 4 | 5, _) => dot_vox::Material::glass(id, 0.1, 0.3, 0.36, 0.5),
+                    // Marble
+                    (0, 185) => dot_vox::Material::metal(id, 0.61, 0.8, 0.3, 0.0),
+
+                    _ => dot_vox::Material::diffuse(id),
+                };
+                (color, material)
+            }
             Material::Plant {
                 material,
                 source_color,
                 dest_color,
             } => {
+                let mat = dot_vox::Material::diffuse(id);
                 let main_color = materials
                     .iter()
                     .find(|m| material == m.mat_pair.get_or_default())
                     .map_or(named::BLACK, |material| material.state_color.rgb());
                 if source_color == dest_color {
-                    return (main_color.red, main_color.green, main_color.blue, 255);
+                    return (
+                        (main_color.red, main_color.green, main_color.blue, 255),
+                        mat,
+                    );
                 }
                 let mut color = Hsv::from_color(main_color.into_linear::<f32>());
                 let source_color = Hsv::from_color(source_color.rgb().into_linear::<f32>());
@@ -86,7 +118,7 @@ impl Material {
                 }
                 let color = Rgb::from_color(color);
                 let color: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(color);
-                (color.red, color.green, color.blue, 255)
+                ((color.red, color.green, color.blue, 255), mat)
             }
         }
     }
@@ -125,18 +157,10 @@ impl Palette {
     }
 
     pub fn write_palette(&self, vox: &mut DotVoxData, materials: &[MaterialDefinition]) {
-        vox.palette.resize(
-            self.materials.len(),
-            dot_vox::Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
-        );
         for (material, index) in &self.materials {
-            let (r, g, b, a) = material.get_color(materials);
+            let ((r, g, b, a), material) = material.get_material(materials, u32::from(*index) + 1);
             vox.palette[*index as usize] = dot_vox::Color { r, g, b, a };
+            vox.materials[*index as usize] = material;
         }
     }
 }
