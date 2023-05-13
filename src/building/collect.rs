@@ -225,6 +225,9 @@ impl CollectVoxels for BuildingInstance {
             BuildingType::Workshop(workshop_type) => {
                 return self.collect_workshop_voxels(workshop_type);
             }
+            BuildingType::Furnace(furnace_type) => {
+                return self.collect_furnace_voxels(furnace_type);
+            }
             _ => return vec![],
         };
         voxels_from_uniform_shape(shape, coords, self.material())

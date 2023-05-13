@@ -1,4 +1,4 @@
-use super::{BuildingInstanceExt, WorkshopType};
+use super::{BuildingInstanceExt, FurnaceType, WorkshopType};
 use crate::{
     palette::Material,
     shape::{self, Box3D},
@@ -46,6 +46,21 @@ pub impl BuildingInstance {
                     ];
                     voxels_from_uniform_shape(shape, self.origin(), self.material())
                 }
+            }
+        }
+    }
+
+    fn collect_furnace_voxels(&self, furnace_type: FurnaceType) -> Vec<Voxel> {
+        match furnace_type {
+            FurnaceType::Generic
+            | FurnaceType::WoodFurnace
+            | FurnaceType::GlassFurnace
+            | FurnaceType::MagmaGlassFurnace
+            | FurnaceType::MagmaKiln
+            | FurnaceType::Kiln
+            | FurnaceType::Custom => self.from_dot_vox(include_bytes!("furnace.vox")),
+            FurnaceType::Smelter | FurnaceType::MagmaSmelter => {
+                self.from_dot_vox(include_bytes!("smelter.vox"))
             }
         }
     }

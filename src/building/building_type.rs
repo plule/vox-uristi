@@ -9,7 +9,7 @@ pub enum BuildingType {
     Table,
     Coffin,
     FarmPlot,
-    Furnace { subtype: i32 },
+    Furnace(FurnaceType),
     Door,
     Floodgate,
     Box,
@@ -92,6 +92,21 @@ pub enum WorkshopType {
     Tool,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, FromPrimitive)]
+#[repr(i32)]
+pub enum FurnaceType {
+    #[default]
+    Generic = -1,
+    WoodFurnace = 0,
+    Smelter = 1,
+    GlassFurnace = 2,
+    Kiln = 3,
+    MagmaSmelter = 4,
+    MagmaGlassFurnace = 5,
+    MagmaKiln = 6,
+    Custom = 7,
+}
+
 impl From<(i32, i32)> for WorkshopType {
     fn from((subtype, custom): (i32, i32)) -> Self {
         match (subtype, custom) {
@@ -140,9 +155,7 @@ impl BuildingType {
             2 => BuildingType::Table,
             3 => BuildingType::Coffin,
             4 => BuildingType::FarmPlot,
-            5 => BuildingType::Furnace {
-                subtype: building_type.building_subtype(),
-            },
+            5 => BuildingType::Furnace(FurnaceType::from(building_type.building_subtype())),
             8 => BuildingType::Door,
             9 => BuildingType::Floodgate,
             10 => BuildingType::Box,
