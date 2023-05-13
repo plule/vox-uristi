@@ -6,7 +6,7 @@ use crate::{
     export::ExportSettings,
     map::Map,
     shape::{self, Rotating},
-    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel},
 };
 use dfhack_remote::{BuildingInstance, PlantRawList};
 
@@ -227,6 +227,9 @@ impl CollectVoxels for BuildingInstance {
             }
             BuildingType::Furnace(furnace_type) => {
                 return self.collect_furnace_voxels(furnace_type);
+            }
+            BuildingType::TradeDepot => {
+                return self.from_dot_vox(include_bytes!("trade_depot.vox"));
             }
             _ => return vec![],
         };
