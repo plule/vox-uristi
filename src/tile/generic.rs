@@ -103,7 +103,6 @@ pub impl BlockTile<'_> {
             TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
             TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
             TiletypeShape::RAMP => {
-                // review for perf
                 let c = map.neighbouring_flat(coords, |tile, _| {
                     tile.map(|tile| tile.ramp_contact_kind())
                         .unwrap_or(RampContactKind::Empty)
@@ -112,7 +111,7 @@ pub impl BlockTile<'_> {
                 #[rustfmt::skip]
                             let levels = [
                                 [corner_ramp_level(c.n, c.w) , c.n.height(), corner_ramp_level(c.n, c.e)],
-                                [c.w.height()                , 2           , c.e.height()               ],
+                                [c.w.height()                , 3           , c.e.height()               ],
                                 [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
                             ];
 
