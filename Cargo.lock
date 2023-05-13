@@ -3738,6 +3738,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vox-uristi"
 version = "0.7.0"
 dependencies = [
+ "ahash",
  "anyhow",
  "clap",
  "dfhack-remote",
@@ -3747,6 +3748,7 @@ dependencies = [
  "image",
  "indicatif",
  "itertools",
+ "num-integer",
  "num_enum 0.6.1",
  "opener",
  "palette",
@@ -3760,15 +3762,8 @@ dependencies = [
  "serde",
  "strum",
  "tracing-subscriber",
- "vox_writer",
  "winres",
 ]
-
-[[package]]
-name = "vox_writer"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f333d7cee8e3496dfe877c3093795a23eb73bb79fbf384e8174ba9c9919aa5ca"
 
 [[package]]
 name = "waker-fn"

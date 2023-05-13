@@ -6,6 +6,7 @@ mod calendar;
 #[cfg(feature = "cli")]
 mod cli;
 mod direction;
+mod dot_vox_builder;
 mod export;
 mod flow;
 mod map;

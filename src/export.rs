@@ -1,12 +1,15 @@
-use crate::{map::Map, palette::Palette, rfr, voxel::CollectVoxels};
+use crate::{
+    dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr, voxel::CollectVoxels,
+};
 use anyhow::Result;
 use dfhack_remote::PlantRawList;
+use dot_vox::DotVoxData;
 use std::{
+    fs::File,
     ops::Range,
     path::PathBuf,
     sync::mpsc::{Receiver, Sender},
 };
-use vox_writer::VoxWriter;
 
 pub struct ExportSettings {
     pub year_tick: i32,
@@ -33,7 +36,6 @@ pub fn try_export_voxels(
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
 ) -> Result<()> {
-    let path_str = path.to_string_lossy().to_string();
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
 
@@ -78,7 +80,7 @@ pub fn try_export_voxels(
     let total = map.tiles.len();
     progress_tx.send(Progress::StartBuilding { total })?;
 
-    let mut vox = VoxWriter::create_empty();
+    let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
 
     let max_y = map_info.block_size_y() * 16 * 3;
@@ -132,10 +134,14 @@ pub fn try_export_voxels(
             min_z,
         );
     }
+
+    let mut vox: DotVoxData = vox.into();
+
     palette.write_palette(&mut vox, &material_list.material_list);
 
     progress_tx.send(Progress::Writing)?;
-    vox.save_to_file(path_str).expect("Fail to save vox file");
+    let mut f = File::create(path.clone())?;
+    vox.write_vox(&mut f)?;
     progress_tx.send(Progress::Done { path })?;
     Ok(())
 }
@@ -147,7 +153,7 @@ fn add_voxels<T>(
     settings: &ExportSettings,
     plant_raws: &PlantRawList,
     palette: &mut Palette,
-    vox: &mut VoxWriter,
+    vox: &mut DotVoxBuilder,
     max_y: i32,
     min_z: i32,
 ) where
@@ -159,7 +165,7 @@ fn add_voxels<T>(
             voxel.coord.x,
             max_y - voxel.coord.y,
             voxel.coord.z - min_z,
-            color.into(),
+            color,
         );
     }
 }

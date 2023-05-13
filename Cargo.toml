@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ahash = "0.8.3"
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
@@ -14,6 +15,7 @@ eframe = {version = "0.21.3", features = ["persistence"]}
 extend = "1.2.0"
 indicatif = "0.17.3"
 itertools = "0.10.5"
+num-integer = "0.1.45"
 num_enum = "0.6.1"
 opener = { version = "0.6.1", features = ["reveal"] }
 palette = "0.7.1"
@@ -27,7 +29,6 @@ semver = "1.0.17"
 serde = "1.0.160"
 strum = { version = "0.24.1", features = ["derive"] }
 tracing-subscriber = "0.3.16"
-vox_writer = "0.1.6"
 
 [build-dependencies]
 image = "0.24.6"

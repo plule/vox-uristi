@@ -1,10 +1,10 @@
 use crate::rfr::RGBColor;
 use dfhack_remote::{core_text_fragment::Color, MatPair, MaterialDefinition};
+use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter};
-use vox_writer::VoxWriter;
 
 /// A material to be exported as an entry in the palette
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -118,17 +118,25 @@ pub struct Palette {
 impl Palette {
     pub fn get_palette_color(&mut self, material: &Material) -> u8 {
         let palette_size = self.materials.len();
-        1 + *self
+        *self
             .materials
             .entry(material.clone())
             .or_insert_with(|| palette_size.try_into().unwrap_or_default()) // would be nice to warn in case of palette overflow
     }
 
-    pub fn write_palette(&self, vox: &mut VoxWriter, materials: &[MaterialDefinition]) {
-        vox.clear_colors();
+    pub fn write_palette(&self, vox: &mut DotVoxData, materials: &[MaterialDefinition]) {
+        vox.palette.resize(
+            self.materials.len(),
+            dot_vox::Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+        );
         for (material, index) in &self.materials {
             let (r, g, b, a) = material.get_color(materials);
-            vox.add_color(r, g, b, a, *index);
+            vox.palette[*index as usize] = dot_vox::Color { r, g, b, a };
         }
     }
 }
