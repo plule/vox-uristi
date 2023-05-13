@@ -43,11 +43,12 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Directional ramps
 - ☑ Rough/Smooth floor representation
 - ☑ Basic tree support, inaccurate but good enough
-- ☑ Essential construction items (doors, windows, bars, bridges)
-- ☐ Detailed materials (metallic, water, light emission)
+- ☑ Most construction items (doors, windows, bars, bridges, furnitures, workshops)
 - ☑ Flows, waves and mist
-- ☑ Accurate trees
-- ☑ More construction items (furnitures)
+- ☑ Seasonal plants
+- ☐ Spatters
+- ☐ Detailed materials (metallic, water, light emission)
+- ☐ Export tuning
 
 ## Gallery
 
@@ -78,6 +79,12 @@ Fort Chantbell is a fortress by Neo.
 | *The library, lego style*          |
 
 ## Version History
+
+### v0.7
+
+- Bumped the vertical resolution from 3 to 5
+- Workshops
+- Reviewed many models
 
 ### v0.6
 
