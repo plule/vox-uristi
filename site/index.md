@@ -78,6 +78,10 @@ Fort Chantbell is a fortress by Neo.
 |------------------------------------|
 | *The library, lego style*          |
 
+| ![forge](assets/chantbell-4.jpg) |
+|----------------------------------|
+| *The Forge of Chantbell*         |
+
 ## Version History
 
 ### v0.7
