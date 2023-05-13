@@ -1,6 +1,6 @@
 use crate::{
     building::{BuildingInstanceExt, BuildingType},
-    direction::{DirectionFlat, Neighbouring, NeighbouringFlat},
+    direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile},
     tile::BlockTile_Ext,
     Coords, IsSomeAnd, WithCoords,
@@ -75,6 +75,21 @@ impl<'a> Map<'a> {
     {
         let empty_vec = vec![];
         NeighbouringFlat::new(|direction| {
+            let neighbour = coords + direction;
+            func(
+                self.tiles.get(&neighbour),
+                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
+            )
+        })
+    }
+
+    /// Compute a given function for all the neighbours on the same plane
+    pub fn neighbouring_8flat<F, T>(&self, coords: Coords, func: F) -> Neighbouring8Flat<T>
+    where
+        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
+    {
+        let empty_vec = vec![];
+        Neighbouring8Flat::new(|direction| {
             let neighbour = coords + direction;
             func(
                 self.tiles.get(&neighbour),

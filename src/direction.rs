@@ -1,4 +1,4 @@
-use crate::Coords;
+use crate::{Coords, WithCoords};
 use dfhack_remote::BuildingDirection;
 use std::ops::Add;
 
@@ -20,12 +20,36 @@ pub enum DirectionFlat {
     West,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction8Flat {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct NeighbouringFlat<T> {
     pub n: T,
     pub e: T,
     pub s: T,
     pub w: T,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Neighbouring8Flat<T> {
+    pub n: T,
+    pub ne: T,
+    pub e: T,
+    pub se: T,
+    pub s: T,
+    pub sw: T,
+    pub w: T,
+    pub nw: T,
 }
 
 pub struct Neighbouring<T> {
@@ -37,8 +61,23 @@ pub struct Neighbouring<T> {
     pub w: T,
 }
 
-impl Direction {
-    pub fn get_coords(&self) -> Coords {
+impl WithCoords for Direction8Flat {
+    fn coords(&self) -> Coords {
+        match self {
+            Direction8Flat::North => Direction::North.coords(),
+            Direction8Flat::NorthEast => Direction::North.coords() + Direction::East.coords(),
+            Direction8Flat::East => Direction::East.coords(),
+            Direction8Flat::SouthEast => Direction::South.coords() + Direction::East.coords(),
+            Direction8Flat::South => Direction::South.coords(),
+            Direction8Flat::SouthWest => Direction::South.coords() + Direction::West.coords(),
+            Direction8Flat::West => Direction::West.coords(),
+            Direction8Flat::NorthWest => Direction::North.coords() + Direction::West.coords(),
+        }
+    }
+}
+
+impl WithCoords for Direction {
+    fn coords(&self) -> Coords {
         match self {
             Direction::Above => Coords::new(0, 0, 1),
             Direction::Below => Coords::new(0, 0, -1),
@@ -50,16 +89,8 @@ impl Direction {
     }
 }
 
-impl Add<Direction> for Coords {
-    type Output = Coords;
-
-    fn add(self, rhs: Direction) -> Self::Output {
-        self + rhs.get_coords()
-    }
-}
-
-impl DirectionFlat {
-    pub fn get_coords(&self) -> Coords {
+impl WithCoords for DirectionFlat {
+    fn coords(&self) -> Coords {
         match self {
             DirectionFlat::North => Coords::new(0, -1, 0),
             DirectionFlat::South => Coords::new(0, 1, 0),
@@ -67,7 +98,9 @@ impl DirectionFlat {
             DirectionFlat::West => Coords::new(-1, 0, 0),
         }
     }
+}
 
+impl DirectionFlat {
     pub fn maybe_from_df(value: &BuildingDirection) -> Option<Self> {
         match value {
             BuildingDirection::NORTH => Some(DirectionFlat::North),
@@ -76,14 +109,6 @@ impl DirectionFlat {
             BuildingDirection::WEST => Some(DirectionFlat::West),
             BuildingDirection::NONE => None,
         }
-    }
-}
-
-impl Add<DirectionFlat> for Coords {
-    type Output = Coords;
-
-    fn add(self, rhs: DirectionFlat) -> Self::Output {
-        self + rhs.get_coords()
     }
 }
 
@@ -101,6 +126,24 @@ impl<T> NeighbouringFlat<T> {
     }
 }
 
+impl<T> Neighbouring8Flat<T> {
+    pub fn new<F>(func: F) -> Self
+    where
+        F: Fn(Direction8Flat) -> T,
+    {
+        Self {
+            n: func(Direction8Flat::North),
+            ne: func(Direction8Flat::NorthEast),
+            e: func(Direction8Flat::East),
+            se: func(Direction8Flat::SouthEast),
+            s: func(Direction8Flat::South),
+            sw: func(Direction8Flat::SouthWest),
+            w: func(Direction8Flat::West),
+            nw: func(Direction8Flat::NorthWest),
+        }
+    }
+}
+
 impl<T> Neighbouring<T> {
     pub fn new<F>(func: F) -> Self
     where
@@ -114,5 +157,16 @@ impl<T> Neighbouring<T> {
             s: func(Direction::South),
             w: func(Direction::West),
         }
+    }
+}
+
+impl<T> Add<T> for Coords
+where
+    T: WithCoords,
+{
+    type Output = Coords;
+
+    fn add(self, rhs: T) -> Self::Output {
+        self + rhs.coords()
     }
 }

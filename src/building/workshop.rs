@@ -34,7 +34,6 @@ pub impl BuildingInstance {
             WorkshopType::Still => self.dot_vox(include_bytes!("workshop_still.vox")),
             _ => {
                 let dimensions = self.dimension();
-                dbg!(dimensions);
                 if dimensions.0 == 3 && dimensions.1 == 3 {
                     self.dot_vox(include_bytes!("workshop.vox"))
                 } else {

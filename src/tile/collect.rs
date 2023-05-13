@@ -29,13 +29,7 @@ impl CollectVoxels for BlockTile<'_> {
 
         if self.material().mat_type() != 419 {
             // classic tile structure
-            let structure_shape = self.structure_shape(map);
-            let structure_material = Material::Generic(self.material().clone());
-            voxels.extend(voxels_from_uniform_shape(
-                structure_shape,
-                self.coords(),
-                structure_material,
-            ));
+            voxels.extend(self.collect_structure_voxels(map));
         } else {
             // plant, trees
             voxels.extend(self.collect_plant_voxels(map, settings, plant_raws));

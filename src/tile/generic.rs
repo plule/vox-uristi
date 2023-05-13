@@ -5,11 +5,10 @@ use super::{
 };
 use crate::{
     map::Map,
+    palette::{DefaultMaterials, Material},
     rfr::BlockTile,
-    shape::{
-        box_empty, box_from_levels, box_full, slice_empty, slice_from_fn, slice_full, Box3D,
-        Rotating,
-    },
+    shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D, Rotating},
+    voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
     IsSomeAnd,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
@@ -35,11 +34,11 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn structure_shape(&self, map: &Map) -> Box3D<bool> {
+    fn collect_structure_voxels(&self, map: &Map) -> Vec<Voxel> {
         let coords = self.coords();
         let tile_type = self.tile_type();
         let mut rng = rand::thread_rng();
-        match tile_type.shape() {
+        let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let r = !matches!(
                     tile_type.special(),
@@ -53,7 +52,25 @@ pub impl BlockTile<'_> {
                     slice_full(),
                 ]
             }
-            TiletypeShape::WALL => box_full(),
+            TiletypeShape::WALL => {
+                let c = map.neighbouring_8flat(coords, |tile, _| tile.some_and(|t| t.is_wall()));
+                let mat = Material::Generic(self.material().to_owned());
+                let void = Material::Default(DefaultMaterials::Hidden);
+                let slice = [
+                    [c.n && c.w && c.nw, c.n, c.n && c.e && c.ne],
+                    [c.w, true, c.e],
+                    [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
+                ]
+                .map(|col| col.map(|b| Some(if b { void.clone() } else { mat.clone() })));
+                let shape = [
+                    slice.clone(),
+                    slice.clone(),
+                    slice.clone(),
+                    slice.clone(),
+                    slice,
+                ];
+                return voxels_from_shape(shape, self.coords());
+            }
             TiletypeShape::FORTIFICATION => {
                 let conn = map.neighbouring_flat(coords, |tile, _| tile.some_and(|t| t.is_wall()));
                 #[rustfmt::skip]
@@ -108,7 +125,9 @@ pub impl BlockTile<'_> {
             TiletypeShape::TRUNK_BRANCH => box_empty(), // TODO
             TiletypeShape::TWIG => box_empty(),       // TODO
             _ => box_empty(),
-        }
+        };
+        let material = Material::Generic(self.material().clone());
+        voxels_from_uniform_shape(shape, self.coords(), material)
     }
 
     fn plant_part(&self) -> PlantPart {

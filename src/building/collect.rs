@@ -7,6 +7,7 @@ use crate::{
     map::Map,
     shape::{self, Rotating},
     voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel},
+    WithCoords,
 };
 use dfhack_remote::{BuildingInstance, PlantRawList};
 
@@ -64,7 +65,7 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(coords)),
-            BuildingType::Statue | BuildingType::GearAssembly => [
+            BuildingType::GearAssembly => [
                 shape::slice_empty(),
                 [
                     [false, false, false],
@@ -79,6 +80,9 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_full(),
                 shape::slice_empty(),
             ],
+            BuildingType::Statue => {
+                return self.dot_vox(include_bytes!("statue.vox"));
+            }
             BuildingType::Box => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -106,17 +110,27 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ],
-            BuildingType::Table | BuildingType::TractionBench => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_full(),
+            BuildingType::Table | BuildingType::TractionBench => {
+                let edges = map.neighbouring_flat(self.coords(), |_, buildings| {
+                    !buildings.iter().any(|building| {
+                        matches!(
+                            building.building_type(),
+                            BuildingType::Table | BuildingType::TractionBench
+                        )
+                    })
+                });
                 [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                shape::slice_empty(),
-            ],
+                    shape::slice_empty(),
+                    shape::slice_empty(),
+                    shape::slice_full(),
+                    [
+                        [edges.n && edges.w, false, edges.n && edges.e],
+                        [false, false, false],
+                        [edges.s && edges.w, false, edges.s && edges.e],
+                    ],
+                    shape::slice_empty(),
+                ]
+            }
             BuildingType::Bed => [
                 shape::slice_empty(),
                 shape::slice_empty(),
