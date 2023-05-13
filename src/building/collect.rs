@@ -229,7 +229,7 @@ impl CollectVoxels for BuildingInstance {
                 return self.collect_furnace_voxels(furnace_type);
             }
             BuildingType::TradeDepot => {
-                return self.from_dot_vox(include_bytes!("trade_depot.vox"));
+                return self.dot_vox(include_bytes!("trade_depot.vox"));
             }
             _ => return vec![],
         };

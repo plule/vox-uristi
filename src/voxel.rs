@@ -75,22 +75,22 @@ pub fn voxels_from_dot_vox(
     voxels
         .iter()
         .filter_map(|voxel| {
-            materials.get(voxel.i as usize).and_then(|material| {
-                Some(Voxel::new(
+            materials.get(voxel.i as usize).map(|material| {
+                Voxel::new(
                     Coords::new(
                         voxel.x as i32 + origin.x * 3,
                         (size_y - voxel.y) as i32 + origin.y * 3,
                         voxel.z as i32 + origin.z * 5,
                     ),
                     material.clone(),
-                ))
+                )
             })
         })
         .collect()
 }
 
 pub trait FromDotVox {
-    fn from_dot_vox(&self, voxels: &[u8]) -> Vec<Voxel>;
+    fn dot_vox(&self, voxels: &[u8]) -> Vec<Voxel>;
 }
 
 pub trait WithDotVoxMaterials {
@@ -101,7 +101,7 @@ impl<T> FromDotVox for T
 where
     T: WithCoords + WithDotVoxMaterials,
 {
-    fn from_dot_vox(&self, bytes: &[u8]) -> Vec<Voxel> {
+    fn dot_vox(&self, bytes: &[u8]) -> Vec<Voxel> {
         voxels_from_dot_vox(
             &dot_vox::load_bytes(bytes).expect("Invalid model").models[0].voxels,
             self.coords(),

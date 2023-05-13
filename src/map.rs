@@ -19,6 +19,13 @@ pub struct Map<'a> {
 
 impl<'a> Map<'a> {
     pub fn add_block(&mut self, block: &'a MapBlock, tiletypes: &'a TiletypeList) {
+        for flow in &block.flows {
+            self.flows.insert(flow.coords(), flow);
+        }
+        for tile in rfr::TileIterator::new(block, tiletypes) {
+            self.tiles.insert(tile.coords(), tile);
+        }
+
         for building in &block.buildings {
             if building.building_type() != BuildingType::Unknown {
                 self.buildings
@@ -27,12 +34,22 @@ impl<'a> Map<'a> {
                     .push(building);
             }
         }
+    }
 
-        for flow in &block.flows {
-            self.flows.insert(flow.coords(), flow);
-        }
-        for tile in rfr::TileIterator::new(block, tiletypes) {
-            self.tiles.insert(tile.coords(), tile);
+    pub fn remove_overlapping_floors(&mut self) {
+        for buildings in self.buildings.values() {
+            for building in buildings {
+                if building.is_floor() {
+                    let bounding_box = building.bounding_box();
+                    for x in bounding_box.x.clone() {
+                        for y in bounding_box.y.clone() {
+                            for z in bounding_box.z.clone() {
+                                self.tiles.remove(&Coords::new(x, y, z));
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

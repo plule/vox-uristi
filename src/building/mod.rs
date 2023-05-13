@@ -63,4 +63,14 @@ pub impl BuildingInstance {
             bounding_box.y.end() - bounding_box.y.start(),
         )
     }
+
+    fn is_floor(&self) -> bool {
+        matches!(
+            BuildingType::from_df(self),
+            BuildingType::TradeDepot
+                | BuildingType::Furnace(_)
+                | BuildingType::Statue
+                | BuildingType::Workshop(_)
+        )
+    }
 }

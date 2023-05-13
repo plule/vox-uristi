@@ -73,6 +73,8 @@ pub fn try_export_voxels(
         map.add_block(block, &tile_type_list);
     }
 
+    map.remove_overlapping_floors();
+
     let total = map.tiles.len();
     progress_tx.send(Progress::StartBuilding { total })?;
 
