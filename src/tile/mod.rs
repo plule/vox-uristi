@@ -1,7 +1,7 @@
 mod collect;
 mod generic;
 mod plant;
-pub use generic::BlockTile_Ext;
+pub use generic::BlockTileExt;
 pub use plant::BlockTilePlantExt;
 
 use crate::{rfr::BlockTile, WithCoords};

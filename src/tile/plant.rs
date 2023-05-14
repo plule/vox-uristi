@@ -1,3 +1,4 @@
+use super::BlockTileExt;
 use crate::{
     direction::{DirectionFlat, NeighbouringFlat},
     export::ExportSettings,
@@ -9,12 +10,10 @@ use crate::{
     IsSomeAnd,
 };
 use dfhack_remote::{MatPair, PlantRawList, TiletypeMaterial, TiletypeSpecial};
-use extend::ext;
+use easy_ext::ext;
 use rand::{seq::SliceRandom, Rng};
 
-use super::BlockTile_Ext;
-
-#[ext(name = BlockTilePlantExt)]
+#[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
     fn collect_plant_voxels(
         &self,

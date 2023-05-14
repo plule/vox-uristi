@@ -12,7 +12,7 @@ pub use workshop::BuildingInstanceWorkshopExt;
 pub use self::building_type::BuildingType;
 use crate::{palette::Material, Coords, WithCoords};
 use dfhack_remote::BuildingInstance;
-use extend::ext;
+use easy_ext::ext;
 use std::ops::RangeInclusive;
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ impl WithCoords for BuildingInstance {
     }
 }
 
-#[ext]
+#[ext(BuildingInstanceExt)]
 pub impl BuildingInstance {
     fn building_type(&self) -> BuildingType {
         BuildingType::from_df(self)

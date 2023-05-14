@@ -6,9 +6,9 @@ use crate::{
     Coords,
 };
 use dfhack_remote::BuildingInstance;
-use extend::ext;
+use easy_ext::ext;
 
-#[ext(name=BuildingInstanceBridgeExt)]
+#[ext(BuildingInstanceBridgeExt)]
 pub impl BuildingInstance {
     fn bridge_collect_voxels(&self, direction: Option<DirectionFlat>) -> Vec<Voxel> {
         let mut voxels = Vec::new();

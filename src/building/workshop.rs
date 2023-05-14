@@ -5,7 +5,7 @@ use crate::{
     voxel::{voxels_from_uniform_shape, FromDotVox, Voxel, WithDotVoxMaterials},
 };
 use dfhack_remote::BuildingInstance;
-use extend::ext;
+use easy_ext::ext;
 use itertools::Itertools;
 
 impl WithDotVoxMaterials for BuildingInstance {
@@ -17,7 +17,7 @@ impl WithDotVoxMaterials for BuildingInstance {
     }
 }
 
-#[ext(name = BuildingInstanceWorkshopExt)]
+#[ext(BuildingInstanceWorkshopExt)]
 pub impl BuildingInstance {
     fn collect_workshop_voxels(&self, workshop_type: WorkshopType) -> Vec<Voxel> {
         match workshop_type {

@@ -7,7 +7,7 @@ use crate::{
 };
 use dfhack_remote::PlantRawList;
 
-use super::{BlockTilePlantExt, BlockTile_Ext};
+use super::{BlockTileExt, BlockTilePlantExt};
 
 impl CollectVoxels for BlockTile<'_> {
     fn collect_voxels(

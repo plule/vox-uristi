@@ -2,7 +2,7 @@ use crate::{
     building::{BuildingInstanceExt, BuildingType},
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile},
-    tile::BlockTile_Ext,
+    tile::BlockTileExt,
     Coords, IsSomeAnd, WithCoords,
 };
 use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, TiletypeList};

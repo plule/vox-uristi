@@ -1037,6 +1037,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "easy-ext"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49457524c7e65648794c98283282a0b7c73b10018e7091f1cdcfff314fd7ae59"
+
+[[package]]
 name = "ecolor"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1252,17 +1258,6 @@ dependencies = [
  "rayon-core",
  "smallvec",
  "zune-inflate",
-]
-
-[[package]]
-name = "extend"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "311a6d2f1f9d60bff73d2c78a0af97ed27f79672f15c238192a5bbb64db56d00"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.15",
 ]
 
 [[package]]
@@ -3736,13 +3731,12 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vox-uristi"
 version = "0.7.0"
 dependencies = [
- "ahash",
  "anyhow",
  "clap",
  "dfhack-remote",
  "dot_vox",
+ "easy-ext",
  "eframe",
- "extend",
  "image",
  "indicatif",
  "itertools",

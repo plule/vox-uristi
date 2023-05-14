@@ -4,13 +4,13 @@ use crate::{
     direction::DirectionFlat,
     map::Map,
     shape::{self, Box3D, Rotating},
-    tile::BlockTile_Ext,
+    tile::BlockTileExt,
     IsSomeAnd,
 };
 use dfhack_remote::BuildingInstance;
-use extend::ext;
+use easy_ext::ext;
 
-#[ext(name = BuildingInstanceFurnitureExt)]
+#[ext(BuildingInstanceFurnitureExt)]
 pub impl BuildingInstance {
     fn window_shape(&self, map: &Map) -> Box3D<bool> {
         let conn = map.neighbouring_flat(self.origin(), |tile, buildings| {

@@ -52,73 +52,92 @@ impl<T: RGBColor> RGBAColor for T {
 }
 
 impl Material {
-    pub fn get_material(
+    pub fn apply_material(
         &self,
         materials: &[MaterialDefinition],
-        id: u32,
-    ) -> ((u8, u8, u8, u8), dot_vox::Material) {
+        color: &mut dot_vox::Color,
+        material: &mut dot_vox::Material,
+    ) {
         match self {
             Material::Default(default) => {
-                let color = default.get_rgba();
-                let mat = match default {
-                    DefaultMaterials::Water => dot_vox::Material::glass(id, 0.1, 0.3, 0.2, 0.05),
-                    DefaultMaterials::Magma => dot_vox::Material::emit(id, 0.5, 2, 0.0),
-                    DefaultMaterials::Fire => dot_vox::Material::emit(id, 0.5, 2, 0.0),
-                    _ => dot_vox::Material::diffuse(id),
+                (color.r, color.g, color.b, color.a) = default.get_rgba();
+                match default {
+                    DefaultMaterials::Water => {
+                        material.set_glass();
+                        material.set_transparency(0.3);
+                    }
+                    DefaultMaterials::Magma => {
+                        material.set_emissive();
+                        material.set_emit(0.25);
+                        material.set_flux(2.0);
+                    }
+                    DefaultMaterials::Fire => {
+                        material.set_emissive();
+                        material.set_emit(0.5);
+                        material.set_flux(2.0);
+                    }
+                    _ => {
+                        material.set_diffuse();
+                    }
                 };
-
-                (color, mat)
             }
             Material::Generic(matpair) => {
-                let color = materials
+                (color.r, color.g, color.b, color.a) = materials
                     .iter()
                     .find(|m| matpair == m.mat_pair.get_or_default())
                     .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba());
-                let material = match (matpair.mat_type(), matpair.mat_index()) {
+                let (mat_type, mat_index) = (matpair.mat_type(), matpair.mat_index());
+                if mat_type == 0 && (0..=25).contains(&mat_index) {
                     // Metals
-                    (0, i) if i <= 25 => dot_vox::Material::metal(id, 1.0, 0.1, 0.3, 0.05),
-                    // Green, clear and crystal glass
-                    (3 | 4 | 5, _) => dot_vox::Material::glass(id, 0.1, 0.3, 0.36, 0.5),
-                    // Marble
-                    (0, 185) => dot_vox::Material::metal(id, 0.61, 0.8, 0.3, 0.0),
+                    material.set_metal();
+                    material.set_metalness(1.0);
+                }
 
-                    _ => dot_vox::Material::diffuse(id),
-                };
-                (color, material)
+                if (3..=5).contains(&mat_type) {
+                    // Green, clear and crystal glass
+                    material.set_glass();
+                    material.set_transparency(0.3);
+                }
+
+                if (mat_type, mat_index) == (0, 185) {
+                    // Marble
+                    material.set_metal();
+                    material.set_roughness(0.3);
+                    material.set_metalness(0.6);
+                }
             }
             Material::Plant {
-                material,
+                material: mat,
                 source_color,
                 dest_color,
             } => {
-                let mat = dot_vox::Material::diffuse(id);
+                material.set_diffuse();
                 let main_color = materials
                     .iter()
-                    .find(|m| material == m.mat_pair.get_or_default())
+                    .find(|m| mat == m.mat_pair.get_or_default())
                     .map_or(named::BLACK, |material| material.state_color.rgb());
                 if source_color == dest_color {
-                    return (
-                        (main_color.red, main_color.green, main_color.blue, 255),
-                        mat,
-                    );
+                    (color.r, color.g, color.b, color.a) =
+                        (main_color.red, main_color.green, main_color.blue, 255);
+                    return;
                 }
-                let mut color = Hsv::from_color(main_color.into_linear::<f32>());
+                let mut hsv = Hsv::from_color(main_color.into_linear::<f32>());
                 let source_color = Hsv::from_color(source_color.rgb().into_linear::<f32>());
                 let dest_color = Hsv::from_color(dest_color.rgb().into_linear::<f32>());
                 // I have no idea what's going on here, I just did my best to replicate what is done in Armok Vision
                 // https://github.com/RosaryMala/armok-vision/blob/3027c785a54d7a8d9a7a9f7f2a10a1815c3bb500/Assets/Scripts/MapGen/DfColor.cs#L37
                 // and the result looks fairly similar to in-game colors.
-                color.hue += dest_color.hue - source_color.hue;
+                hsv.hue += dest_color.hue - source_color.hue;
                 if source_color.value > dest_color.value {
-                    color.value *= dest_color.value / source_color.value;
+                    hsv.value *= dest_color.value / source_color.value;
                 } else {
-                    color.value = 1.0
-                        - ((1.0 - color.value)
+                    hsv.value = 1.0
+                        - ((1.0 - hsv.value)
                             * ((1.0 - dest_color.value) / (1.0 - source_color.value)));
                 }
-                let color = Rgb::from_color(color);
-                let color: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(color);
-                ((color.red, color.green, color.blue, 255), mat)
+                let rgb = Rgb::from_color(hsv);
+                let rgba: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(rgb);
+                (color.r, color.g, color.b, color.a) = (rgba.red, rgba.green, rgba.blue, 255);
             }
         }
     }
@@ -158,9 +177,11 @@ impl Palette {
 
     pub fn write_palette(&self, vox: &mut DotVoxData, materials: &[MaterialDefinition]) {
         for (material, index) in &self.materials {
-            let ((r, g, b, a), material) = material.get_material(materials, u32::from(*index) + 1);
-            vox.palette[*index as usize] = dot_vox::Color { r, g, b, a };
-            vox.materials[*index as usize] = material;
+            material.apply_material(
+                materials,
+                &mut vox.palette[*index as usize],
+                &mut vox.materials[*index as usize + 1],
+            );
         }
     }
 }

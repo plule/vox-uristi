@@ -12,10 +12,10 @@ use crate::{
     IsSomeAnd,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
-use extend::ext;
+use easy_ext::ext;
 use rand::Rng;
 
-#[ext]
+#[ext(BlockTileExt)]
 pub impl BlockTile<'_> {
     fn is_wall(&self) -> bool {
         matches!(

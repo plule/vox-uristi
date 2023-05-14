@@ -1,7 +1,7 @@
-use ahash::{AHashMap, HashMap};
 use dot_vox::{Dict, DotVoxData, Frame, Material, Model, SceneNode, ShapeModel, Size, Voxel};
-use extend::ext;
+use easy_ext::ext;
 use num_integer::div_mod_floor;
+use std::collections::HashMap;
 
 const MODEL_EDGE: i32 = 128;
 pub struct DotVoxBuilder {
@@ -29,9 +29,15 @@ impl Default for DotVoxBuilder {
             data: DotVoxData {
                 version: 150,
                 models: vec![],
-                palette: dot_vox::DEFAULT_PALETTE.to_vec(),
+                palette: (0..256)
+                    .map(|_| dot_vox::Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    })
+                    .collect(),
                 materials: (0..256)
-                    .into_iter()
                     .map(|i| Material {
                         id: i,
                         properties: {
@@ -73,7 +79,7 @@ impl DotVoxBuilder {
             self.data.scenes.push(SceneNode::Transform {
                 attributes: Default::default(),
                 frames: vec![Frame {
-                    attributes: AHashMap::from([(
+                    attributes: Dict::from([(
                         "_t".to_string(),
                         format!("{} {} {}", x * MODEL_EDGE, y * MODEL_EDGE, z * MODEL_EDGE),
                     )]),
@@ -130,52 +136,79 @@ fn voxel_coords(x: i32, y: i32, z: i32) -> ((i32, i32, i32), (u8, u8, u8)) {
     ((x, y, z), (sub_x as u8, sub_y as u8, sub_z as u8))
 }
 
-#[ext]
+#[ext(MaterialExt)]
 pub impl Material {
+    fn with_id(mut self, id: u32) -> Self {
+        self.id = id;
+        self
+    }
+
     fn diffuse(id: u32) -> Self {
         Self {
             id,
-            properties: AHashMap::from([
+            properties: Dict::from([
                 ("_rough".to_string(), "0.1".to_string()),
                 ("_ior".to_string(), "0.3".to_string()),
                 ("_d".to_string(), "0.05".to_string()),
             ]),
         }
     }
-    fn metal(id: u32, metal: f32, rough: f32, ior: f32, sp: f32) -> Self {
-        Self {
-            id,
-            properties: AHashMap::from([
-                ("_type".to_string(), "_metal".to_string()),
-                ("_metal".to_string(), metal.to_string()),
-                ("_rough".to_string(), rough.to_string()),
-                ("_ior".to_string(), ior.to_string()),
-                ("_sp".to_string(), sp.to_string()),
-            ]),
-        }
+
+    fn set_f32(&mut self, prop: &str, value: f32) {
+        self.properties.insert(prop.to_string(), value.to_string());
     }
-    fn emit(id: u32, emit: f32, flux: u8, ldr: f32) -> Self {
-        Self {
-            id,
-            properties: AHashMap::from([
-                ("_type".to_string(), "_emit".to_string()),
-                ("_emit".to_string(), emit.to_string()),
-                ("_flux".to_string(), flux.to_string()),
-                ("_ldr".to_string(), ldr.to_string()),
-            ]),
-        }
+
+    fn set_str(&mut self, prop: &str, value: &str) {
+        self.properties.insert(prop.to_string(), value.to_string());
     }
-    fn glass(id: u32, rough: f32, ior: f32, trans: f32, density: f32) -> Self {
-        Self {
-            id,
-            properties: AHashMap::from([
-                ("_type".to_string(), "_glass".to_string()),
-                ("_trans".to_string(), trans.to_string()),
-                ("_alpha".to_string(), trans.to_string()),
-                ("_rough".to_string(), rough.to_string()),
-                ("_ior".to_string(), ior.to_string()),
-                ("_d".to_string(), density.to_string()),
-            ]),
-        }
+
+    fn set_diffuse(&mut self) {
+        self.set_str("_type", "_diffuse");
+    }
+
+    fn set_metal(&mut self) {
+        self.set_str("_type", "_metal");
+    }
+
+    fn set_roughness(&mut self, roughness: f32) {
+        self.set_f32("_rough", roughness);
+    }
+
+    fn set_ior(&mut self, ior: f32) {
+        self.set_f32("_ior", ior);
+    }
+
+    fn set_specular(&mut self, specular: f32) {
+        self.set_f32("_sp", specular);
+    }
+
+    fn set_metalness(&mut self, metalness: f32) {
+        self.set_f32("_metal", metalness);
+    }
+
+    fn set_emissive(&mut self) {
+        self.set_str("_type", "_emit");
+    }
+
+    fn set_emit(&mut self, emit: f32) {
+        self.set_f32("_emit", emit);
+    }
+
+    fn set_flux(&mut self, flux: f32) {
+        self.set_f32("_flux", flux);
+    }
+
+    fn set_ldr(&mut self, ldr: f32) {
+        self.set_f32("_ldr", ldr);
+    }
+    fn set_glass(&mut self) {
+        self.set_str("_type", "_glass");
+    }
+    fn set_transparency(&mut self, trans: f32) {
+        self.set_f32("_trans", trans);
+        self.set_f32("_alpha", trans);
+    }
+    fn set_density(&mut self, density: f32) {
+        self.set_f32("_d", density);
     }
 }
