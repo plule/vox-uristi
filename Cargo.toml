@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.70"
 clap = { version = "4.2.4", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
-dot_vox = { path = "../dot_vox" }
+dot_vox = { git = "https://github.com/plule/dot_vox.git", branch = "write-mats" } # opened PR for writing materials
 easy-ext = "1.0.1"
 eframe = {version = "0.21.3", features = ["persistence"]}
 indicatif = "0.17.3"

@@ -1023,6 +1023,7 @@ dependencies = [
 [[package]]
 name = "dot_vox"
 version = "5.1.1"
+source = "git+https://github.com/plule/dot_vox.git?branch=write-mats#108d676a7052038aa18604360a0de6bf8c0c2ea9"
 dependencies = [
  "ahash",
  "lazy_static",
