@@ -2,9 +2,11 @@ use crate::{
     dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr, voxel::CollectVoxels,
 };
 use anyhow::Result;
-use dfhack_remote::PlantRawList;
+use dfhack_remote::{BasicMaterialInfo, BasicMaterialInfoMask, ListMaterialsIn, PlantRawList};
 use dot_vox::DotVoxData;
+use protobuf::MessageField;
 use std::{
+    collections::HashMap,
     fs::File,
     ops::Range,
     path::PathBuf,
@@ -43,6 +45,21 @@ pub fn try_export_voxels(
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let map_info = client.remote_fortress_reader().get_map_info()?;
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
+    let inorganics_materials = client.core().list_materials(ListMaterialsIn {
+        mask: MessageField::some(BasicMaterialInfoMask {
+            flags: Some(true),
+            reaction: Some(true),
+            ..Default::default()
+        }),
+        inorganic: Some(true),
+        builtin: Some(true),
+        ..Default::default()
+    })?;
+    let inorganic_materials_map: HashMap<(i32, i32), &BasicMaterialInfo> = inorganics_materials
+        .value
+        .iter()
+        .map(|mat| ((mat.type_(), mat.index()), mat))
+        .collect();
 
     let block_list_iterator =
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, z_range.clone())?;
@@ -137,7 +154,11 @@ pub fn try_export_voxels(
 
     let mut vox: DotVoxData = vox.into();
 
-    palette.write_palette(&mut vox, &material_list.material_list);
+    palette.write_palette(
+        &mut vox,
+        &material_list.material_list,
+        &inorganic_materials_map,
+    );
     progress_tx.send(Progress::Writing)?;
     let mut f = File::create(path.clone())?;
     vox.write_vox(&mut f)?;

@@ -1,6 +1,6 @@
-use crate::dot_vox_builder::MaterialExt;
-use crate::rfr::RGBColor;
-use dfhack_remote::{core_text_fragment::Color, MatPair, MaterialDefinition};
+use crate::rfr::{MaterialFlags, RGBColor};
+use crate::{dot_vox_builder::MaterialExt, rfr::BasicMaterialInfoExt};
+use dfhack_remote::{core_text_fragment::Color, BasicMaterialInfo, MatPair, MaterialDefinition};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
@@ -55,6 +55,7 @@ impl Material {
     pub fn apply_material(
         &self,
         materials: &[MaterialDefinition],
+        material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
         color: &mut dot_vox::Color,
         material: &mut dot_vox::Material,
     ) {
@@ -64,11 +65,11 @@ impl Material {
                 match default {
                     DefaultMaterials::Water => {
                         material.set_glass();
-                        material.set_transparency(0.3);
+                        material.set_transparency(0.5);
                     }
                     DefaultMaterials::Magma => {
                         material.set_emissive();
-                        material.set_emit(0.25);
+                        material.set_emit(0.5);
                         material.set_flux(2.0);
                     }
                     DefaultMaterials::Fire => {
@@ -86,24 +87,33 @@ impl Material {
                     .iter()
                     .find(|m| matpair == m.mat_pair.get_or_default())
                     .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba());
-                let (mat_type, mat_index) = (matpair.mat_type(), matpair.mat_index());
-                if mat_type == 0 && (0..=25).contains(&mat_index) {
-                    // Metals
-                    material.set_metal();
-                    material.set_metalness(1.0);
-                }
-
-                if (3..=5).contains(&mat_type) {
-                    // Green, clear and crystal glass
-                    material.set_glass();
-                    material.set_transparency(0.3);
-                }
-
-                if (mat_type, mat_index) == (0, 185) {
-                    // Marble
-                    material.set_metal();
-                    material.set_roughness(0.3);
-                    material.set_metalness(0.6);
+                if let Some(info) = material_info.get(&(matpair.mat_type(), matpair.mat_index())) {
+                    for flag in info.get_flags() {
+                        match flag {
+                            MaterialFlags::IsMetal => {
+                                material.set_metal();
+                                material.set_metalness(1.0);
+                            }
+                            MaterialFlags::IsGem => {
+                                material.set_glass();
+                                material.set_transparency(0.3);
+                            }
+                            MaterialFlags::IsGlass => {
+                                material.set_glass();
+                                material.set_transparency(0.6);
+                            }
+                            MaterialFlags::IsCeramic => {
+                                material.set_glass();
+                                material.set_transparency(0.0);
+                            }
+                            _ => {}
+                        }
+                    }
+                    if info.token() == "MARBLE" {
+                        material.set_metal();
+                        material.set_roughness(0.5);
+                        material.set_metalness(0.5);
+                    }
                 }
             }
             Material::Plant {
@@ -175,10 +185,16 @@ impl Palette {
             .or_insert_with(|| palette_size.try_into().unwrap_or_default()) // would be nice to warn in case of palette overflow
     }
 
-    pub fn write_palette(&self, vox: &mut DotVoxData, materials: &[MaterialDefinition]) {
+    pub fn write_palette(
+        &self,
+        vox: &mut DotVoxData,
+        materials: &[MaterialDefinition],
+        material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
+    ) {
         for (material, index) in &self.materials {
             material.apply_material(
                 materials,
+                material_info,
                 &mut vox.palette[*index as usize],
                 &mut vox.materials[*index as usize + 1],
             );

@@ -1,9 +1,14 @@
-use crate::{calendar::Month, export, rfr, update, Coords};
+use crate::{
+    calendar::Month,
+    export,
+    rfr::{self, BasicMaterialInfoExt},
+    update, Coords,
+};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use dfhack_remote::BlockRequest;
+use dfhack_remote::{BasicMaterialId, BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
 use indicatif::{ProgressBar, ProgressStyle};
-use protobuf::MessageDyn;
+use protobuf::{MessageDyn, MessageField};
 use std::{path::PathBuf, thread};
 use strum::IntoEnumIterator;
 
@@ -188,6 +193,22 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
 
 fn dump_lists(destination: PathBuf) -> Result<()> {
     let mut client = dfhack_remote::connect()?;
+
+    let req = ListMaterialsIn {
+        mask: MessageField::some(BasicMaterialInfoMask {
+            flags: Some(true),
+            reaction: Some(true),
+            ..Default::default()
+        }),
+        inorganic: Some(true),
+        builtin: Some(true),
+        ..Default::default()
+    };
+
+    let basic_materials = client.core().list_materials(req)?;
+    dbg!(&basic_materials.value[203].get_flags());
+    return Ok(());
+    dump(&basic_materials, &destination, "basic_materials.json")?;
 
     let materials = client.remote_fortress_reader().get_material_list()?;
     dump(&materials, &destination, "materials.json")?;

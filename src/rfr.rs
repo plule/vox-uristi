@@ -1,15 +1,107 @@
 use crate::Coords;
 use anyhow::Result;
 use dfhack_remote::{
-    core_text_fragment::Color, BlockList, BlockRequest, ColorDefinition, GrowthPrint, MapBlock,
-    MatPair, Tiletype, TiletypeList, TreeGrowth,
+    core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, ColorDefinition,
+    GrowthPrint, MapBlock, MatPair, Tiletype, TiletypeList, TreeGrowth,
 };
+use num_enum::FromPrimitive;
 use palette::{named, Srgb};
 use protobuf::Enum;
 use std::{
     fmt::{Debug, Display},
     ops::{Range, RangeInclusive},
 };
+
+/// Could be generated from:
+/// https://github.com/DFHack/df-structures/blob/22d9bc0bc1847def8a6c62893104f36262e63e98/df.materials.xml#L80
+#[derive(FromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum MaterialFlags {
+    #[default]
+    Unknown = -1,
+    Bone,
+    Meat,
+    EdibleVermin,
+    EdibleRaw,
+    EdibleCooked,
+    Alcohol,
+    ItemsMetal,
+    ItemsBarred,
+    ItemsScaled,
+    ItemsLeather,
+    ItemsSoft,
+    ItemsHard,
+    ImpliesAnimalKill,
+    AlcoholPlant,
+    AlcoholCreature,
+    CheesePlant,
+    CheeseCreature,
+    PowderMiscPlant,
+    PowderMiscCreature,
+    StockpileGlob,
+    LiquidMiscPlant,
+    LiquidMiscCreature,
+    LiquidMiscOther,
+    Wood,
+    ThreadPlant,
+    Tooth,
+    Horn,
+    Pearl,
+    Shell,
+    Leather,
+    Silk,
+    Soap,
+    Rots,
+    IsDye,
+    PowderMisc,
+    LiquidMisc,
+    StructuralPlantMat,
+    SeedMat,
+    LeafMat,
+    Cheese,
+    EntersBlood,
+    BloodMapDescriptor,
+    IchorMapDescriptor,
+    GooMapDescriptor,
+    SlimeMapDescriptor,
+    PusMapDescriptor,
+    GeneratesMiasma,
+    IsMetal,
+    IsGem,
+    IsGlass,
+    CrystalGlassable,
+    ItemsWeapon,
+    ItemsWeaponRanged,
+    ItemsAnvil,
+    ItemsAmmo,
+    ItemsDigger,
+    ItemsArmor,
+    ItemsDelicate,
+    ItemsSiegeEngine,
+    ItemsQuern,
+    IsStone,
+    Undiggable,
+    Yarn,
+    StockpileGlobPaste,
+    StockpileGlobPressed,
+    DisplayUnglazed,
+    DoNotCleanGlob,
+    NoStoneStockpile,
+    StockpileThreadMetal,
+    SweatMapDescriptor,
+    TearsMapDescriptor,
+    SpitMapDescriptor,
+    Evaporates,
+    IsCeramic,
+    Cartilage,
+    Feather,
+    Scale,
+    Hair,
+    NervousTissue,
+    Hoof,
+    Chitin,
+    Antler,
+}
 
 /// Wrapper around dwarf fortress blocks to help access individual tile properties
 #[derive(Debug)]
@@ -295,5 +387,15 @@ impl RGBColor for Color {
             Color::COLOR_YELLOW => named::YELLOW,
             Color::COLOR_WHITE => named::WHITE,
         }
+    }
+}
+
+#[easy_ext::ext(BasicMaterialInfoExt)]
+pub impl BasicMaterialInfo {
+    fn get_flags(&self) -> Vec<MaterialFlags> {
+        self.flags
+            .iter()
+            .map(|flag| MaterialFlags::from_primitive(*flag))
+            .collect()
     }
 }
