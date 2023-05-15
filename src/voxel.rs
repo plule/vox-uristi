@@ -1,4 +1,5 @@
 use dfhack_remote::PlantRawList;
+use dot_vox::Model;
 
 use crate::{
     export::ExportSettings,
@@ -70,13 +71,10 @@ pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     voxels_from_shape(shape, origin)
 }
 
-pub fn voxels_from_dot_vox(
-    voxels: &[dot_vox::Voxel],
-    origin: Coords,
-    materials: &[Material],
-) -> Vec<Voxel> {
-    let size_y = voxels.iter().max_by_key(|v| v.y).unwrap().y;
-    voxels
+pub fn voxels_from_dot_vox(model: &Model, origin: Coords, materials: &[Material]) -> Vec<Voxel> {
+    let max_y = model.size.y as i32 - 1;
+    model
+        .voxels
         .iter()
         .filter_map(|voxel| {
             let material = match voxel.i {
@@ -90,7 +88,7 @@ pub fn voxels_from_dot_vox(
                 Voxel::new(
                     Coords::new(
                         voxel.x as i32 + origin.x * 3,
-                        (size_y - voxel.y) as i32 + origin.y * 3,
+                        (max_y - voxel.y as i32) + origin.y * 3,
                         voxel.z as i32 + origin.z * 5,
                     ),
                     material,
@@ -114,7 +112,7 @@ where
 {
     fn dot_vox(&self, bytes: &[u8]) -> Vec<Voxel> {
         voxels_from_dot_vox(
-            &dot_vox::load_bytes(bytes).expect("Invalid model").models[0].voxels,
+            &dot_vox::load_bytes(bytes).expect("Invalid model").models[0],
             self.coords(),
             &self.dot_vox_materials(),
         )

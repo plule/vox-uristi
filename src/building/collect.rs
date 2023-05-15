@@ -224,6 +224,9 @@ impl CollectVoxels for BuildingInstance {
             BuildingType::TradeDepot => {
                 return self.dot_vox(include_bytes!("trade_depot.vox"));
             }
+            BuildingType::Instrument => {
+                return self.dot_vox(include_bytes!("piano.vox"));
+            }
             _ => return vec![],
         };
         voxels_from_uniform_shape(shape, coords, self.material())
