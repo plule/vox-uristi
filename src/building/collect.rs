@@ -95,10 +95,12 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(coords)),
+            BuildingType::DisplayFurniture => {
+                return self.dot_vox(include_bytes!("display_case.vox"));
+            }
             BuildingType::AnimalTrap
             | BuildingType::Chair
             | BuildingType::Chain
-            | BuildingType::DisplayFurniture
             | BuildingType::OfferingPlace => [
                 shape::slice_empty(),
                 shape::slice_empty(),
