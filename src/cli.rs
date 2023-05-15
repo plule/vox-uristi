@@ -252,6 +252,9 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
     let blocks = client.remote_fortress_reader().get_block_list(req)?;
     dump(&blocks, &destination, "blocks.json")?;
 
+    let enums = client.core().list_enums()?;
+    dump(&enums, &destination, "enums.json")?;
+
     Ok(())
 }
 

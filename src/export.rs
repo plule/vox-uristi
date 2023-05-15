@@ -45,7 +45,7 @@ impl Progress {
         Self::Start { message, total }
     }
 
-    pub fn progress(message: &'static str, curr: usize, total: usize) -> Self {
+    pub fn update(message: &'static str, curr: usize, total: usize) -> Self {
         Self::Progress {
             message,
             curr,
@@ -80,6 +80,7 @@ pub fn try_export_voxels(
     let material_list = client.remote_fortress_reader().get_material_list()?;
     let map_info = client.remote_fortress_reader().get_map_info()?;
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
+    let enums = client.core().list_enums()?;
     let inorganics_materials = client.core().list_materials(ListMaterialsIn {
         mask: MessageField::some(BasicMaterialInfoMask {
             flags: Some(true),
@@ -110,7 +111,7 @@ pub fn try_export_voxels(
             return Ok(());
         }
 
-        progress_tx.send(Progress::progress("Reading...", progress, block_list_count))?;
+        progress_tx.send(Progress::update("Reading...", progress, block_list_count))?;
 
         for block in block_list?.map_blocks {
             blocks.push(block);
@@ -120,7 +121,7 @@ pub fn try_export_voxels(
     let tot = blocks.len();
     progress_tx.send(Progress::start("Assembling...", tot))?;
     for (curr, block) in blocks.iter().enumerate() {
-        progress_tx.send(Progress::progress("Assembling...", curr, tot))?;
+        progress_tx.send(Progress::update("Assembling...", curr, tot))?;
         map.add_block(block, &tile_type_list);
     }
 
@@ -136,7 +137,7 @@ pub fn try_export_voxels(
     let total = map.buildings.len();
     progress_tx.send(Progress::start("Building constructions...", total))?;
     for (curr, building_list) in map.buildings.values().enumerate() {
-        progress_tx.send(Progress::progress("Building constructions...", curr, total))?;
+        progress_tx.send(Progress::update("Building constructions...", curr, total))?;
         for building in building_list {
             add_voxels(
                 *building,
@@ -158,7 +159,7 @@ pub fn try_export_voxels(
             return Ok(());
         }
 
-        progress_tx.send(Progress::progress("Building tiles...", curr, total))?;
+        progress_tx.send(Progress::update("Building tiles...", curr, total))?;
         add_voxels(
             tile,
             &map,
@@ -174,7 +175,7 @@ pub fn try_export_voxels(
     let total = map.flows.len();
     progress_tx.send(Progress::start("Building flows...", total))?;
     for (curr, flow) in map.flows.values().enumerate() {
-        progress_tx.send(Progress::progress("Building flows...", curr, total))?;
+        progress_tx.send(Progress::update("Building flows...", curr, total))?;
         add_voxels(
             flow,
             &map,
@@ -193,6 +194,7 @@ pub fn try_export_voxels(
         &mut vox,
         &material_list.material_list,
         &inorganic_materials_map,
+        &enums,
     );
     progress_tx.send(Progress::undetermined("Saving the file..."))?;
     let mut f = File::create(path.clone())?;

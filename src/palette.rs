@@ -1,5 +1,6 @@
-use crate::rfr::{MaterialFlags, RGBColor};
+use crate::rfr::RGBColor;
 use crate::{dot_vox_builder::MaterialExt, rfr::BasicMaterialInfoExt};
+use dfhack_remote::ListEnumsOut;
 use dfhack_remote::{core_text_fragment::Color, BasicMaterialInfo, MatPair, MaterialDefinition};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
@@ -56,6 +57,7 @@ impl Material {
         &self,
         materials: &[MaterialDefinition],
         material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
+        enums: &ListEnumsOut,
         color: &mut dot_vox::Color,
         material: &mut dot_vox::Material,
     ) {
@@ -98,23 +100,23 @@ impl Material {
                     .find(|m| matpair == m.mat_pair.get_or_default())
                     .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba());
                 if let Some(info) = material_info.get(&(matpair.mat_type(), matpair.mat_index())) {
-                    for flag in info.get_flags() {
+                    for flag in info.flag_names(enums) {
                         match flag {
-                            MaterialFlags::IsMetal => {
+                            "IS_METAL" => {
                                 material.set_metal();
                                 material.set_metalness(1.0);
                             }
-                            MaterialFlags::IsGem => {
+                            "IS_GEM" => {
                                 material.set_glass();
                                 material.set_roughness(0.025);
                                 material.set_transparency(0.3);
                             }
-                            MaterialFlags::IsGlass => {
+                            "IS_GLASS" => {
                                 material.set_glass();
                                 material.set_roughness(0.05);
                                 material.set_transparency(0.6);
                             }
-                            MaterialFlags::IsCeramic => {
+                            "IS_CERAMIC" => {
                                 material.set_glass();
                                 material.set_transparency(0.0);
                             }
@@ -202,11 +204,13 @@ impl Palette {
         vox: &mut DotVoxData,
         materials: &[MaterialDefinition],
         material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
+        enums: &ListEnumsOut,
     ) {
         for (material, index) in &self.materials {
             material.apply_material(
                 materials,
                 material_info,
+                enums,
                 &mut vox.palette[*index as usize],
                 &mut vox.materials[*index as usize + 1],
             );
