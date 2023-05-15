@@ -206,8 +206,6 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
     };
 
     let basic_materials = client.core().list_materials(req)?;
-    dbg!(&basic_materials.value[203].get_flags());
-    return Ok(());
     dump(&basic_materials, &destination, "basic_materials.json")?;
 
     let materials = client.remote_fortress_reader().get_material_list()?;
