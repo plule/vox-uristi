@@ -3,7 +3,7 @@
 /// It has a set of methods to build programmatically 3D boxes or 2D slices
 use std::array;
 
-use crate::direction::DirectionFlat;
+use crate::direction::{DirectionFlat, Rotating};
 
 /// A 3D box of base BxB and height H
 pub type Box3D<T, const B: usize = 3, const H: usize = 5> = [[[T; B]; B]; H];
@@ -76,15 +76,6 @@ fn slice_rotated<T: Copy, const B: usize>(input: Slice2D<T, B>) -> Slice2D<T, B>
 /// Rotate 90° a given 3D box
 fn box_rotated<T: Copy, const B: usize, const H: usize>(input: Box3D<T, B, H>) -> Box3D<T, B, H> {
     input.map(|m| slice_rotated(m))
-}
-
-pub trait Rotating {
-    /// Return a copy looking at the given direction, assuming
-    /// the input was looking at north
-    fn looking_at(self, direction: DirectionFlat) -> Self;
-
-    /// Return a copy rotated by amount time 90 degrees
-    fn rotated_by(self, amount: usize) -> Self;
 }
 
 impl<T: Copy, const B: usize, const H: usize> Rotating for Box3D<T, B, H> {

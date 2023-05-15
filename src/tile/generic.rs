@@ -4,10 +4,11 @@ use super::{
     RampContactKind,
 };
 use crate::{
+    direction::Rotating,
     map::Map,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
-    shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D, Rotating},
+    shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
     IsSomeAnd,
 };

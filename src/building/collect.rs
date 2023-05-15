@@ -3,9 +3,10 @@ use super::{
     BuildingInstanceWorkshopExt, BuildingType,
 };
 use crate::{
+    direction::Rotating,
     export::ExportSettings,
     map::Map,
-    shape::{self, Rotating},
+    shape,
     voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel},
     WithCoords,
 };
