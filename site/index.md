@@ -47,8 +47,8 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Flows, waves and mist
 - ☑ Seasonal plants
 - ☐ Spatters
-- ☐ Detailed materials (metallic, water, light emission)
-- ☐ Export tuning
+- ☑ Detailed materials (metallic, water, light emission)
+- ☐ Advanced export parameters
 
 ## Gallery
 
@@ -83,6 +83,10 @@ Fort Chantbell is a fortress by Neo.
 | *The Forge of Chantbell*         |
 
 ## Version History
+
+### v0.8
+
+- Export materials (glass, transparency, light emission)
 
 ### v0.7
 
