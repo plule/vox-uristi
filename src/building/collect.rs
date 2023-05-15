@@ -155,31 +155,7 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_empty(),
             ],
             BuildingType::Well => {
-                #[rustfmt::skip]
-                let shape = [
-                    shape::slice_empty(),
-                    [
-                        [false, false, false],
-                        [true, true, true],
-                        [false, false, false],
-                    ],
-                    [
-                        [false, false, false],
-                        [true, false, true],
-                        [false, false, false],
-                    ],
-                    [
-                        [true, true, true],
-                        [true, false, true],
-                        [true, true, true],
-                    ],
-                    [
-                        [true, true, true],
-                        [true, false, true],
-                        [true, true, true]
-                    ],
-                ];
-                shape
+                return self.dot_vox(include_bytes!("well.vox"));
             }
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
             BuildingType::Door => self.door_shape(map),

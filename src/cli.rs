@@ -19,20 +19,24 @@ pub enum Command {
     /// Export the map in the .vox folder
     Export {
         /// Lower point to export
-        elevation_low: i32,
+        #[arg(long)]
+        low: Option<i32>,
         /// Higher point to export
-        elevation_high: i32,
-        /// Destination file
-        destination: PathBuf,
+        #[arg(long)]
+        high: Option<i32>,
         /// Season for export
         #[arg(short, long)]
         month: Option<Month>,
+        /// Destination file
+        destination: PathBuf,
     },
     ExportYear {
         /// Lower point to export
-        elevation_low: i32,
+        #[arg(short, long)]
+        low: Option<i32>,
         /// Higher point to export
-        elevation_high: i32,
+        #[arg(short, long)]
+        high: Option<i32>,
         /// Destination folder
         destination: PathBuf,
     },
@@ -53,14 +57,14 @@ pub enum Command {
 pub fn run_cli_command(command: Command) -> Result<()> {
     match command {
         Command::Export {
-            elevation_low,
-            elevation_high,
+            low: elevation_low,
+            high: elevation_high,
             destination,
             month,
         } => export(elevation_low, elevation_high, destination, month),
         Command::ExportYear {
-            elevation_low,
-            elevation_high,
+            low: elevation_low,
+            high: elevation_high,
             destination,
         } => export_year(elevation_low, elevation_high, destination),
         Command::DumpLists { destination } => dump_lists(destination),
@@ -70,8 +74,8 @@ pub fn run_cli_command(command: Command) -> Result<()> {
 }
 
 fn export(
-    elevation_low: i32,
-    elevation_high: i32,
+    low: Option<i32>,
+    high: Option<i32>,
     destination: PathBuf,
     month: Option<Month>,
 ) -> Result<()> {
@@ -86,7 +90,15 @@ fn export(
         Some(month) => month.year_tick(),
         None => df.remote_fortress_reader().get_world_map()?.cur_year_tick(),
     };
-    let range = elevation_low..elevation_high + 1;
+    let (low, high) = match (low, high) {
+        (Some(low), Some(high)) => (low, high),
+        (Some(elevation), None) | (None, Some(elevation)) => (elevation, elevation),
+        (None, None) => {
+            let elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z();
+            (elevation, elevation)
+        }
+    };
+    let range = low..high + 1;
     let (progress_tx, progress_rx) = std::sync::mpsc::channel();
     let (_cancel_tx, cancel_rx) = std::sync::mpsc::channel();
     let task = thread::spawn(move || {
@@ -133,7 +145,11 @@ fn export(
     Ok(())
 }
 
-fn export_year(elevation_low: i32, elevation_high: i32, destination: PathBuf) -> Result<()> {
+fn export_year(
+    elevation_low: Option<i32>,
+    elevation_high: Option<i32>,
+    destination: PathBuf,
+) -> Result<()> {
     for (index, month) in Month::iter().enumerate() {
         let mut destination = destination.clone();
         destination.push(format!("{:02}-{}.vox", index + 1, month));
