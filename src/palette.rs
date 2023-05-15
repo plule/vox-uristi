@@ -77,6 +77,16 @@ impl Material {
                         material.set_emit(0.5);
                         material.set_flux(2.0);
                     }
+                    DefaultMaterials::Mist => {
+                        material.set_glass();
+                        material.set_ior(0.0);
+                        material.set_transparency(0.75);
+                    }
+                    DefaultMaterials::Smoke => {
+                        material.set_glass();
+                        material.set_ior(0.0);
+                        material.set_transparency(0.25);
+                    }
                     _ => {
                         material.set_diffuse();
                     }
@@ -96,10 +106,12 @@ impl Material {
                             }
                             MaterialFlags::IsGem => {
                                 material.set_glass();
+                                material.set_roughness(0.025);
                                 material.set_transparency(0.3);
                             }
                             MaterialFlags::IsGlass => {
                                 material.set_glass();
+                                material.set_roughness(0.05);
                                 material.set_transparency(0.6);
                             }
                             MaterialFlags::IsCeramic => {

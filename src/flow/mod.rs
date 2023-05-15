@@ -17,7 +17,7 @@ impl CollectVoxels for &FlowInfo {
     ) -> Vec<Voxel> {
         let coords = self.coords();
         let shape: Box3D<bool> = shape::box_from_fn(|_, _, _| {
-            rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 200)
+            rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
         });
         let material = match self.type_() {
             FlowType::Mist | FlowType::SeaFoam | FlowType::Steam => {
