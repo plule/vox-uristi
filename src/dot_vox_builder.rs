@@ -3,7 +3,7 @@ use easy_ext::ext;
 use num_integer::div_mod_floor;
 use std::collections::HashMap;
 
-const MODEL_EDGE: i32 = 128;
+const MODEL_EDGE: i32 = 256;
 pub struct DotVoxBuilder {
     data: DotVoxData,
     models: HashMap<(i32, i32, i32), usize>,
@@ -81,7 +81,12 @@ impl DotVoxBuilder {
                 frames: vec![Frame {
                     attributes: Dict::from([(
                         "_t".to_string(),
-                        format!("{} {} {}", x * MODEL_EDGE, y * MODEL_EDGE, z * MODEL_EDGE),
+                        format!(
+                            "{} {} {}",
+                            x * MODEL_EDGE,
+                            y * MODEL_EDGE,
+                            z * MODEL_EDGE + MODEL_EDGE / 2
+                        ),
                     )]),
                 }],
                 child: shape_node as u32,

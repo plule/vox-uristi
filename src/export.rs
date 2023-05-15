@@ -131,7 +131,7 @@ pub fn try_export_voxels(
     let mut palette = Palette::default();
 
     let max_y = map_info.block_size_y() * 16 * 3;
-    let min_z = z_range.start;
+    let min_z = z_range.start * 5;
 
     let total = map.buildings.len();
     progress_tx.send(Progress::start("Building constructions...", total))?;
