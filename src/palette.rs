@@ -1,7 +1,7 @@
 use crate::rfr::RGBColor;
 use crate::{dot_vox_builder::MaterialExt, rfr::BasicMaterialInfoExt};
-use dfhack_remote::ListEnumsOut;
 use dfhack_remote::{core_text_fragment::Color, BasicMaterialInfo, MatPair, MaterialDefinition};
+use dfhack_remote::{ListEnumsOut, TiletypeMaterial};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
@@ -15,6 +15,8 @@ pub enum Material {
     Default(DefaultMaterials),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
+    /// Generic material with tile information
+    TileGeneric(MatPair, TiletypeMaterial),
     /// Generic material with a growth console color associated to it
     Plant {
         material: MatPair,
@@ -95,39 +97,17 @@ impl Material {
                 };
             }
             Material::Generic(matpair) => {
-                (color.r, color.g, color.b, color.a) = materials
-                    .iter()
-                    .find(|m| matpair == m.mat_pair.get_or_default())
-                    .map_or((0, 0, 0, 0), |material| material.state_color.get_rgba());
-                if let Some(info) = material_info.get(&(matpair.mat_type(), matpair.mat_index())) {
-                    for flag in info.flag_names(enums) {
-                        match flag {
-                            "IS_METAL" => {
-                                material.set_metal();
-                                material.set_metalness(1.0);
-                            }
-                            "IS_GEM" => {
-                                material.set_glass();
-                                material.set_roughness(0.025);
-                                material.set_transparency(0.3);
-                            }
-                            "IS_GLASS" => {
-                                material.set_glass();
-                                material.set_roughness(0.05);
-                                material.set_transparency(0.6);
-                            }
-                            "IS_CERAMIC" => {
-                                material.set_glass();
-                                material.set_transparency(0.0);
-                            }
-                            _ => {}
-                        }
+                apply_matpair(color, material, materials, matpair, material_info, enums);
+            }
+            Material::TileGeneric(matpair, tiletype_material) => {
+                apply_matpair(color, material, materials, matpair, material_info, enums);
+                match tiletype_material {
+                    TiletypeMaterial::FROZEN_LIQUID => {
+                        material.set_glass();
+                        material.set_ior(0.5);
+                        material.set_transparency(0.5);
                     }
-                    if info.token() == "MARBLE" {
-                        material.set_metal();
-                        material.set_roughness(0.5);
-                        material.set_metalness(0.5);
-                    }
+                    _ => {}
                 }
             }
             Material::Plant {
@@ -163,6 +143,54 @@ impl Material {
                 let rgba: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(rgb);
                 (color.r, color.g, color.b, color.a) = (rgba.red, rgba.green, rgba.blue, 255);
             }
+        }
+    }
+}
+
+fn apply_matpair(
+    color: &mut dot_vox::Color,
+    material: &mut dot_vox::Material,
+    materials: &[MaterialDefinition],
+    matpair: &MatPair,
+    material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
+    enums: &ListEnumsOut,
+) {
+    (color.r, color.g, color.b, color.a) = materials
+        .iter()
+        .find(|m| matpair == m.mat_pair.get_or_default())
+        .map_or((0, 0, 0, 0), |material| match material.id() {
+            // Water coloring exception, it's "clear" so no color, make it light blue for ice
+            "WATER" => (200, 200, 230, 255),
+            _ => material.state_color.get_rgba(),
+        });
+    if let Some(info) = material_info.get(&(matpair.mat_type(), matpair.mat_index())) {
+        for flag in info.flag_names(enums) {
+            match flag {
+                "IS_METAL" => {
+                    material.set_metal();
+                    material.set_metalness(1.0);
+                }
+                "IS_GEM" => {
+                    material.set_glass();
+                    material.set_roughness(0.025);
+                    material.set_transparency(0.3);
+                }
+                "IS_GLASS" => {
+                    material.set_glass();
+                    material.set_roughness(0.05);
+                    material.set_transparency(0.6);
+                }
+                "IS_CERAMIC" => {
+                    material.set_glass();
+                    material.set_transparency(0.0);
+                }
+                _ => {}
+            }
+        }
+        if info.token() == "MARBLE" {
+            material.set_metal();
+            material.set_roughness(0.5);
+            material.set_metalness(0.5);
         }
     }
 }
