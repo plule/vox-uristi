@@ -2,7 +2,7 @@ use crate::Coords;
 use anyhow::Result;
 use dfhack_remote::{
     core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, ColorDefinition,
-    GrowthPrint, ListEnumsOut, MapBlock, MatPair, Tiletype, TiletypeList, TreeGrowth,
+    GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter, Tiletype, TiletypeList, TreeGrowth,
 };
 use palette::{named, Srgb};
 use protobuf::Enum;
@@ -17,6 +17,7 @@ pub struct BlockTile<'a> {
     block: &'a MapBlock,
     index: usize,
     tiletypes: &'a TiletypeList,
+    empty_spatters: Vec<Spatter>,
 }
 
 pub struct BlockListIterator<'a> {
@@ -124,6 +125,7 @@ impl<'a> BlockTile<'a> {
             block,
             index,
             tiletypes,
+            empty_spatters: Default::default(),
         }
     }
 
@@ -201,6 +203,14 @@ impl<'a> BlockTile<'a> {
             .copied()
             .unwrap_or_default()
     }
+
+    pub fn spatters(&self) -> &Vec<Spatter> {
+        self.block
+            .spatterPile
+            .get(self.index)
+            .map(|pile| &pile.spatters)
+            .unwrap_or(&self.empty_spatters)
+    }
 }
 
 impl Display for BlockTile<'_> {
@@ -219,6 +229,18 @@ impl Display for BlockTile<'_> {
         writeln!(f, "tree_origin: {}", self.tree_origin())?;
         writeln!(f, "tree_percent: {}", self.tree_percent())?;
         writeln!(f, "grass: {}", self.grass_percent())?;
+        for spatter in self.spatters() {
+            writeln!(
+                f,
+                "spatter: {}. state: {:?}. material: t{} i{}. item: t{} i{}",
+                spatter.amount(),
+                spatter.state(),
+                spatter.material.get_or_default().mat_type(),
+                spatter.material.get_or_default().mat_index(),
+                spatter.item.get_or_default().mat_type(),
+                spatter.item.get_or_default().mat_index(),
+            )?;
+        }
         Ok(())
     }
 }
