@@ -18,14 +18,48 @@ pub struct ExportSettings {
 }
 
 pub enum Progress {
-    Connecting,
-    StartReading { total: usize },
-    Reading { curr: usize, to: usize },
-    StartBuilding { total: usize },
-    Building { curr: usize, to: usize },
-    Writing,
-    Done { path: PathBuf },
+    Undetermined {
+        message: &'static str,
+    },
+    Start {
+        message: &'static str,
+        total: usize,
+    },
+    Progress {
+        message: &'static str,
+        curr: usize,
+        total: usize,
+    },
+    Done {
+        path: PathBuf,
+    },
     Error(anyhow::Error),
+}
+
+impl Progress {
+    pub fn undetermined(message: &'static str) -> Self {
+        Self::Undetermined { message }
+    }
+
+    pub fn start(message: &'static str, total: usize) -> Self {
+        Self::Start { message, total }
+    }
+
+    pub fn progress(message: &'static str, curr: usize, total: usize) -> Self {
+        Self::Progress {
+            message,
+            curr,
+            total,
+        }
+    }
+
+    pub fn done(path: PathBuf) -> Self {
+        Self::Done { path }
+    }
+
+    pub fn error(error: anyhow::Error) -> Self {
+        Self::Error(error)
+    }
 }
 
 pub struct Cancel;
@@ -38,6 +72,7 @@ pub fn try_export_voxels(
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
 ) -> Result<()> {
+    progress_tx.send(Progress::undetermined("Starting..."))?;
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
 
@@ -66,36 +101,31 @@ pub fn try_export_voxels(
     let (block_list_count, _) = block_list_iterator.size_hint();
 
     let mut map = Map::default();
-    progress_tx.send(Progress::StartReading {
-        total: block_list_count,
-    })?;
     let settings = ExportSettings { year_tick };
-
     let mut blocks = Vec::new();
 
+    progress_tx.send(Progress::start("Reading...", block_list_count))?;
     for (progress, block_list) in block_list_iterator.enumerate() {
         if cancel_rx.try_iter().next().is_some() {
             return Ok(());
         }
 
-        progress_tx.send(Progress::Reading {
-            curr: progress,
-            to: block_list_count,
-        })?;
+        progress_tx.send(Progress::progress("Reading...", progress, block_list_count))?;
 
         for block in block_list?.map_blocks {
             blocks.push(block);
         }
     }
 
-    for block in blocks.iter() {
+    let tot = blocks.len();
+    progress_tx.send(Progress::start("Assembling...", tot))?;
+    for (curr, block) in blocks.iter().enumerate() {
+        progress_tx.send(Progress::progress("Assembling...", curr, tot))?;
         map.add_block(block, &tile_type_list);
     }
 
+    progress_tx.send(Progress::undetermined("Cleaning..."))?;
     map.remove_overlapping_floors();
-
-    let total = map.tiles.len();
-    progress_tx.send(Progress::StartBuilding { total })?;
 
     let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
@@ -103,7 +133,10 @@ pub fn try_export_voxels(
     let max_y = map_info.block_size_y() * 16 * 3;
     let min_z = z_range.start;
 
-    for building_list in map.buildings.values() {
+    let total = map.buildings.len();
+    progress_tx.send(Progress::start("Building constructions...", total))?;
+    for (curr, building_list) in map.buildings.values().enumerate() {
+        progress_tx.send(Progress::progress("Building constructions...", curr, total))?;
         for building in building_list {
             add_voxels(
                 *building,
@@ -118,15 +151,14 @@ pub fn try_export_voxels(
         }
     }
 
-    for (progress, tile) in map.tiles.values().enumerate() {
+    let total = map.tiles.len();
+    progress_tx.send(Progress::start("Building tiles...", total))?;
+    for (curr, tile) in map.tiles.values().enumerate() {
         if cancel_rx.try_iter().next().is_some() {
             return Ok(());
         }
 
-        progress_tx.send(Progress::Building {
-            curr: progress,
-            to: total,
-        })?;
+        progress_tx.send(Progress::progress("Building tiles...", curr, total))?;
         add_voxels(
             tile,
             &map,
@@ -139,7 +171,10 @@ pub fn try_export_voxels(
         );
     }
 
-    for flow in map.flows.values() {
+    let total = map.flows.len();
+    progress_tx.send(Progress::start("Building flows...", total))?;
+    for (curr, flow) in map.flows.values().enumerate() {
+        progress_tx.send(Progress::progress("Building flows...", curr, total))?;
         add_voxels(
             flow,
             &map,
@@ -151,18 +186,18 @@ pub fn try_export_voxels(
             min_z,
         );
     }
-
     let mut vox: DotVoxData = vox.into();
 
+    progress_tx.send(Progress::undetermined("Writing the palette..."))?;
     palette.write_palette(
         &mut vox,
         &material_list.material_list,
         &inorganic_materials_map,
     );
-    progress_tx.send(Progress::Writing)?;
+    progress_tx.send(Progress::undetermined("Saving the file..."))?;
     let mut f = File::create(path.clone())?;
     vox.write_vox(&mut f)?;
-    progress_tx.send(Progress::Done { path })?;
+    progress_tx.send(Progress::done(path))?;
     Ok(())
 }
 
@@ -207,7 +242,7 @@ pub fn export_voxels(
         cancel_rx,
     ) {
         progress_tx
-            .send(Progress::Error(err))
+            .send(Progress::error(err))
             .expect("Failed to report error");
     }
 }

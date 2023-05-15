@@ -69,25 +69,21 @@ impl App {
                 }
                 ui.label("Do not unpause the game during the export.");
                 match progress {
-                    Progress::Connecting => {
-                        ui.label("Starting");
+                    Progress::Undetermined { message } => {
+                        ui.label(*message);
                         ui.spinner();
                     }
-                    Progress::Reading { curr, to } => {
-                        ui.add(
-                            ProgressBar::new(*curr as f32 / *to as f32)
-                                .text("Reading the Fortress"),
-                        );
+                    Progress::Progress {
+                        message,
+                        curr,
+                        total,
+                    } => {
+                        ui.add(ProgressBar::new(*curr as f32 / *total as f32).text(*message));
                     }
-                    Progress::Building { curr, to } => {
-                        ui.add(
-                            ProgressBar::new(*curr as f32 / *to as f32).text("Building the Model"),
-                        );
-                    }
-                    Progress::Writing => {
-                        ui.label("Saving the file");
-                        ui.spinner();
-                    }
+                    Progress::Start {
+                        message: _,
+                        total: _,
+                    } => {}
                     Progress::Done { path } => {
                         self.exported_path = Some(path.to_path_buf());
                         self.progress = None;
@@ -96,8 +92,6 @@ impl App {
                         self.error = Some(err.to_string());
                         self.progress = None;
                     }
-                    Progress::StartReading { total: _ } => {}
-                    Progress::StartBuilding { total: _ } => {}
                 }
             }
             None => {
@@ -139,8 +133,11 @@ impl App {
                                 let (progress_tx, progress_rx) = std::sync::mpsc::channel();
                                 let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
                                 let range = self.low_elevation..self.high_elevation + 1;
-                                self.progress =
-                                    Some((Progress::Connecting, progress_rx, cancel_tx));
+                                self.progress = Some((
+                                    Progress::undetermined("Connecting..."),
+                                    progress_rx,
+                                    cancel_tx,
+                                ));
                                 let tick = self.time.ticks();
                                 let mut df = dfhack_remote::connect()?;
                                 thread::spawn(move || {

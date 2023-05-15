@@ -1,12 +1,7 @@
-use crate::{
-    calendar::Month,
-    export,
-    rfr::{self, BasicMaterialInfoExt},
-    update, Coords,
-};
+use crate::{calendar::Month, export, rfr, update, Coords};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use dfhack_remote::{BasicMaterialId, BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
+use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
 use indicatif::{ProgressBar, ProgressStyle};
 use protobuf::{MessageDyn, MessageField};
 use std::{path::PathBuf, thread};
@@ -107,23 +102,19 @@ fn export(
     'outer: loop {
         for progress in progress_rx.try_iter() {
             match progress {
-                export::Progress::Connecting => {}
-                export::Progress::StartReading { total } => {
-                    pb.println("[1/3] Reading the fortress...");
+                export::Progress::Undetermined { message } => {
+                    pb.println(message);
+                }
+                export::Progress::Start { message, total } => {
+                    pb.println(message);
                     pb.set_length(total as u64);
                 }
-                export::Progress::Reading { curr, to: _ } => {
+                export::Progress::Progress {
+                    message: _,
+                    curr,
+                    total: _,
+                } => {
                     pb.set_position(curr as u64);
-                }
-                export::Progress::StartBuilding { total } => {
-                    pb.println("[2/3] Building the model...");
-                    pb.set_length(total as u64);
-                }
-                export::Progress::Building { curr, to: _ } => {
-                    pb.set_position(curr as u64);
-                }
-                export::Progress::Writing => {
-                    pb.println("[3/3] Saving the model...");
                 }
                 export::Progress::Done { path } => {
                     pb.println(format!("Sucessfully saved to {}", path.to_string_lossy()));
