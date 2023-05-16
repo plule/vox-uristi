@@ -1,9 +1,28 @@
+use anyhow::Context;
 use dot_vox::Model;
 use include_dir::{include_dir, Dir};
 use lazy_static::lazy_static;
+use serde::Deserialize;
 use std::collections::HashMap;
 
+static META_BYTES: &[u8] = include_bytes!("../models/meta.yaml");
 static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/models/buildings");
+
+#[derive(Deserialize)]
+pub struct ModelMeta {
+    pub buildings: HashMap<String, String>,
+}
+
+#[derive(Default)]
+pub struct Models {
+    buildings: HashMap<String, Model>,
+}
+
+impl Models {
+    pub fn building<'a>(&'a self, id: &str) -> Option<&'a Model> {
+        self.buildings.get(&id.to_string())
+    }
+}
 
 fn load_model(bytes: &[u8]) -> Model {
     dot_vox::load_bytes(bytes)
@@ -13,26 +32,40 @@ fn load_model(bytes: &[u8]) -> Model {
         .expect("No model in .vox")
 }
 
-pub fn load_buildings() -> HashMap<String, Model> {
-    let mut ret = HashMap::new();
+pub fn load_models() -> Models {
+    let mut meta: ModelMeta = serde_yaml::from_slice(META_BYTES).unwrap();
+
     for model in BUILDING_BYTES.find("**").unwrap() {
         if let Some(model) = model.as_file() {
-            match model.path().extension().map(|ext| ext.to_str()) {
-                Some(Some("vox")) => {
-                    ret.insert(
-                        model.path().to_string_lossy().replace(".vox", ""),
-                        load_model(model.contents()),
-                    );
+            match model.path().extension().and_then(|ext| ext.to_str()) {
+                Some("vox") => {
+                    let path = model.path().to_string_lossy();
+                    meta.buildings
+                        .insert(path.replace(".vox", "").to_string(), path.to_string());
                 }
                 _ => panic!("Unsupported file type"),
             }
         }
     }
-    ret
+
+    let mut models = Models::default();
+    for (id, path) in meta.buildings.into_iter() {
+        models.buildings.insert(
+            id.clone(),
+            load_model(
+                BUILDING_BYTES
+                    .get_file(&path)
+                    .with_context(|| format!("Missing file: {} for model {}", &path, &id))
+                    .unwrap()
+                    .contents(),
+            ),
+        );
+    }
+    models
 }
 
 lazy_static! {
-    pub static ref BUILDINGS: HashMap<String, Model> = load_buildings();
+    pub static ref MODELS: Models = load_models();
 }
 
 #[cfg(test)]
@@ -48,12 +81,13 @@ mod tests {
 
     #[test]
     fn has_models_that_can_be_loaded() {
-        assert!(BUILDINGS.len() > 0)
+        assert!(MODELS.buildings.len() > 0)
     }
 
     #[test]
-    fn size_check() {
-        let mut models_to_check: HashSet<&str> = BUILDINGS.keys().map(|s| s.as_str()).collect();
+    fn check_models() {
+        let mut models_to_check: HashSet<&str> =
+            MODELS.buildings.keys().map(|s| s.as_str()).collect();
         let mut missing_models = Vec::new();
         let building_defs = BuildingList::parse_from_bytes(
             &std::fs::read(Path::new("testdata/building_defs.dat")).unwrap(),
@@ -77,7 +111,7 @@ mod tests {
                         building_type.building_custom(),
                     ))
                     .unwrap();
-                if let Some(model) = BUILDINGS.get(def.id()) {
+                if let Some(model) = MODELS.buildings.get(def.id()) {
                     models_to_check.remove(def.id());
                     total_buildings_with_model += 1;
                     let (x, y) = building.dimension();
@@ -104,10 +138,11 @@ mod tests {
             }
         }
 
-        //assert_eq!(0, missing_models.len(), "{:#?}", missing_models);
         assert_eq!(0, models_to_check.len(), "{:#?}", models_to_check);
 
         assert!(total_buildings > 0);
         assert!(total_buildings_with_model > 0);
+
+        //assert_eq!(0, missing_models.len(), "{:#?}", missing_models);
     }
 }

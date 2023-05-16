@@ -1,0 +1,16 @@
+# Extra model aliases
+buildings:
+  Furnace/GlassFurnace: Furnace/WoodFurnace.vox
+  Furnace/MagmaGlassFurnace: Furnace/WoodFurnace.vox
+  Furnace/Kiln: Furnace/Smelter.vox
+  Furnace/MagmaSmelter: Furnace/Smelter.vox
+  Furnace/MagmaKiln: Furnace/Smelter.vox
+  Workshop/Dyers: Workshop/Craftsdwarfs.vox
+  Workshop/Butchers: Workshop/Craftsdwarfs.vox
+  Workshop/Tanners: Workshop/Craftsdwarfs.vox
+  Workshop/Bowyers: Workshop/Craftsdwarfs.vox
+  Workshop/Mechanics: Workshop/Craftsdwarfs.vox
+  Workshop/MagmaForge: Workshop/MetalsmithsForge.vox
+  Workshop/Jewelers: Workshop/Craftsdwarfs.vox
+  Workshop/SOAP_MAKER: Workshop/Craftsdwarfs.vox
+  

@@ -28,7 +28,7 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_subtype(),
             building_type.building_custom(),
         )) {
-            if let Some(model) = crate::models::BUILDINGS.get(building_definition.id()) {
+            if let Some(model) = crate::models::MODELS.building(building_definition.id()) {
                 return voxels_from_dot_vox(model, self.origin(), &self.dot_vox_materials());
             }
         }
