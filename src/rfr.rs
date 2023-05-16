@@ -1,12 +1,14 @@
 use crate::Coords;
 use anyhow::Result;
 use dfhack_remote::{
-    core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, ColorDefinition,
-    GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter, Tiletype, TiletypeList, TreeGrowth,
+    core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, BuildingDefinition,
+    ColorDefinition, GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter, Tiletype, TiletypeList,
+    TreeGrowth,
 };
 use palette::{named, Srgb};
 use protobuf::Enum;
 use std::{
+    collections::HashMap,
     fmt::{Debug, Display},
     ops::{Range, RangeInclusive},
 };
@@ -328,4 +330,21 @@ pub impl BasicMaterialInfo {
             .map(|flag| enums.material_flags[*flag as usize].name())
             .collect()
     }
+}
+
+pub fn create_building_def_map(
+    building_definitions: dfhack_remote::BuildingList,
+) -> HashMap<(i32, i32, i32), BuildingDefinition> {
+    let building_map: HashMap<(i32, i32, i32), BuildingDefinition> = building_definitions
+        .building_list
+        .into_iter()
+        .map(|b| {
+            let t = b.building_type.get_or_default();
+            (
+                (t.building_type(), t.building_subtype(), t.building_custom()),
+                b,
+            )
+        })
+        .collect();
+    building_map
 }

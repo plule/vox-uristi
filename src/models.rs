@@ -15,7 +15,7 @@ fn load_model(bytes: &[u8]) -> Model {
 
 pub fn load_buildings() -> HashMap<String, Model> {
     let mut ret = HashMap::new();
-    for model in BUILDING_BYTES.entries() {
+    for model in BUILDING_BYTES.find("**").unwrap() {
         if let Some(model) = model.as_file() {
             match model.path().extension().map(|ext| ext.to_str()) {
                 Some(Some("vox")) => {
@@ -37,10 +37,55 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
+    use dfhack_remote::{BlockList, BuildingList};
+    use protobuf::Message;
+
+    use crate::{building::BuildingInstanceExt, rfr::create_building_def_map};
+
     use super::*;
 
     #[test]
     fn has_models_that_can_be_loaded() {
-        assert!(load_buildings().len() > 0)
+        assert!(BUILDINGS.len() > 0)
+    }
+
+    #[test]
+    fn size_check() {
+        let building_defs = BuildingList::parse_from_bytes(
+            &std::fs::read(Path::new("testdata/building_defs.dat")).unwrap(),
+        )
+        .unwrap();
+        let block_list =
+            BlockList::parse_from_bytes(&std::fs::read(Path::new("testdata/block_0.dat")).unwrap())
+                .unwrap();
+        let building_defs = create_building_def_map(building_defs);
+        assert!(!block_list.map_blocks.is_empty());
+        let mut total_buildings = 0;
+        let mut total_buildings_with_model = 0;
+        for block in block_list.map_blocks {
+            for building in block.buildings {
+                total_buildings += 1;
+                let building_type = building.building_type.clone();
+                let def = building_defs
+                    .get(&(
+                        building_type.building_type(),
+                        building_type.building_subtype(),
+                        building_type.building_custom(),
+                    ))
+                    .unwrap();
+                if let Some(model) = BUILDINGS.get(def.id()) {
+                    total_buildings_with_model += 1;
+                    let (x, y) = building.dimension();
+                    assert_eq!(x * 3, model.size.x as i32, "{}", def.id());
+                    assert_eq!(y * 3, model.size.y as i32, "{}", def.id());
+                    assert_eq!(5, model.size.z, "{}", def.id());
+                }
+            }
+        }
+
+        assert!(total_buildings > 0);
+        assert!(total_buildings_with_model > 0);
     }
 }

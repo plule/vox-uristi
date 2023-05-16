@@ -1,9 +1,9 @@
-use crate::{calendar::Month, export, models::load_buildings, rfr, update, Coords};
+use crate::{calendar::Month, export, rfr, update, Coords};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
 use indicatif::{ProgressBar, ProgressStyle};
-use protobuf::{MessageDyn, MessageField};
+use protobuf::{Message, MessageDyn, MessageField};
 use std::{path::PathBuf, thread};
 use strum::IntoEnumIterator;
 
@@ -40,6 +40,8 @@ pub enum Command {
         /// Destination folder
         destination: PathBuf,
     },
+    /// dump current slice of blocks
+    DumpBlocks { destination: PathBuf },
     /// Debug the tile under the cursor
     Probe {
         /// Destination folder
@@ -70,6 +72,7 @@ pub fn run_cli_command(command: Command) -> Result<()> {
         Command::DumpLists { destination } => dump_lists(destination),
         Command::Probe { destination } => probe(destination),
         Command::CheckUpdate => check_update(),
+        Command::DumpBlocks { destination } => dump_blocks(destination),
     }
 }
 
@@ -198,6 +201,31 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+fn dump_blocks(destination: PathBuf) -> Result<(), anyhow::Error> {
+    let mut client = dfhack_remote::connect()?;
+    client.remote_fortress_reader().reset_map_hashes()?;
+    let view_info = client.remote_fortress_reader().get_view_info()?;
+    let z = view_info.cursor_pos_z();
+    for (index, block_list) in
+        rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?.enumerate()
+    {
+        let data = block_list?.write_to_bytes()?;
+        let mut dest = destination.clone();
+        dest.push(format!("block_{index}.dat"));
+        println!("{}", &dest.display());
+        std::fs::write(dest, data)?;
+    }
+
+    let building_defs = client.remote_fortress_reader().get_building_def_list()?;
+    let data = building_defs.write_to_bytes()?;
+    let mut dest = destination.clone();
+    dest.push(format!("building_defs.dat"));
+    println!("{}", &dest.display());
+    std::fs::write(dest, data)?;
+
+    Ok(())
+}
+
 fn dump_lists(destination: PathBuf) -> Result<()> {
     let mut client = dfhack_remote::connect()?;
 
@@ -259,11 +287,11 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
 }
 
 fn dump(message: &dyn MessageDyn, folder: &PathBuf, filename: &str) -> Result<()> {
-    let materials = protobuf_json_mapping::print_to_string(message)?;
+    let json = protobuf_json_mapping::print_to_string(message)?;
     let mut dest = folder.clone();
     dest.push(filename);
     println!("{}", &dest.display());
-    std::fs::write(dest, materials)?;
+    std::fs::write(dest, json)?;
     Ok(())
 }
 

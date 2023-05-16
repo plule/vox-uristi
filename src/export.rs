@@ -1,5 +1,9 @@
 use crate::{
-    dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr, voxel::CollectVoxels,
+    dot_vox_builder::DotVoxBuilder,
+    map::Map,
+    palette::Palette,
+    rfr::{self, create_building_def_map},
+    voxel::CollectVoxels,
 };
 use anyhow::Result;
 use dfhack_remote::{
@@ -84,17 +88,7 @@ pub fn try_export_voxels(
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
     let enums = client.core().list_enums()?;
     let building_definitions = client.remote_fortress_reader().get_building_def_list()?;
-    let building_map: HashMap<(i32, i32, i32), BuildingDefinition> = building_definitions
-        .building_list
-        .into_iter()
-        .map(|b| {
-            let t = b.building_type.get_or_default();
-            (
-                (t.building_type(), t.building_subtype(), t.building_custom()),
-                b,
-            )
-        })
-        .collect();
+    let building_map = create_building_def_map(building_definitions);
     let inorganics_materials = client.core().list_materials(ListMaterialsIn {
         mask: MessageField::some(BasicMaterialInfoMask {
             flags: Some(true),
