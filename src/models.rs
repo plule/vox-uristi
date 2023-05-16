@@ -9,19 +9,42 @@ static META_BYTES: &[u8] = include_bytes!("../models/meta.yaml");
 static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/models/buildings");
 
 #[derive(Deserialize)]
-pub struct ModelMeta {
-    pub buildings: HashMap<String, String>,
+#[serde(deny_unknown_fields)]
+pub struct ModelsConfigFile {
+    pub buildings: HashMap<String, ModelConfigFile>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ModelConfigFile {
+    #[serde(default)]
+    pub model: String,
+
+    #[serde(default)]
+    pub orientation_mode: OrientationMode,
 }
 
 #[derive(Default)]
-pub struct Models {
-    buildings: HashMap<String, Model>,
+pub struct ModelsConfig {
+    buildings: HashMap<String, ModelConfig>,
 }
 
-impl Models {
-    pub fn building<'a>(&'a self, id: &str) -> Option<&'a Model> {
+impl ModelsConfig {
+    pub fn building<'a>(&'a self, id: &str) -> Option<&'a ModelConfig> {
         self.buildings.get(&id.to_string())
     }
+}
+
+pub struct ModelConfig {
+    pub model: Model,
+    pub orientation_mode: OrientationMode,
+}
+
+#[derive(Deserialize, Default)]
+pub enum OrientationMode {
+    #[default]
+    FromDwarfFortress,
+    AgainstWall,
 }
 
 fn load_model(bytes: &[u8]) -> Model {
@@ -32,40 +55,48 @@ fn load_model(bytes: &[u8]) -> Model {
         .expect("No model in .vox")
 }
 
-pub fn load_models() -> Models {
-    let mut meta: ModelMeta = serde_yaml::from_slice(META_BYTES).unwrap();
+pub fn load_models() -> ModelsConfig {
+    let mut meta: ModelsConfigFile = serde_yaml::from_slice(META_BYTES).unwrap();
 
     for model in BUILDING_BYTES.find("**").unwrap() {
         if let Some(model) = model.as_file() {
             match model.path().extension().and_then(|ext| ext.to_str()) {
                 Some("vox") => {
                     let path = model.path().to_string_lossy();
-                    meta.buildings
-                        .insert(path.replace(".vox", "").to_string(), path.to_string());
+                    let entry = meta
+                        .buildings
+                        .entry(path.replace(".vox", "").to_string())
+                        .or_insert_with(ModelConfigFile::default);
+                    if entry.model.is_empty() {
+                        entry.model = path.to_string();
+                    }
                 }
                 _ => panic!("Unsupported file type"),
             }
         }
     }
 
-    let mut models = Models::default();
-    for (id, path) in meta.buildings.into_iter() {
+    let mut models = ModelsConfig::default();
+    for (id, cfg) in meta.buildings.into_iter() {
         models.buildings.insert(
             id.clone(),
-            load_model(
-                BUILDING_BYTES
-                    .get_file(&path)
-                    .with_context(|| format!("Missing file: {} for model {}", &path, &id))
-                    .unwrap()
-                    .contents(),
-            ),
+            ModelConfig {
+                model: load_model(
+                    BUILDING_BYTES
+                        .get_file(&cfg.model)
+                        .with_context(|| format!("Missing file: {} for model {}", &cfg.model, &id))
+                        .unwrap()
+                        .contents(),
+                ),
+                orientation_mode: cfg.orientation_mode,
+            },
         );
     }
     models
 }
 
 lazy_static! {
-    pub static ref MODELS: Models = load_models();
+    pub static ref MODELS: ModelsConfig = load_models();
 }
 
 #[cfg(test)]
@@ -111,27 +142,27 @@ mod tests {
                         building_type.building_custom(),
                     ))
                     .unwrap();
-                if let Some(model) = MODELS.buildings.get(def.id()) {
+                if let Some(cfg) = MODELS.buildings.get(def.id()) {
                     models_to_check.remove(def.id());
                     total_buildings_with_model += 1;
                     let (x, y) = building.dimension();
                     assert_eq!(
                         0,
-                        (x * 3) % model.size.x as i32,
+                        (x * 3) % cfg.model.size.x as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         x,
-                        model.size.x
+                        cfg.model.size.x
                     );
                     assert_eq!(
                         0,
-                        (y * 3) % model.size.y as i32,
+                        (y * 3) % cfg.model.size.y as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         y,
-                        model.size.y
+                        cfg.model.size.y
                     );
-                    assert_eq!(5, model.size.z, "{}", def.id());
+                    assert_eq!(5, cfg.model.size.z, "{}", def.id());
                 } else {
                     missing_models.push(def.id());
                 }

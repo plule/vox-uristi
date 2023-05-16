@@ -11,7 +11,7 @@ use crate::{
     },
     WithCoords,
 };
-use dfhack_remote::{BuildingDefinition, BuildingDirection, BuildingInstance, PlantRawList};
+use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
 use dot_vox::Model;
 use std::collections::HashMap;
 
@@ -29,23 +29,19 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_subtype(),
             building_type.building_custom(),
         )) {
-            if let Some(model) = crate::models::MODELS.building(building_definition.id()) {
+            if let Some(cfg) = crate::models::MODELS.building(building_definition.id()) {
                 let mut model = Model {
-                    size: model.size.clone(),
-                    voxels: model.voxels.clone(),
+                    size: cfg.model.size,
+                    voxels: cfg.model.voxels.clone(),
                 };
-                if let Some(direction) = self.direction {
-                    let direction = direction.enum_value_or(BuildingDirection::SOUTH);
-                    let direction =
-                        DirectionFlat::maybe_from_df(&direction).unwrap_or(DirectionFlat::South);
-                    model = model.looking_at(direction);
-                } else {
-                    match building_definition.id() {
-                        "Bookcase" => {
-                            dbg!("speecia");
-                            model = model.facing_away(map.wall_direction(self.origin()));
+                match cfg.orientation_mode {
+                    crate::models::OrientationMode::FromDwarfFortress => {
+                        if let Some(direction) = DirectionFlat::maybe_from_df(&self.direction()) {
+                            model = model.looking_at(direction);
                         }
-                        _ => {}
+                    }
+                    crate::models::OrientationMode::AgainstWall => {
+                        model = model.facing_away(map.wall_direction(self.origin()));
                     }
                 }
                 return voxels_from_dot_vox(&model, self.origin(), &self.dot_vox_materials());

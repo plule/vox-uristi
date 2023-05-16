@@ -3,7 +3,7 @@
 /// It has a set of methods to build programmatically 3D boxes or 2D slices
 use std::array;
 
-use crate::direction::{DirectionFlat, Rotating};
+use crate::direction::Rotating;
 
 /// A 3D box of base BxB and height H
 pub type Box3D<T, const B: usize = 3, const H: usize = 5> = [[[T; B]; B]; H];
