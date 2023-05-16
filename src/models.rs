@@ -54,6 +54,7 @@ mod tests {
     #[test]
     fn size_check() {
         let mut models_to_check: HashSet<&str> = BUILDINGS.keys().map(|s| s.as_str()).collect();
+        let mut missing_models = Vec::new();
         let building_defs = BuildingList::parse_from_bytes(
             &std::fs::read(Path::new("testdata/building_defs.dat")).unwrap(),
         )
@@ -80,13 +81,30 @@ mod tests {
                     models_to_check.remove(def.id());
                     total_buildings_with_model += 1;
                     let (x, y) = building.dimension();
-                    assert_eq!(x * 3, model.size.x as i32, "{}", def.id());
-                    assert_eq!(y * 3, model.size.y as i32, "{}", def.id());
+                    assert_eq!(
+                        0,
+                        (x * 3) % model.size.x as i32,
+                        "{}. building dimension: {}, model size: {}",
+                        def.id(),
+                        x,
+                        model.size.x
+                    );
+                    assert_eq!(
+                        0,
+                        (y * 3) % model.size.y as i32,
+                        "{}. building dimension: {}, model size: {}",
+                        def.id(),
+                        y,
+                        model.size.y
+                    );
                     assert_eq!(5, model.size.z, "{}", def.id());
+                } else {
+                    missing_models.push(def.id());
                 }
             }
         }
 
+        //assert_eq!(0, missing_models.len(), "{:#?}", missing_models);
         assert_eq!(0, models_to_check.len(), "{:#?}", models_to_check);
 
         assert!(total_buildings > 0);

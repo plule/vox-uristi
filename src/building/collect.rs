@@ -1,6 +1,5 @@
 use super::{
-    BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt,
-    BuildingInstanceWorkshopExt, BuildingType,
+    BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt, BuildingType,
 };
 use crate::{
     direction::Rotating,
@@ -8,8 +7,7 @@ use crate::{
     map::Map,
     shape,
     voxel::{
-        voxels_from_dot_vox, voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel,
-        WithDotVoxMaterials,
+        voxels_from_dot_vox, voxels_from_uniform_shape, CollectVoxels, Voxel, WithDotVoxMaterials,
     },
     WithCoords,
 };
@@ -96,9 +94,6 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_full(),
                 shape::slice_empty(),
             ],
-            BuildingType::Statue => {
-                return self.dot_vox(include_bytes!("statue.vox"));
-            }
             BuildingType::Box => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -111,9 +106,6 @@ impl CollectVoxels for BuildingInstance {
                 shape::slice_empty(),
             ]
             .looking_at(map.wall_direction(coords)),
-            BuildingType::DisplayFurniture => {
-                return self.dot_vox(include_bytes!("display_case.vox"));
-            }
             BuildingType::AnimalTrap
             | BuildingType::Chair
             | BuildingType::Chain
@@ -172,9 +164,6 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ],
-            BuildingType::Well => {
-                return self.dot_vox(include_bytes!("well.vox"));
-            }
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
             BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
@@ -229,19 +218,6 @@ impl CollectVoxels for BuildingInstance {
                         shape::slice_empty(),
                     ];
                 shape.looking_at(map.wall_direction(coords))
-            }
-            BuildingType::Workshop(_) => {
-                return vec![];
-                //return self.collect_workshop_voxels(workshop_type);
-            }
-            BuildingType::Furnace(furnace_type) => {
-                return self.collect_furnace_voxels(furnace_type);
-            }
-            BuildingType::TradeDepot => {
-                return self.dot_vox(include_bytes!("trade_depot.vox"));
-            }
-            BuildingType::Instrument => {
-                return self.dot_vox(include_bytes!("piano.vox"));
             }
             _ => return vec![],
         };

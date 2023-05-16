@@ -202,7 +202,7 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
 }
 
 fn regen_test_data() -> Result<(), anyhow::Error> {
-    let mut destination = PathBuf::from("testdata");
+    let destination = PathBuf::from("testdata");
     let mut client = dfhack_remote::connect()?;
     client.remote_fortress_reader().reset_map_hashes()?;
     let view_info = client.remote_fortress_reader().get_view_info()?;
