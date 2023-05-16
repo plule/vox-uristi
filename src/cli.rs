@@ -40,8 +40,8 @@ pub enum Command {
         /// Destination folder
         destination: PathBuf,
     },
-    /// dump current slice of blocks
-    DumpBlocks { destination: PathBuf },
+    /// Regen test data from df
+    RegenTestData,
     /// Debug the tile under the cursor
     Probe {
         /// Destination folder
@@ -72,7 +72,7 @@ pub fn run_cli_command(command: Command) -> Result<()> {
         Command::DumpLists { destination } => dump_lists(destination),
         Command::Probe { destination } => probe(destination),
         Command::CheckUpdate => check_update(),
-        Command::DumpBlocks { destination } => dump_blocks(destination),
+        Command::RegenTestData => regen_test_data(),
     }
 }
 
@@ -201,7 +201,8 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn dump_blocks(destination: PathBuf) -> Result<(), anyhow::Error> {
+fn regen_test_data() -> Result<(), anyhow::Error> {
+    let mut destination = PathBuf::from("testdata");
     let mut client = dfhack_remote::connect()?;
     client.remote_fortress_reader().reset_map_hashes()?;
     let view_info = client.remote_fortress_reader().get_view_info()?;

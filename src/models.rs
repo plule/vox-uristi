@@ -37,7 +37,7 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{collections::HashSet, path::Path};
 
     use dfhack_remote::{BlockList, BuildingList};
     use protobuf::Message;
@@ -53,6 +53,7 @@ mod tests {
 
     #[test]
     fn size_check() {
+        let mut models_to_check: HashSet<&str> = BUILDINGS.keys().map(|s| s.as_str()).collect();
         let building_defs = BuildingList::parse_from_bytes(
             &std::fs::read(Path::new("testdata/building_defs.dat")).unwrap(),
         )
@@ -76,6 +77,7 @@ mod tests {
                     ))
                     .unwrap();
                 if let Some(model) = BUILDINGS.get(def.id()) {
+                    models_to_check.remove(def.id());
                     total_buildings_with_model += 1;
                     let (x, y) = building.dimension();
                     assert_eq!(x * 3, model.size.x as i32, "{}", def.id());
@@ -84,6 +86,8 @@ mod tests {
                 }
             }
         }
+
+        assert_eq!(0, models_to_check.len(), "{:#?}", models_to_check);
 
         assert!(total_buildings > 0);
         assert!(total_buildings_with_model > 0);
