@@ -79,20 +79,6 @@ fn box_rotated<T: Copy, const B: usize, const H: usize>(input: Box3D<T, B, H>) -
 }
 
 impl<T: Copy, const B: usize, const H: usize> Rotating for Box3D<T, B, H> {
-    fn looking_at(self, direction: DirectionFlat) -> Self {
-        let n = match direction {
-            DirectionFlat::North => 0,
-            DirectionFlat::East => 1,
-            DirectionFlat::South => 2,
-            DirectionFlat::West => 3,
-        };
-        let mut out = self;
-        for _ in 0..n {
-            out = box_rotated(out);
-        }
-        out
-    }
-
     fn rotated_by(self, amount: usize) -> Self {
         let mut out = self;
         for _ in 0..amount {

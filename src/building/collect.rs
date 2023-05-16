@@ -2,7 +2,7 @@ use super::{
     BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt, BuildingType,
 };
 use crate::{
-    direction::Rotating,
+    direction::{DirectionFlat, Rotating},
     export::ExportSettings,
     map::Map,
     shape,
@@ -11,7 +11,8 @@ use crate::{
     },
     WithCoords,
 };
-use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
+use dfhack_remote::{BuildingDefinition, BuildingDirection, BuildingInstance, PlantRawList};
+use dot_vox::Model;
 use std::collections::HashMap;
 
 impl CollectVoxels for BuildingInstance {
@@ -29,7 +30,25 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_custom(),
         )) {
             if let Some(model) = crate::models::MODELS.building(building_definition.id()) {
-                return voxels_from_dot_vox(model, self.origin(), &self.dot_vox_materials());
+                let mut model = Model {
+                    size: model.size.clone(),
+                    voxels: model.voxels.clone(),
+                };
+                if let Some(direction) = self.direction {
+                    let direction = direction.enum_value_or(BuildingDirection::SOUTH);
+                    let direction =
+                        DirectionFlat::maybe_from_df(&direction).unwrap_or(DirectionFlat::South);
+                    model = model.looking_at(direction);
+                } else {
+                    match building_definition.id() {
+                        "Bookcase" => {
+                            dbg!("speecia");
+                            model = model.facing_away(map.wall_direction(self.origin()));
+                        }
+                        _ => {}
+                    }
+                }
+                return voxels_from_dot_vox(&model, self.origin(), &self.dot_vox_materials());
             }
         }
         let coords = self.origin();
@@ -78,7 +97,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(coords)),
+            .facing_away(map.wall_direction(coords)),
             BuildingType::GearAssembly => [
                 shape::slice_empty(),
                 [
@@ -105,7 +124,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(coords)),
+            .facing_away(map.wall_direction(coords)),
             BuildingType::AnimalTrap
             | BuildingType::Chair
             | BuildingType::Chain
@@ -152,7 +171,7 @@ impl CollectVoxels for BuildingInstance {
                 ],
                 shape::slice_empty(),
             ]
-            .looking_at(map.wall_direction(coords)),
+            .facing_away(map.wall_direction(coords)),
             BuildingType::Coffin => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -190,7 +209,7 @@ impl CollectVoxels for BuildingInstance {
                     ],
                     shape::slice_empty(),
                 ];
-                shape.looking_at(map.wall_direction(coords))
+                shape.facing_away(map.wall_direction(coords))
             }
             BuildingType::WeaponRack => {
                 #[rustfmt::skip]
@@ -217,7 +236,7 @@ impl CollectVoxels for BuildingInstance {
                         ],
                         shape::slice_empty(),
                     ];
-                shape.looking_at(map.wall_direction(coords))
+                shape.facing_away(map.wall_direction(coords))
             }
             _ => return vec![],
         };

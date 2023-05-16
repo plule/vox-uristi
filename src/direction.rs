@@ -62,9 +62,35 @@ pub struct Neighbouring<T> {
 }
 
 pub trait Rotating {
-    /// Return a copy looking at the given direction, assuming
-    /// the input was looking at north
-    fn looking_at(self, direction: DirectionFlat) -> Self;
+    /// Return a copy facing away from a given direction, assuming
+    /// the input was looking at south
+    fn facing_away(self, direction: DirectionFlat) -> Self
+    where
+        Self: Sized,
+    {
+        let n = match direction {
+            DirectionFlat::North => 0,
+            DirectionFlat::East => 1,
+            DirectionFlat::South => 2,
+            DirectionFlat::West => 3,
+        };
+        self.rotated_by(n)
+    }
+
+    /// Return a copy facing away from a given direction, assuming
+    /// the input was looking at south
+    fn looking_at(self, direction: DirectionFlat) -> Self
+    where
+        Self: Sized,
+    {
+        let n = match direction {
+            DirectionFlat::South => 0,
+            DirectionFlat::West => 1,
+            DirectionFlat::North => 2,
+            DirectionFlat::East => 3,
+        };
+        self.rotated_by(n)
+    }
 
     /// Return a copy rotated by amount time 90 degrees
     fn rotated_by(self, amount: usize) -> Self;

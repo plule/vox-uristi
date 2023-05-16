@@ -98,6 +98,6 @@ pub impl BuildingInstance {
             ],
             shape::slice_empty(),
         ]
-        .looking_at(direction)
+        .facing_away(direction)
     }
 }
