@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     export::ExportSettings,
     palette::{DefaultMaterials, Material},
@@ -5,7 +7,7 @@ use crate::{
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
     Coords, WithCoords,
 };
-use dfhack_remote::{FlowInfo, FlowType, PlantRawList};
+use dfhack_remote::{BuildingDefinition, FlowInfo, FlowType, PlantRawList};
 use rand::Rng;
 
 impl CollectVoxels for &FlowInfo {
@@ -14,6 +16,7 @@ impl CollectVoxels for &FlowInfo {
         _map: &crate::map::Map,
         _settings: &ExportSettings,
         _plant_raws: &PlantRawList,
+        _building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
     ) -> Vec<Voxel> {
         let coords = self.coords();
         let shape: Box3D<bool> = shape::box_from_fn(|_, _, _| {

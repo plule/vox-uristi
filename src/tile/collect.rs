@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     export::ExportSettings,
     palette::{DefaultMaterials, Material},
@@ -5,7 +7,7 @@ use crate::{
     shape::{box_from_levels, box_full, slice_const, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels},
 };
-use dfhack_remote::PlantRawList;
+use dfhack_remote::{BuildingDefinition, PlantRawList};
 
 use super::{BlockTileExt, BlockTilePlantExt};
 
@@ -15,6 +17,7 @@ impl CollectVoxels for BlockTile<'_> {
         map: &crate::map::Map,
         settings: &ExportSettings,
         plant_raws: &PlantRawList,
+        _building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
     ) -> Vec<crate::voxel::Voxel> {
         let coords = self.coords();
         if self.hidden() {

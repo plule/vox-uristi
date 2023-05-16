@@ -2,7 +2,9 @@ use crate::{
     dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr, voxel::CollectVoxels,
 };
 use anyhow::Result;
-use dfhack_remote::{BasicMaterialInfo, BasicMaterialInfoMask, ListMaterialsIn, PlantRawList};
+use dfhack_remote::{
+    BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition, ListMaterialsIn, PlantRawList,
+};
 use dot_vox::DotVoxData;
 use protobuf::MessageField;
 use std::{
@@ -81,6 +83,18 @@ pub fn try_export_voxels(
     let map_info = client.remote_fortress_reader().get_map_info()?;
     let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
     let enums = client.core().list_enums()?;
+    let building_definitions = client.remote_fortress_reader().get_building_def_list()?;
+    let building_map: HashMap<(i32, i32, i32), BuildingDefinition> = building_definitions
+        .building_list
+        .into_iter()
+        .map(|b| {
+            let t = b.building_type.get_or_default();
+            (
+                (t.building_type(), t.building_subtype(), t.building_custom()),
+                b,
+            )
+        })
+        .collect();
     let inorganics_materials = client.core().list_materials(ListMaterialsIn {
         mask: MessageField::some(BasicMaterialInfoMask {
             flags: Some(true),
@@ -144,6 +158,7 @@ pub fn try_export_voxels(
                 &map,
                 &settings,
                 &plant_raws,
+                &building_map,
                 &mut palette,
                 &mut vox,
                 max_y,
@@ -165,6 +180,7 @@ pub fn try_export_voxels(
             &map,
             &settings,
             &plant_raws,
+            &building_map,
             &mut palette,
             &mut vox,
             max_y,
@@ -181,6 +197,7 @@ pub fn try_export_voxels(
             &map,
             &settings,
             &plant_raws,
+            &building_map,
             &mut palette,
             &mut vox,
             max_y,
@@ -209,6 +226,7 @@ fn add_voxels<T>(
     map: &Map,
     settings: &ExportSettings,
     plant_raws: &PlantRawList,
+    building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
     palette: &mut Palette,
     vox: &mut DotVoxBuilder,
     max_y: i32,
@@ -216,7 +234,7 @@ fn add_voxels<T>(
 ) where
     T: CollectVoxels,
 {
-    for voxel in item.collect_voxels(map, settings, plant_raws) {
+    for voxel in item.collect_voxels(map, settings, plant_raws, building_defs) {
         let color = palette.get_palette_color(&voxel.material);
         vox.add_voxel(
             voxel.coord.x,

@@ -10,16 +10,17 @@ mod dot_vox_builder;
 mod export;
 mod flow;
 mod map;
+mod models;
 mod palette;
 mod rfr;
 mod shape;
 mod tile;
 mod update;
 mod voxel;
-use std::fmt::Display;
 
 use app::App;
 use eframe::egui;
+use std::fmt::Display;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));

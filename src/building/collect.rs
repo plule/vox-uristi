@@ -7,10 +7,14 @@ use crate::{
     export::ExportSettings,
     map::Map,
     shape,
-    voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel},
+    voxel::{
+        voxels_from_dot_vox, voxels_from_uniform_shape, CollectVoxels, FromDotVox, Voxel,
+        WithDotVoxMaterials,
+    },
     WithCoords,
 };
-use dfhack_remote::{BuildingInstance, PlantRawList};
+use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
+use std::collections::HashMap;
 
 impl CollectVoxels for BuildingInstance {
     fn collect_voxels(
@@ -18,7 +22,18 @@ impl CollectVoxels for BuildingInstance {
         map: &Map,
         _settings: &ExportSettings,
         _plant_raws: &PlantRawList,
+        building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
     ) -> Vec<Voxel> {
+        let building_type = self.building_type.get_or_default();
+        if let Some(building_definition) = building_defs.get(&(
+            building_type.building_type(),
+            building_type.building_subtype(),
+            building_type.building_custom(),
+        )) {
+            if let Some(model) = crate::models::BUILDINGS.get(building_definition.id()) {
+                return voxels_from_dot_vox(model, self.origin(), &self.dot_vox_materials());
+            }
+        }
         let coords = self.origin();
         let shape = match self.building_type() {
             BuildingType::ArcheryTarget { direction } => BuildingInstance::archery_shape(direction),
@@ -215,8 +230,9 @@ impl CollectVoxels for BuildingInstance {
                     ];
                 shape.looking_at(map.wall_direction(coords))
             }
-            BuildingType::Workshop(workshop_type) => {
-                return self.collect_workshop_voxels(workshop_type);
+            BuildingType::Workshop(_) => {
+                return vec![];
+                //return self.collect_workshop_voxels(workshop_type);
             }
             BuildingType::Furnace(furnace_type) => {
                 return self.collect_furnace_voxels(furnace_type);

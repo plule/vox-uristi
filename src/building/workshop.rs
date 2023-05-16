@@ -21,17 +21,6 @@ impl WithDotVoxMaterials for BuildingInstance {
 pub impl BuildingInstance {
     fn collect_workshop_voxels(&self, workshop_type: WorkshopType) -> Vec<Voxel> {
         match workshop_type {
-            WorkshopType::Ashery => self.dot_vox(include_bytes!("workshop_ashery.vox")),
-            WorkshopType::Clothiers => self.dot_vox(include_bytes!("workshop_clothier.vox")),
-            WorkshopType::Farmers => self.dot_vox(include_bytes!("workshop_farmer.vox")),
-            WorkshopType::Fishery => self.dot_vox(include_bytes!("workshop_fishery.vox")),
-            WorkshopType::Kitchen => self.dot_vox(include_bytes!("workshop_kitchen.vox")),
-            WorkshopType::Leatherworks => self.dot_vox(include_bytes!("workshop_leather.vox")),
-            WorkshopType::MetalsmithsForge => {
-                self.dot_vox(include_bytes!("workshop_metalsmith.vox"))
-            }
-            WorkshopType::Loom => self.dot_vox(include_bytes!("workshop_loom.vox")),
-            WorkshopType::Still => self.dot_vox(include_bytes!("workshop_still.vox")),
             _ => {
                 let dimensions = self.dimension();
                 if dimensions.0 == 3 && dimensions.1 == 3 {

@@ -1,4 +1,6 @@
-use dfhack_remote::PlantRawList;
+use std::collections::HashMap;
+
+use dfhack_remote::{BuildingDefinition, PlantRawList};
 use dot_vox::Model;
 
 use crate::{
@@ -27,6 +29,7 @@ pub trait CollectVoxels {
         map: &Map,
         settings: &ExportSettings,
         plant_raws: &PlantRawList,
+        building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
     ) -> Vec<Voxel>;
 }
 
