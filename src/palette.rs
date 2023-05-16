@@ -107,6 +107,11 @@ impl Material {
                         material.set_ior(0.5);
                         material.set_transparency(0.5);
                     }
+                    TiletypeMaterial::CAMPFIRE | TiletypeMaterial::FIRE => {
+                        material.set_emissive();
+                        material.set_emit(0.5);
+                        material.set_flux(2.0);
+                    }
                     _ => {}
                 }
             }

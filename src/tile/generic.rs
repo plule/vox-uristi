@@ -127,7 +127,7 @@ pub impl BlockTile<'_> {
             _ => box_empty(),
         };
 
-        let material = Material::TileGeneric(self.material().clone(), tile_type.material().clone());
+        let material = Material::TileGeneric(self.material().clone(), tile_type.material());
         voxels_from_uniform_shape(shape, self.coords(), material)
     }
 
