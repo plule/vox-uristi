@@ -110,6 +110,7 @@ impl<'a> Map<'a> {
         let mut wallyness = [0, 0, 0, 0];
         for x in -1..=1 {
             for y in -1..=1 {
+                // increase the "wallyness" of a direction by 1 for corners and by 4 for direct contact
                 let wally = self
                     .tiles
                     .get(&Coords::new(coords.x + x, coords.y + y, z))
@@ -117,18 +118,30 @@ impl<'a> Map<'a> {
                 if wally {
                     if x == -1 {
                         wallyness[W] += 1;
+                        if y == 0 {
+                            wallyness[W] += 3;
+                        }
                     }
 
                     if x == 1 {
                         wallyness[E] += 1;
+                        if y == 0 {
+                            wallyness[E] += 3;
+                        }
                     }
 
                     if y == -1 {
                         wallyness[N] += 1;
+                        if x == 0 {
+                            wallyness[N] += 3;
+                        }
                     }
 
                     if y == 1 {
                         wallyness[S] += 1;
+                        if x == 0 {
+                            wallyness[S] += 3;
+                        }
                     }
                 }
             }
