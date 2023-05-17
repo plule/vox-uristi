@@ -36,7 +36,11 @@ impl CollectVoxels for BuildingInstance {
                 };
                 match cfg.orientation_mode {
                     crate::models::OrientationMode::FromDwarfFortress => {
-                        if let Some(direction) = DirectionFlat::maybe_from_df(&self.direction()) {
+                        let direction = self
+                            .direction
+                            .and_then(|dir| dir.enum_value().ok())
+                            .and_then(|dir| DirectionFlat::maybe_from_df(&dir));
+                        if let Some(direction) = direction {
                             model = model.looking_at(direction);
                         }
                     }

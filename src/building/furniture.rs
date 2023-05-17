@@ -1,7 +1,6 @@
 use super::BuildingInstanceExt;
 use crate::{
     building::BuildingType,
-    direction::{DirectionFlat, Rotating},
     map::Map,
     shape::{self, Box3D},
     tile::BlockTileExt,
