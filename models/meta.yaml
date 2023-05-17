@@ -1,30 +1,18 @@
 # Model configuration
+# vox with the same name as the building are implied
 buildings:
-  Furnace/GlassFurnace:
-    model: Furnace/WoodFurnace.vox
-  Furnace/MagmaGlassFurnace:
-    model: Furnace/WoodFurnace.vox
-  Furnace/Kiln:
-    model: Furnace/Smelter.vox
-  Furnace/MagmaSmelter:
-    model: Furnace/Smelter.vox
-  Furnace/MagmaKiln:
-    model: Furnace/Smelter.vox
-  Workshop/Dyers:
-    model: Workshop/Craftsdwarfs.vox
-  Workshop/Butchers:
-    model: Workshop/Craftsdwarfs.vox
   Workshop/Tanners:
     model: Workshop/Craftsdwarfs.vox
-  Workshop/Bowyers:
-    model: Workshop/Craftsdwarfs.vox
-  Workshop/Mechanics:
-    model: Workshop/Craftsdwarfs.vox
-  Workshop/MagmaForge:
-    model: Workshop/MetalsmithsForge.vox
-  Workshop/Jewelers:
-    model: Workshop/Craftsdwarfs.vox
-  Workshop/SOAP_MAKER:
-    model: Workshop/Craftsdwarfs.vox
   Bookcase:
+    orientation_mode: AgainstWall
+  Armorstand:
+    orientation_mode: AgainstWall
+  Weaponrack:
+    orientation_mode: AgainstWall
+  Bed:
+    orientation_mode: AgainstWall
+  Coffin:
+    model: Bed.vox
+    orientation_mode: AgainstWall
+  Cabinet:
     orientation_mode: AgainstWall

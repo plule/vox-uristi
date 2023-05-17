@@ -77,27 +77,4 @@ pub impl BuildingInstance {
             shape::slice_empty(),
         ]
     }
-
-    fn archery_shape(direction: DirectionFlat) -> Box3D<bool> {
-        [
-            shape::slice_empty(),
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, false, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-            [
-                [true, true, true],
-                [false, true, false],
-                [false, true, false],
-            ],
-            shape::slice_empty(),
-        ]
-        .facing_away(direction)
-    }
 }

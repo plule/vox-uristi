@@ -49,7 +49,6 @@ impl CollectVoxels for BuildingInstance {
         }
         let coords = self.origin();
         let shape = match self.building_type() {
-            BuildingType::ArcheryTarget { direction } => BuildingInstance::archery_shape(direction),
             BuildingType::GrateFloor | BuildingType::BarsFloor => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -70,30 +69,6 @@ impl CollectVoxels for BuildingInstance {
             | BuildingType::GrateWall
             | BuildingType::Support
             | BuildingType::AxleVertical => shape::box_from_fn(|x, y, _| x == 1 && y == 1),
-            BuildingType::Bookcase | BuildingType::Cabinet => [
-                [
-                    [true, true, true],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [false, false, false],
-                ],
-                [
-                    [true, true, true],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [false, false, false],
-                ],
-                shape::slice_empty(),
-            ]
-            .facing_away(map.wall_direction(coords)),
             BuildingType::GearAssembly => [
                 shape::slice_empty(),
                 [
@@ -156,18 +131,6 @@ impl CollectVoxels for BuildingInstance {
                     shape::slice_empty(),
                 ]
             }
-            BuildingType::Bed => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_empty(),
-                [
-                    [true, true, false],
-                    [true, true, false],
-                    [true, true, false],
-                ],
-                shape::slice_empty(),
-            ]
-            .facing_away(map.wall_direction(coords)),
             BuildingType::Coffin => [
                 shape::slice_empty(),
                 shape::slice_empty(),
@@ -183,56 +146,6 @@ impl CollectVoxels for BuildingInstance {
             BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {
                 return self.bridge_collect_voxels(direction);
-            }
-            BuildingType::ArmorStand => {
-                #[rustfmt::skip]
-                let shape = [
-                    shape::slice_empty(),
-                    [
-                        [true, true, true],
-                        [false, false, false],
-                        [false, false, false],
-                    ],
-                    [
-                        [false, true, false],
-                        [false, false, false],
-                        [false, false, false],
-                    ],
-                    [
-                        [true, true, true],
-                        [true, true, true],
-                        [false, false, false],
-                    ],
-                    shape::slice_empty(),
-                ];
-                shape.facing_away(map.wall_direction(coords))
-            }
-            BuildingType::WeaponRack => {
-                #[rustfmt::skip]
-                    let shape = [
-                        [
-                            [true, false, true],
-                            [false, false, false],
-                            [false, false, false],
-                        ],
-                        [
-                            [true, true, true],
-                            [false, false, false],
-                            [false, false, false],
-                        ],
-                        [
-                            [true, false, true],
-                            [false, false, false],
-                            [false, false, false],
-                        ],
-                        [
-                            [true, true, true],
-                            [true, false, true],
-                            [false, false, false],
-                        ],
-                        shape::slice_empty(),
-                    ];
-                shape.facing_away(map.wall_direction(coords))
             }
             _ => return vec![],
         };
