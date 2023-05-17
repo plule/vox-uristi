@@ -2,7 +2,7 @@ use super::BuildingInstanceExt;
 use crate::{
     direction::DirectionFlat,
     shape,
-    voxel::{voxels_from_uniform_shape, Voxel},
+    voxel::{voxels_from_uniform_shape, FromDotVox2, Voxel},
     Coords,
 };
 use dfhack_remote::BuildingInstance;

@@ -25,6 +25,10 @@ impl BoundingBox {
     pub fn new(x: RangeInclusive<i32>, y: RangeInclusive<i32>, z: RangeInclusive<i32>) -> Self {
         Self { x, y, z }
     }
+
+    pub fn origin(&self) -> Coords {
+        Coords::new(*self.x.start(), *self.y.start(), *self.z.start())
+    }
 }
 
 impl WithCoords for BuildingInstance {
@@ -65,6 +69,14 @@ impl FromDotVox2 for BuildingInstance {
             .and_then(|dir| dir.enum_value().ok())
             .and_then(|dir| DirectionFlat::maybe_from_df(&dir))
     }
+
+    fn bounding_box(&self) -> BoundingBox {
+        BoundingBox::new(
+            self.pos_x_min()..=self.pos_x_max(),
+            self.pos_y_min()..=self.pos_y_max(),
+            self.pos_z_min()..=self.pos_z_max(),
+        )
+    }
 }
 
 #[ext(BuildingInstanceExt)]
@@ -79,14 +91,6 @@ pub impl BuildingInstance {
 
     fn origin(&self) -> Coords {
         Coords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
-    }
-
-    fn bounding_box(&self) -> BoundingBox {
-        BoundingBox::new(
-            self.pos_x_min()..=self.pos_x_max(),
-            self.pos_y_min()..=self.pos_y_max(),
-            self.pos_z_min()..=self.pos_z_max(),
-        )
     }
 
     fn dimension(&self) -> (i32, i32) {

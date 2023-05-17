@@ -41,17 +41,6 @@ impl CollectVoxels for BuildingInstance {
                     (coords.x + x as i32) % 2 == 0 || (coords.y + y as i32) % 2 == 0
                 }),
             ],
-            BuildingType::Hatch => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_full(),
-                shape::slice_empty(),
-            ],
-            BuildingType::BarsVertical
-            | BuildingType::GrateWall
-            | BuildingType::Support
-            | BuildingType::AxleVertical => shape::box_from_fn(|x, y, _| x == 1 && y == 1),
             BuildingType::GearAssembly => [
                 shape::slice_empty(),
                 [

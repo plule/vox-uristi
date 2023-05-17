@@ -3,6 +3,7 @@ use crate::{
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile},
     tile::BlockTileExt,
+    voxel::FromDotVox2,
     Coords, IsSomeAnd, WithCoords,
 };
 use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, TiletypeList};

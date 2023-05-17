@@ -1,4 +1,5 @@
 use crate::{
+    building::BoundingBox,
     direction::{DirectionFlat, Rotating},
     export::ExportSettings,
     map::Map,
@@ -82,17 +83,16 @@ pub trait FromDotVox2 {
     fn build_materials(&self) -> [Option<MatPair>; 8];
     fn content_materials(&self) -> [Option<MatPair>; 8];
     fn df_orientation(&self) -> Option<DirectionFlat>;
+    fn bounding_box(&self) -> BoundingBox;
 
-    fn collect_from_dot_vox(&self, prefab: &ModelConfig, map: &Map) -> Vec<Voxel>
-    where
-        Self: WithCoords,
-    {
+    fn collect_from_dot_vox(&self, prefab: &ModelConfig, map: &Map) -> Vec<Voxel> {
         let mut model = Model {
             size: prefab.model.size,
             voxels: prefab.model.voxels.clone(),
         };
 
-        let coords = self.coords();
+        let bounding_box = self.bounding_box();
+        let coords = bounding_box.origin();
 
         // Rotate the model based on the preference
         match prefab.orientation_mode {
@@ -135,25 +135,32 @@ pub trait FromDotVox2 {
             .collect();
 
         // Convert to actual voxels
+        let mut voxels = Vec::new();
         let max_y = model.size.y as i32 - 1;
-        model
-            .voxels
-            .iter()
-            .filter_map(|voxel| {
-                let material = materials.get(voxel.i as usize).cloned().flatten();
+        for x in bounding_box.x.clone().step_by(model.size.x as usize / 3) {
+            for y in bounding_box.y.clone().step_by(model.size.y as usize / 3) {
+                for z in bounding_box.z.clone() {
+                    let coords = Coords::new(x, y, z);
 
-                material.map(|material| {
-                    Voxel::new(
-                        Coords::new(
-                            voxel.x as i32 + coords.x * 3,
-                            (max_y - voxel.y as i32) + coords.y * 3,
-                            voxel.z as i32 + coords.z * 5,
-                        ),
-                        material,
-                    )
-                })
-            })
-            .collect()
+                    voxels.extend(model.voxels.iter().filter_map(|voxel| {
+                        let material = materials.get(voxel.i as usize).cloned().flatten();
+
+                        material.map(|material| {
+                            Voxel::new(
+                                Coords::new(
+                                    voxel.x as i32 + coords.x * 3,
+                                    (max_y - voxel.y as i32) + coords.y * 3,
+                                    voxel.z as i32 + coords.z * 5,
+                                ),
+                                material,
+                            )
+                        })
+                    }));
+                }
+            }
+        }
+
+        voxels
     }
 }
 
