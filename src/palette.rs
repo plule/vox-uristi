@@ -184,7 +184,8 @@ fn apply_matpair(
             match flag {
                 "IS_METAL" => {
                     material.set_metal();
-                    material.set_metalness(1.0);
+                    material.set_metalness(0.6);
+                    material.set_roughness(0.2);
                 }
                 "IS_GEM" => {
                     material.set_glass();

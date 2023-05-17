@@ -6,6 +6,7 @@ mod furniture;
 pub use bridge::BuildingInstanceBridgeExt;
 pub use building_type::*;
 pub use furniture::BuildingInstanceFurnitureExt;
+use itertools::Itertools;
 
 pub use self::building_type::BuildingType;
 use crate::{direction::DirectionFlat, palette::Material, voxel::FromDotVox2, Coords, WithCoords};
@@ -45,13 +46,17 @@ impl FromDotVox2 for BuildingInstance {
     }
 
     fn content_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
-        let mut iter = self.items.iter().filter_map(|item| {
-            if item.mode() != 2 {
-                Some(item.item.material.get_or_default().to_owned())
-            } else {
-                None
-            }
-        });
+        let mut iter = self
+            .items
+            .iter()
+            .filter_map(|item| {
+                if item.mode() != 2 {
+                    Some(item.item.material.get_or_default().to_owned())
+                } else {
+                    None
+                }
+            })
+            .unique_by(|i| (i.mat_index(), i.mat_type()));
         std::array::from_fn(|_| iter.next())
     }
 
