@@ -2,17 +2,14 @@ use super::{
     BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt, BuildingType,
 };
 use crate::{
-    direction::{DirectionFlat, Rotating},
+    direction::Rotating,
     export::ExportSettings,
     map::Map,
     shape,
-    voxel::{
-        voxels_from_dot_vox, voxels_from_uniform_shape, CollectVoxels, Voxel, WithDotVoxMaterials,
-    },
+    voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox2, Voxel},
     WithCoords,
 };
 use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
-use dot_vox::Model;
 use std::collections::HashMap;
 
 impl CollectVoxels for BuildingInstance {
@@ -29,26 +26,8 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_subtype(),
             building_type.building_custom(),
         )) {
-            if let Some(cfg) = crate::models::MODELS.building(building_definition.id()) {
-                let mut model = Model {
-                    size: cfg.model.size,
-                    voxels: cfg.model.voxels.clone(),
-                };
-                match cfg.orientation_mode {
-                    crate::models::OrientationMode::FromDwarfFortress => {
-                        let direction = self
-                            .direction
-                            .and_then(|dir| dir.enum_value().ok())
-                            .and_then(|dir| DirectionFlat::maybe_from_df(&dir));
-                        if let Some(direction) = direction {
-                            model = model.looking_at(direction);
-                        }
-                    }
-                    crate::models::OrientationMode::AgainstWall => {
-                        model = model.facing_away(map.wall_direction(self.origin()));
-                    }
-                }
-                return voxels_from_dot_vox(&model, self.origin(), &self.dot_vox_materials());
+            if let Some(prefab) = crate::models::MODELS.building(building_definition.id()) {
+                return self.collect_from_dot_vox(prefab, map);
             }
         }
         let coords = self.origin();

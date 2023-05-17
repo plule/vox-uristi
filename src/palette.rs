@@ -5,6 +5,7 @@ use dfhack_remote::{ListEnumsOut, TiletypeMaterial};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
+use palette::{Darken, Srgb};
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter};
 
@@ -15,6 +16,8 @@ pub enum Material {
     Default(DefaultMaterials),
     /// Generic material built procedurally from Dwarf Fortress
     Generic(MatPair),
+    /// Darker variant of a generic material
+    DarkGeneric(MatPair),
     /// Generic material with tile information
     TileGeneric(MatPair, TiletypeMaterial),
     /// Generic material with a growth console color associated to it
@@ -98,6 +101,14 @@ impl Material {
             }
             Material::Generic(matpair) => {
                 apply_matpair(color, material, materials, matpair, material_info, enums);
+            }
+            Material::DarkGeneric(matpair) => {
+                apply_matpair(color, material, materials, matpair, material_info, enums);
+                let color2 = Hsv::from_color(Srgb::new(color.r, color.g, color.b).into_linear());
+                let color2 = color2.darken(0.5);
+                let color2: Rgb<palette::encoding::Srgb, u8> =
+                    Rgb::from_linear(Rgb::from_color(color2));
+                (color.r, color.g, color.b, color.a) = (color2.red, color2.green, color2.blue, 255);
             }
             Material::TileGeneric(matpair, tiletype_material) => {
                 apply_matpair(color, material, materials, matpair, material_info, enums);

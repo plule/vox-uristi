@@ -1,16 +1,15 @@
-use std::collections::HashMap;
-
-use dfhack_remote::{BuildingDefinition, PlantRawList};
-use dot_vox::Model;
-
 use crate::{
-    direction::Rotating,
+    direction::{DirectionFlat, Rotating},
     export::ExportSettings,
     map::Map,
+    models::{ModelConfig, OrientationMode},
     palette::{DefaultMaterials, Material},
     shape::Box3D,
     Coords, WithCoords,
 };
+use dfhack_remote::{BuildingDefinition, MatPair, PlantRawList};
+use dot_vox::Model;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Voxel {
@@ -75,51 +74,86 @@ pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     voxels_from_shape(shape, origin)
 }
 
-pub fn voxels_from_dot_vox(model: &Model, origin: Coords, materials: &[Material]) -> Vec<Voxel> {
-    let max_y = model.size.y as i32 - 1;
-    model
-        .voxels
-        .iter()
-        .filter_map(|voxel| {
-            let material = match voxel.i {
-                i if i < 8 => materials.get(i as usize).cloned(),
-                8 => Some(Material::Default(DefaultMaterials::Fire)),
-                9 => Some(Material::Default(DefaultMaterials::Wood)),
-                _ => None,
-            };
-
-            material.map(|material| {
-                Voxel::new(
-                    Coords::new(
-                        voxel.x as i32 + origin.x * 3,
-                        (max_y - voxel.y as i32) + origin.y * 3,
-                        voxel.z as i32 + origin.z * 5,
-                    ),
-                    material,
-                )
-            })
-        })
-        .collect()
-}
-
 pub trait FromDotVox {
     fn dot_vox(&self, voxels: &[u8]) -> Vec<Voxel>;
 }
 
-pub trait WithDotVoxMaterials {
-    fn dot_vox_materials(&self) -> Vec<Material>;
-}
+pub trait FromDotVox2 {
+    fn build_materials(&self) -> [Option<MatPair>; 8];
+    fn content_materials(&self) -> [Option<MatPair>; 8];
+    fn df_orientation(&self) -> Option<DirectionFlat>;
 
-impl<T> FromDotVox for T
-where
-    T: WithCoords + WithDotVoxMaterials,
-{
-    fn dot_vox(&self, bytes: &[u8]) -> Vec<Voxel> {
-        voxels_from_dot_vox(
-            &dot_vox::load_bytes(bytes).expect("Invalid model").models[0],
-            self.coords(),
-            &self.dot_vox_materials(),
-        )
+    fn collect_from_dot_vox(&self, prefab: &ModelConfig, map: &Map) -> Vec<Voxel>
+    where
+        Self: WithCoords,
+    {
+        let mut model = Model {
+            size: prefab.model.size,
+            voxels: prefab.model.voxels.clone(),
+        };
+
+        let coords = self.coords();
+
+        // Rotate the model based on the preference
+        match prefab.orientation_mode {
+            OrientationMode::FromDwarfFortress => {
+                if let Some(direction) = self.df_orientation() {
+                    model = model.looking_at(direction);
+                }
+            }
+            OrientationMode::AgainstWall => {
+                model = model.facing_away(map.wall_direction(coords));
+            }
+        }
+
+        // Collect the material palette
+        // First 8 materials of the palette are the build materials
+        let build_materials = self
+            .build_materials()
+            .into_iter()
+            .map(|m| m.map(Material::Generic));
+        // Next 8 materials are the darker versions
+        let dark_build_materials = self
+            .build_materials()
+            .into_iter()
+            .map(|m| m.map(Material::DarkGeneric));
+        // Next 8 are the content materials
+        let content_materials = self
+            .content_materials()
+            .into_iter()
+            .map(|m| m.map(Material::Generic));
+        // Next are the default hard-coded materials
+        let default_materials = [
+            Some(Material::Default(DefaultMaterials::Fire)),
+            Some(Material::Default(DefaultMaterials::Wood)),
+        ];
+
+        let materials: Vec<Option<Material>> = build_materials
+            .chain(dark_build_materials)
+            .chain(content_materials)
+            .chain(default_materials)
+            .collect();
+
+        // Convert to actual voxels
+        let max_y = model.size.y as i32 - 1;
+        model
+            .voxels
+            .iter()
+            .filter_map(|voxel| {
+                let material = materials.get(voxel.i as usize).cloned().flatten();
+
+                material.map(|material| {
+                    Voxel::new(
+                        Coords::new(
+                            voxel.x as i32 + coords.x * 3,
+                            (max_y - voxel.y as i32) + coords.y * 3,
+                            voxel.z as i32 + coords.z * 5,
+                        ),
+                        material,
+                    )
+                })
+            })
+            .collect()
     }
 }
 

@@ -8,7 +8,7 @@ pub use building_type::*;
 pub use furniture::BuildingInstanceFurnitureExt;
 
 pub use self::building_type::BuildingType;
-use crate::{palette::Material, voxel::WithDotVoxMaterials, Coords, WithCoords};
+use crate::{direction::DirectionFlat, palette::Material, voxel::FromDotVox2, Coords, WithCoords};
 use dfhack_remote::BuildingInstance;
 use easy_ext::ext;
 use std::ops::RangeInclusive;
@@ -32,12 +32,33 @@ impl WithCoords for BuildingInstance {
     }
 }
 
-impl WithDotVoxMaterials for BuildingInstance {
-    fn dot_vox_materials(&self) -> Vec<Material> {
-        self.items
-            .iter()
-            .map(|item| Material::Generic(item.item.material.get_or_default().clone()))
-            .collect()
+impl FromDotVox2 for BuildingInstance {
+    fn build_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
+        let mut iter = self.items.iter().filter_map(|item| {
+            if item.mode() == 2 {
+                Some(item.item.material.get_or_default().to_owned())
+            } else {
+                None
+            }
+        });
+        std::array::from_fn(|_| iter.next())
+    }
+
+    fn content_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
+        let mut iter = self.items.iter().filter_map(|item| {
+            if item.mode() != 2 {
+                Some(item.item.material.get_or_default().to_owned())
+            } else {
+                None
+            }
+        });
+        std::array::from_fn(|_| iter.next())
+    }
+
+    fn df_orientation(&self) -> Option<DirectionFlat> {
+        self.direction
+            .and_then(|dir| dir.enum_value().ok())
+            .and_then(|dir| DirectionFlat::maybe_from_df(&dir))
     }
 }
 
