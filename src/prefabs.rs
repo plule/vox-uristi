@@ -203,6 +203,6 @@ mod tests {
         assert!(total_buildings > 0);
         assert!(total_buildings_with_model > 0);
 
-        //assert_eq!(0, missing_models.len(), "{:#?}", missing_models);
+        assert_eq!(0, missing_models.len(), "{:#?}", missing_models);
     }
 }

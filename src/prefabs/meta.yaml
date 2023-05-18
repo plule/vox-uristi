@@ -27,3 +27,5 @@ buildings:
     connectivity: SelfOrWall
   Door:
     connectivity: SelfOrWall
+  BarsVertical:
+    connectivity: SelfOrWall
