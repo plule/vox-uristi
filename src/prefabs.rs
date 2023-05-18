@@ -114,7 +114,12 @@ mod tests {
     use dfhack_remote::{BlockList, BuildingList};
     use protobuf::Message;
 
-    use crate::{building::BuildingInstanceExt, rfr::create_building_def_map};
+    use crate::{
+        building::BuildingInstanceExt,
+        direction::{DirectionFlat, Rotating},
+        rfr::create_building_def_map,
+        voxel::FromPrefab,
+    };
 
     use super::*;
 
@@ -150,27 +155,33 @@ mod tests {
                         building_type.building_custom(),
                     ))
                     .unwrap();
-                if let Some(cfg) = MODELS.buildings.get(def.id()) {
+                if let Some(prefab) = MODELS.buildings.get(def.id()) {
+                    let model = Model {
+                        size: prefab.model.size,
+                        voxels: prefab.model.voxels.clone(),
+                    };
+                    let model =
+                        model.looking_at(building.df_orientation().unwrap_or(DirectionFlat::South));
                     models_to_check.remove(def.id());
                     total_buildings_with_model += 1;
                     let (x, y) = building.dimension();
                     assert_eq!(
                         0,
-                        (x * 3) % cfg.model.size.x as i32,
+                        (x * 3) % model.size.x as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         x,
-                        cfg.model.size.x
+                        model.size.x
                     );
                     assert_eq!(
                         0,
-                        (y * 3) % cfg.model.size.y as i32,
+                        (y * 3) % model.size.y as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         y,
-                        cfg.model.size.y
+                        model.size.y
                     );
-                    assert_eq!(5, cfg.model.size.z, "{}", def.id());
+                    assert_eq!(5, model.size.z, "{}", def.id());
                 } else {
                     missing_models.push(def.id());
                 }

@@ -17,7 +17,7 @@ buildings:
   Coffin:
     model: Bed.vox
     orientation: AgainstWall
-  Cabinet:
-    orientation: AgainstWall
   Instrument:
     orientation: FacingChairOrAgainstWall
+  Box:
+    orientation: AgainstWall

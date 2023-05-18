@@ -2,7 +2,6 @@ use super::{
     BuildingInstanceBridgeExt, BuildingInstanceExt, BuildingInstanceFurnitureExt, BuildingType,
 };
 use crate::{
-    direction::Rotating,
     export::ExportSettings,
     map::Map,
     shape,
@@ -41,47 +40,6 @@ impl CollectVoxels for BuildingInstance {
                     (coords.x + x as i32) % 2 == 0 || (coords.y + y as i32) % 2 == 0
                 }),
             ],
-            BuildingType::GearAssembly => [
-                shape::slice_empty(),
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                [
-                    [false, true, false],
-                    [true, true, true],
-                    [false, true, false],
-                ],
-                shape::slice_full(),
-                shape::slice_empty(),
-            ],
-            BuildingType::Box => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_empty(),
-                [
-                    [false, true, false],
-                    [false, false, false],
-                    [false, false, false],
-                ],
-                shape::slice_empty(),
-            ]
-            .facing_away(map.wall_direction(coords)),
-            BuildingType::AnimalTrap
-            | BuildingType::Chair
-            | BuildingType::Chain
-            | BuildingType::OfferingPlace => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_empty(),
-                [
-                    [false, false, false],
-                    [false, true, false],
-                    [false, false, false],
-                ],
-                shape::slice_empty(),
-            ],
             BuildingType::Table | BuildingType::TractionBench => {
                 let edges = map.neighbouring_flat(self.coords(), |_, buildings| {
                     !buildings.iter().any(|building| {
@@ -103,17 +61,6 @@ impl CollectVoxels for BuildingInstance {
                     shape::slice_empty(),
                 ]
             }
-            BuildingType::Coffin => [
-                shape::slice_empty(),
-                shape::slice_empty(),
-                shape::slice_empty(),
-                [
-                    [true, true, true],
-                    [true, true, true],
-                    [false, false, false],
-                ],
-                shape::slice_empty(),
-            ],
             BuildingType::WindowGem | BuildingType::WindowGlass => self.window_shape(map),
             BuildingType::Door => self.door_shape(map),
             BuildingType::Bridge { direction } => {

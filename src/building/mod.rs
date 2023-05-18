@@ -7,12 +7,11 @@ pub use bridge::BuildingInstanceBridgeExt;
 pub use building_type::*;
 pub use furniture::BuildingInstanceFurnitureExt;
 
-
 pub use self::building_type::BuildingType;
 use crate::{direction::DirectionFlat, palette::Material, voxel::FromPrefab, Coords, WithCoords};
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
-use std::{ops::RangeInclusive};
+use std::ops::RangeInclusive;
 
 #[derive(Debug)]
 pub struct BoundingBox {
@@ -102,6 +101,7 @@ pub impl BuildingInstance {
                 | BuildingType::Furnace(_)
                 | BuildingType::Statue
                 | BuildingType::Workshop(_)
+                | BuildingType::ScrewPump
         )
     }
 
