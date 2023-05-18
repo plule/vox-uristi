@@ -4,13 +4,14 @@ use crate::{
     export::ExportSettings,
     map::Map,
     palette::{DefaultMaterials, Material},
-    prefabs::{OrientationMode, Prefab},
+    prefabs::{ContentMode, OrientationMode, Prefab},
     shape::Box3D,
     Coords,
 };
 use dfhack_remote::{BuildingDefinition, MatPair, PlantRawList};
 use dot_vox::Model;
-use std::collections::HashMap;
+use itertools::Itertools;
+use std::{collections::HashMap, iter::repeat};
 
 #[derive(Debug)]
 pub struct Voxel {
@@ -76,8 +77,8 @@ pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
 }
 
 pub trait FromPrefab {
-    fn build_materials(&self) -> [Option<MatPair>; 8];
-    fn content_materials(&self) -> [Option<MatPair>; 8];
+    fn build_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
+    fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn bounding_box(&self) -> BoundingBox;
 
@@ -91,7 +92,7 @@ pub trait FromPrefab {
         let coords = bounding_box.origin();
 
         // Rotate the model based on the preference
-        match prefab.orientation_mode {
+        match prefab.orientation {
             OrientationMode::FromDwarfFortress => {
                 if let Some(direction) = self.df_orientation() {
                     model = model.looking_at(direction);
@@ -114,18 +115,28 @@ pub trait FromPrefab {
         // First 8 materials of the palette are the build materials
         let build_materials = self
             .build_materials()
-            .into_iter()
-            .map(|m| m.map(Material::Generic));
+            .map(|m| Some(Material::Generic(m)))
+            .chain(repeat(None))
+            .take(8);
         // Next 8 materials are the darker versions
         let dark_build_materials = self
             .build_materials()
-            .into_iter()
-            .map(|m| m.map(Material::DarkGeneric));
+            .map(|m| Some(Material::DarkGeneric(m)))
+            .chain(repeat(None))
+            .take(8);
         // Next 8 are the content materials
-        let content_materials = self
-            .content_materials()
-            .into_iter()
-            .map(|m| m.map(Material::Generic));
+        let content_materials = match prefab.content {
+            ContentMode::Unique => self
+                .content_materials()
+                .unique_by(|m| (m.mat_index(), m.mat_type()))
+                .take(8)
+                .collect_vec(),
+            ContentMode::All => self.content_materials().take(8).collect_vec(),
+        }
+        .into_iter()
+        .map(|m| Some(Material::Generic(m)))
+        .chain(repeat(None))
+        .take(8);
         // Next are the default hard-coded materials
         let default_materials = [
             Some(Material::Default(DefaultMaterials::Fire)),

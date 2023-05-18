@@ -15,13 +15,11 @@ pub struct PrefabsConfig {
 }
 
 #[derive(Deserialize, Default)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, default)]
 pub struct PrefabConfig {
-    #[serde(default)]
     pub model: String,
-
-    #[serde(default)]
-    pub orientation_mode: OrientationMode,
+    pub orientation: OrientationMode,
+    pub content: ContentMode,
 }
 
 #[derive(Default)]
@@ -37,7 +35,8 @@ impl Prefabs {
 
 pub struct Prefab {
     pub model: Model,
-    pub orientation_mode: OrientationMode,
+    pub orientation: OrientationMode,
+    pub content: ContentMode,
 }
 
 #[derive(Deserialize, Default)]
@@ -46,6 +45,13 @@ pub enum OrientationMode {
     FromDwarfFortress,
     AgainstWall,
     FacingChairOrAgainstWall,
+}
+
+#[derive(Deserialize, Default)]
+pub enum ContentMode {
+    #[default]
+    Unique,
+    All,
 }
 
 fn load_model(bytes: &[u8]) -> Model {
@@ -89,7 +95,8 @@ pub fn load_models() -> Prefabs {
                         .unwrap()
                         .contents(),
                 ),
-                orientation_mode: cfg.orientation_mode,
+                orientation: cfg.orientation,
+                content: cfg.content,
             },
         );
     }
@@ -113,7 +120,7 @@ mod tests {
 
     #[test]
     fn has_models_that_can_be_loaded() {
-        assert!(MODELS.buildings.len() > 0)
+        assert!(!MODELS.buildings.is_empty())
     }
 
     #[test]

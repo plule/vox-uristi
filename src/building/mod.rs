@@ -6,13 +6,13 @@ mod furniture;
 pub use bridge::BuildingInstanceBridgeExt;
 pub use building_type::*;
 pub use furniture::BuildingInstanceFurnitureExt;
-use itertools::Itertools;
+
 
 pub use self::building_type::BuildingType;
 use crate::{direction::DirectionFlat, palette::Material, voxel::FromPrefab, Coords, WithCoords};
-use dfhack_remote::BuildingInstance;
+use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive};
 
 #[derive(Debug)]
 pub struct BoundingBox {
@@ -38,30 +38,24 @@ impl WithCoords for BuildingInstance {
 }
 
 impl FromPrefab for BuildingInstance {
-    fn build_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
-        let mut iter = self.items.iter().filter_map(|item| {
+    fn build_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
+        Box::new(self.items.iter().filter_map(|item| {
             if item.mode() == 2 {
                 Some(item.item.material.get_or_default().to_owned())
             } else {
                 None
             }
-        });
-        std::array::from_fn(|_| iter.next())
+        }))
     }
 
-    fn content_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
-        let mut iter = self
-            .items
-            .iter()
-            .filter_map(|item| {
-                if item.mode() != 2 {
-                    Some(item.item.material.get_or_default().to_owned())
-                } else {
-                    None
-                }
-            })
-            .unique_by(|i| (i.mat_index(), i.mat_type()));
-        std::array::from_fn(|_| iter.next())
+    fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
+        Box::new(self.items.iter().filter_map(|item| {
+            if item.mode() != 2 {
+                Some(item.item.material.get_or_default().to_owned())
+            } else {
+                None
+            }
+        }))
     }
 
     fn df_orientation(&self) -> Option<DirectionFlat> {

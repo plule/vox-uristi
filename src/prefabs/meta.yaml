@@ -4,19 +4,20 @@ buildings:
   Workshop/Tanners:
     model: Workshop/Craftsdwarfs.vox
   Bookcase:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
+    content: All
   Armorstand:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Weaponrack:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Bed:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Cabinet:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Coffin:
     model: Bed.vox
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Cabinet:
-    orientation_mode: AgainstWall
+    orientation: AgainstWall
   Instrument:
-    orientation_mode: FacingChairOrAgainstWall
+    orientation: FacingChairOrAgainstWall
