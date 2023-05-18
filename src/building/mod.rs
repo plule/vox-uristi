@@ -109,6 +109,7 @@ pub impl BuildingInstance {
                 | BuildingType::ScrewPump
                 | BuildingType::Windmill
                 | BuildingType::RoadPaved
+                | BuildingType::FarmPlot
         )
     }
 
