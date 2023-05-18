@@ -27,10 +27,7 @@ pub impl BlockTile<'_> {
             }
         };
         let mut rng = rand::thread_rng();
-        let item_on_tile = map
-            .buildings
-            .get(&self.coords())
-            .some_and(|i| !i.is_empty());
+        let item_on_tile = map.with_building.contains(&self.coords());
         let shape: Box3D<bool> = [
             slice_empty(),
             slice_empty(),

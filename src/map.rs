@@ -9,7 +9,10 @@ use crate::{
 };
 use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock};
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Add};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Add,
+};
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
@@ -17,6 +20,8 @@ pub struct Map<'a> {
     pub tiles: HashMap<Coords, BlockTile<'a>>,
     pub buildings: HashMap<Coords, Vec<&'a BuildingInstance>>,
     pub flows: HashMap<Coords, &'a FlowInfo>,
+
+    pub with_building: HashSet<Coords>,
 }
 
 impl<'a> Map<'a> {
@@ -34,6 +39,15 @@ impl<'a> Map<'a> {
                     .entry(building.origin())
                     .or_default()
                     .push(building);
+
+                let bounding_box = building.bounding_box();
+                for x in bounding_box.x.clone() {
+                    for y in bounding_box.y.clone() {
+                        for z in bounding_box.z.clone() {
+                            self.with_building.insert(Coords::new(x, y, z));
+                        }
+                    }
+                }
             }
         }
     }

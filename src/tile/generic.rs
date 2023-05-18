@@ -41,7 +41,7 @@ pub impl BlockTile<'_> {
         let mut rng = rand::thread_rng();
         let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
-                let item_on_tile = map.buildings.get(&coords).some_and(|i| !i.is_empty());
+                let item_on_tile = map.with_building.contains(&coords);
                 let r = !item_on_tile
                     && !matches!(
                         tile_type.special(),
