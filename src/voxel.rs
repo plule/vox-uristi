@@ -81,7 +81,7 @@ pub trait FromPrefab {
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn bounding_box(&self) -> BoundingBox;
 
-    fn from_prefab(&self, prefab: &Prefab, map: &Map) -> Vec<Voxel> {
+    fn voxels_from_prefab(&self, prefab: &Prefab, map: &Map) -> Vec<Voxel> {
         let mut model = Model {
             size: prefab.model.size,
             voxels: prefab.model.voxels.clone(),

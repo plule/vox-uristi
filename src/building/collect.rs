@@ -27,7 +27,7 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_custom(),
         )) {
             if let Some(prefab) = crate::prefabs::MODELS.building(building_definition.id()) {
-                return self.from_prefab(prefab, map);
+                return self.voxels_from_prefab(prefab, map);
             }
         }
         let coords = self.origin();
