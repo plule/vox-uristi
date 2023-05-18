@@ -161,6 +161,29 @@ impl<T> NeighbouringFlat<T> {
     }
 }
 
+impl NeighbouringFlat<bool> {
+    pub fn directions(&self) -> Vec<DirectionFlat> {
+        let mut ret = Vec::new();
+        if self.n {
+            ret.push(DirectionFlat::North);
+        }
+
+        if self.e {
+            ret.push(DirectionFlat::East);
+        }
+
+        if self.s {
+            ret.push(DirectionFlat::South);
+        }
+
+        if self.w {
+            ret.push(DirectionFlat::West);
+        }
+
+        ret
+    }
+}
+
 impl<T> Neighbouring8Flat<T> {
     pub fn new<F>(func: F) -> Self
     where

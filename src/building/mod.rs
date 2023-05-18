@@ -110,4 +110,8 @@ pub impl BuildingInstance {
                 | BuildingType::Workshop(_)
         )
     }
+
+    fn is_chair(&self) -> bool {
+        matches!(BuildingType::from_df(self), BuildingType::Chair)
+    }
 }

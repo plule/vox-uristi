@@ -11,8 +11,12 @@ buildings:
     orientation_mode: AgainstWall
   Bed:
     orientation_mode: AgainstWall
+  Cabinet:
+    orientation_mode: AgainstWall
   Coffin:
     model: Bed.vox
     orientation_mode: AgainstWall
   Cabinet:
     orientation_mode: AgainstWall
+  Instrument:
+    orientation_mode: FacingChairOrAgainstWall

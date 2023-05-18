@@ -45,6 +45,7 @@ pub enum OrientationMode {
     #[default]
     FromDwarfFortress,
     AgainstWall,
+    FacingChairOrAgainstWall,
 }
 
 fn load_model(bytes: &[u8]) -> Model {

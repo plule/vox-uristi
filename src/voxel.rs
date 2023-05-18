@@ -1,5 +1,5 @@
 use crate::{
-    building::BoundingBox,
+    building::{BoundingBox, BuildingInstanceExt},
     direction::{DirectionFlat, Rotating},
     export::ExportSettings,
     map::Map,
@@ -99,6 +99,14 @@ pub trait FromPrefab {
             }
             OrientationMode::AgainstWall => {
                 model = model.facing_away(map.wall_direction(coords));
+            }
+            OrientationMode::FacingChairOrAgainstWall => {
+                let c = map.neighbouring_flat(coords, |_, n| n.iter().any(|b| b.is_chair()));
+                if let Some(chair_direction) = c.directions().first() {
+                    model = model.looking_at(*chair_direction)
+                } else {
+                    model = model.facing_away(map.wall_direction(coords));
+                }
             }
         }
 
