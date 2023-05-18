@@ -1,18 +1,10 @@
 use crate::{
-    dot_vox_builder::DotVoxBuilder,
-    map::Map,
-    palette::Palette,
-    rfr::{self, create_building_def_map},
+    context::DFContext, dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr,
     voxel::CollectVoxels,
 };
 use anyhow::Result;
-use dfhack_remote::{
-    BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition, ListMaterialsIn, PlantRawList,
-};
 use dot_vox::DotVoxData;
-use protobuf::MessageField;
 use std::{
-    collections::HashMap,
     fs::File,
     ops::Range,
     path::PathBuf,
@@ -81,36 +73,14 @@ pub fn try_export_voxels(
     progress_tx.send(Progress::undetermined("Starting..."))?;
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
-
-    let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
-    let material_list = client.remote_fortress_reader().get_material_list()?;
-    let map_info = client.remote_fortress_reader().get_map_info()?;
-    let plant_raws = client.remote_fortress_reader().get_plant_raws()?;
-    let enums = client.core().list_enums()?;
-    let building_definitions = client.remote_fortress_reader().get_building_def_list()?;
-    let building_map = create_building_def_map(building_definitions);
-    let inorganics_materials = client.core().list_materials(ListMaterialsIn {
-        mask: MessageField::some(BasicMaterialInfoMask {
-            flags: Some(true),
-            reaction: Some(true),
-            ..Default::default()
-        }),
-        inorganic: Some(true),
-        builtin: Some(true),
-        ..Default::default()
-    })?;
-    let inorganic_materials_map: HashMap<(i32, i32), &BasicMaterialInfo> = inorganics_materials
-        .value
-        .iter()
-        .map(|mat| ((mat.type_(), mat.index()), mat))
-        .collect();
-
+    let settings = ExportSettings { year_tick };
+    let context = DFContext::try_new(client, settings)?;
     let block_list_iterator =
         rfr::BlockListIterator::try_new(client, 100, 0..1000, 0..1000, z_range.clone())?;
     let (block_list_count, _) = block_list_iterator.size_hint();
 
     let mut map = Map::default();
-    let settings = ExportSettings { year_tick };
+
     let mut blocks = Vec::new();
 
     progress_tx.send(Progress::start("Reading...", block_list_count))?;
@@ -130,7 +100,7 @@ pub fn try_export_voxels(
     progress_tx.send(Progress::start("Assembling...", tot))?;
     for (curr, block) in blocks.iter().enumerate() {
         progress_tx.send(Progress::update("Assembling...", curr, tot))?;
-        map.add_block(block, &tile_type_list);
+        map.add_block(block, &context);
     }
 
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
@@ -139,7 +109,7 @@ pub fn try_export_voxels(
     let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
 
-    let max_y = map_info.block_size_y() * 16 * 3;
+    let max_y = context.map_info.block_size_y() * 16 * 3;
     let min_z = z_range.start * 5;
 
     let total = map.buildings.len();
@@ -150,9 +120,7 @@ pub fn try_export_voxels(
             add_voxels(
                 *building,
                 &map,
-                &settings,
-                &plant_raws,
-                &building_map,
+                &context,
                 &mut palette,
                 &mut vox,
                 max_y,
@@ -169,44 +137,19 @@ pub fn try_export_voxels(
         }
 
         progress_tx.send(Progress::update("Building tiles...", curr, total))?;
-        add_voxels(
-            tile,
-            &map,
-            &settings,
-            &plant_raws,
-            &building_map,
-            &mut palette,
-            &mut vox,
-            max_y,
-            min_z,
-        );
+        add_voxels(tile, &map, &context, &mut palette, &mut vox, max_y, min_z);
     }
 
     let total = map.flows.len();
     progress_tx.send(Progress::start("Building flows...", total))?;
     for (curr, flow) in map.flows.values().enumerate() {
         progress_tx.send(Progress::update("Building flows...", curr, total))?;
-        add_voxels(
-            flow,
-            &map,
-            &settings,
-            &plant_raws,
-            &building_map,
-            &mut palette,
-            &mut vox,
-            max_y,
-            min_z,
-        );
+        add_voxels(flow, &map, &context, &mut palette, &mut vox, max_y, min_z);
     }
     let mut vox: DotVoxData = vox.into();
 
     progress_tx.send(Progress::undetermined("Writing the palette..."))?;
-    palette.write_palette(
-        &mut vox,
-        &material_list.material_list,
-        &inorganic_materials_map,
-        &enums,
-    );
+    palette.write_palette(&mut vox, &context);
     progress_tx.send(Progress::undetermined("Saving the file..."))?;
     let mut f = File::create(path.clone())?;
     vox.write_vox(&mut f)?;
@@ -218,9 +161,7 @@ pub fn try_export_voxels(
 fn add_voxels<T>(
     item: &T,
     map: &Map,
-    settings: &ExportSettings,
-    plant_raws: &PlantRawList,
-    building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
+    context: &DFContext,
     palette: &mut Palette,
     vox: &mut DotVoxBuilder,
     max_y: i32,
@@ -228,7 +169,7 @@ fn add_voxels<T>(
 ) where
     T: CollectVoxels,
 {
-    for voxel in item.collect_voxels(map, settings, plant_raws, building_defs) {
+    for voxel in item.collect_voxels(map, context) {
         let color = palette.get_palette_color(&voxel.material);
         vox.add_voxel(
             voxel.coord.x,

@@ -1,7 +1,7 @@
 use super::BlockTileExt;
 use crate::{
+    context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat},
-    export::ExportSettings,
     map::Map,
     palette::{DefaultMaterials, Material},
     rfr::{BlockTile, ConsoleColor, GetTiming},
@@ -9,18 +9,13 @@ use crate::{
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
     IsSomeAnd,
 };
-use dfhack_remote::{MatPair, PlantRawList, TiletypeMaterial, TiletypeSpecial};
+use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeSpecial};
 use easy_ext::ext;
 use rand::{seq::SliceRandom, Rng};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
-    fn collect_plant_voxels(
-        &self,
-        map: &Map,
-        settings: &ExportSettings,
-        raws: &PlantRawList,
-    ) -> Vec<Voxel> {
+    fn collect_plant_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
         let material = match self.tile_type().material() {
             TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
             TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
@@ -28,7 +23,7 @@ pub impl BlockTile<'_> {
                 Material::Default(DefaultMaterials::DeadGrass)
             }
             _ => {
-                return self.collect_tree_voxels(map, settings, raws);
+                return self.collect_tree_voxels(map, context);
             }
         };
         let mut rng = rand::thread_rng();
@@ -47,12 +42,7 @@ pub impl BlockTile<'_> {
         voxels_from_uniform_shape(shape, self.coords(), material)
     }
 
-    fn collect_tree_voxels(
-        &self,
-        map: &Map,
-        settings: &ExportSettings,
-        raws: &PlantRawList,
-    ) -> Vec<Voxel> {
+    fn collect_tree_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
         let part = self.plant_part();
         let coords = self.coords();
         let mut rng = rand::thread_rng();
@@ -85,7 +75,7 @@ pub impl BlockTile<'_> {
             coords,
             structure_material,
         );
-        let growth_materials = self.growth_materials(&part, raws, settings.year_tick);
+        let growth_materials = self.growth_materials(&part, context);
         if alive && !growth_materials.is_empty() {
             let growth = BlockTile::growth_shape(&part).map(|slice| {
                 slice.map(|col| {
@@ -311,19 +301,14 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn growth_materials(
-        &self,
-        part: &PlantPart,
-        raws: &PlantRawList,
-        year_tick: i32,
-    ) -> Vec<Material> {
+    fn growth_materials(&self, part: &PlantPart, context: &DFContext) -> Vec<Material> {
         let plant_index = self.material().mat_index();
-        if let Some(plant_raw) = raws.plant_raws.get(plant_index as usize) {
+        if let Some(plant_raw) = context.plant_raws.plant_raws.get(plant_index as usize) {
             plant_raw
                 .growths
                 .iter()
                 .filter(|growth| {
-                    growth.timing().contains(&year_tick)
+                    growth.timing().contains(&context.settings.year_tick)
                         && match part {
                             PlantPart::Cap => growth.cap(),
                             PlantPart::Root => growth.roots(),
@@ -340,7 +325,7 @@ pub impl BlockTile<'_> {
                     let current_print = growth
                         .prints
                         .iter()
-                        .find(|print| print.timing().contains(&year_tick));
+                        .find(|print| print.timing().contains(&context.settings.year_tick));
                     let fresh_print = growth
                         .prints
                         .iter()

@@ -1,7 +1,7 @@
 use crate::{
     building::{BoundingBox, BuildingInstanceExt},
+    context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat, Rotating},
-    export::ExportSettings,
     map::Map,
     palette::{DefaultMaterials, Material},
     prefabs::{Connectivity, ContentMode, OrientationMode, Prefab},
@@ -9,10 +9,10 @@ use crate::{
     tile::BlockTileExt,
     Coords, IsSomeAnd,
 };
-use dfhack_remote::{BuildingDefinition, MatPair, PlantRawList};
+use dfhack_remote::MatPair;
 use dot_vox::Model;
 use itertools::Itertools;
-use std::{collections::HashMap, iter::repeat};
+use std::iter::repeat;
 
 #[derive(Debug)]
 pub struct Voxel {
@@ -27,13 +27,7 @@ impl Voxel {
 }
 
 pub trait CollectVoxels {
-    fn collect_voxels(
-        &self,
-        map: &Map,
-        settings: &ExportSettings,
-        plant_raws: &PlantRawList,
-        building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
-    ) -> Vec<Voxel>;
+    fn collect_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel>;
 }
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(

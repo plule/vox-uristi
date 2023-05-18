@@ -1,12 +1,13 @@
 use crate::{
     building::{BuildingInstanceExt, BuildingType},
+    context::DFContext,
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile},
     tile::BlockTileExt,
     voxel::FromPrefab,
     Coords, IsSomeAnd, WithCoords,
 };
-use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock, TiletypeList};
+use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock};
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Add};
 
@@ -19,11 +20,11 @@ pub struct Map<'a> {
 }
 
 impl<'a> Map<'a> {
-    pub fn add_block(&mut self, block: &'a MapBlock, tiletypes: &'a TiletypeList) {
+    pub fn add_block(&mut self, block: &'a MapBlock, context: &'a DFContext) {
         for flow in &block.flows {
             self.flows.insert(flow.coords(), flow);
         }
-        for tile in rfr::TileIterator::new(block, tiletypes) {
+        for tile in rfr::TileIterator::new(block, &context.tile_types) {
             self.tiles.insert(tile.coords(), tile);
         }
 

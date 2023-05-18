@@ -1,26 +1,19 @@
 use super::{BuildingInstanceExt, BuildingType};
 use crate::{
+    context::DFContext,
     direction::DirectionFlat,
-    export::ExportSettings,
     map::Map,
     shape,
     voxel::{voxels_from_uniform_shape, CollectVoxels, FromPrefab, Voxel},
     Coords, WithCoords,
 };
-use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
-use std::collections::HashMap;
+use dfhack_remote::BuildingInstance;
 
 impl CollectVoxels for BuildingInstance {
-    fn collect_voxels(
-        &self,
-        map: &Map,
-        _settings: &ExportSettings,
-        _plant_raws: &PlantRawList,
-        building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
-    ) -> Vec<Voxel> {
+    fn collect_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
         // Look for a static mesh
         let building_type = self.building_type.get_or_default();
-        if let Some(building_definition) = building_defs.get(&(
+        if let Some(building_definition) = context.building_map.get(&(
             building_type.building_type(),
             building_type.building_subtype(),
             building_type.building_custom(),

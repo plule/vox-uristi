@@ -1,7 +1,8 @@
+use crate::context::DFContext;
 use crate::rfr::RGBColor;
 use crate::{dot_vox_builder::MaterialExt, rfr::BasicMaterialInfoExt};
-use dfhack_remote::{core_text_fragment::Color, BasicMaterialInfo, MatPair, MaterialDefinition};
-use dfhack_remote::{ListEnumsOut, TiletypeMaterial};
+use dfhack_remote::TiletypeMaterial;
+use dfhack_remote::{core_text_fragment::Color, MatPair};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
@@ -60,9 +61,7 @@ impl<T: RGBColor> RGBAColor for T {
 impl Material {
     pub fn apply_material(
         &self,
-        materials: &[MaterialDefinition],
-        material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
-        enums: &ListEnumsOut,
+        context: &DFContext,
         color: &mut dot_vox::Color,
         material: &mut dot_vox::Material,
     ) {
@@ -100,10 +99,10 @@ impl Material {
                 };
             }
             Material::Generic(matpair) => {
-                apply_matpair(color, material, materials, matpair, material_info, enums);
+                apply_matpair(color, material, context, matpair);
             }
             Material::DarkGeneric(matpair) => {
-                apply_matpair(color, material, materials, matpair, material_info, enums);
+                apply_matpair(color, material, context, matpair);
                 let color2 = Hsv::from_color(Srgb::new(color.r, color.g, color.b).into_linear());
                 let color2 = color2.darken(0.5);
                 let color2: Rgb<palette::encoding::Srgb, u8> =
@@ -111,7 +110,7 @@ impl Material {
                 (color.r, color.g, color.b, color.a) = (color2.red, color2.green, color2.blue, 255);
             }
             Material::TileGeneric(matpair, tiletype_material) => {
-                apply_matpair(color, material, materials, matpair, material_info, enums);
+                apply_matpair(color, material, context, matpair);
                 match tiletype_material {
                     TiletypeMaterial::FROZEN_LIQUID => {
                         material.set_glass();
@@ -132,7 +131,9 @@ impl Material {
                 dest_color,
             } => {
                 material.set_diffuse();
-                let main_color = materials
+                let main_color = context
+                    .materials
+                    .material_list
                     .iter()
                     .find(|m| mat == m.mat_pair.get_or_default())
                     .map_or(named::BLACK, |material| material.state_color.rgb());
@@ -166,12 +167,12 @@ impl Material {
 fn apply_matpair(
     color: &mut dot_vox::Color,
     material: &mut dot_vox::Material,
-    materials: &[MaterialDefinition],
+    context: &DFContext,
     matpair: &MatPair,
-    material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
-    enums: &ListEnumsOut,
 ) {
-    (color.r, color.g, color.b, color.a) = materials
+    (color.r, color.g, color.b, color.a) = context
+        .materials
+        .material_list
         .iter()
         .find(|m| matpair == m.mat_pair.get_or_default())
         .map_or((0, 0, 0, 0), |material| match material.id() {
@@ -179,8 +180,11 @@ fn apply_matpair(
             "WATER" => (200, 200, 230, 255),
             _ => material.state_color.get_rgba(),
         });
-    if let Some(info) = material_info.get(&(matpair.mat_type(), matpair.mat_index())) {
-        for flag in info.flag_names(enums) {
+    if let Some(info) = context
+        .inorganic_materials_map
+        .get(&(matpair.mat_type(), matpair.mat_index()))
+    {
+        for flag in info.flag_names(&context.enums) {
             match flag {
                 "IS_METAL" => {
                     material.set_metal();
@@ -244,18 +248,10 @@ impl Palette {
             .or_insert_with(|| palette_size.try_into().unwrap_or_default()) // would be nice to warn in case of palette overflow
     }
 
-    pub fn write_palette(
-        &self,
-        vox: &mut DotVoxData,
-        materials: &[MaterialDefinition],
-        material_info: &HashMap<(i32, i32), &BasicMaterialInfo>,
-        enums: &ListEnumsOut,
-    ) {
+    pub fn write_palette(&self, vox: &mut DotVoxData, context: &DFContext) {
         for (material, index) in &self.materials {
             material.apply_material(
-                materials,
-                material_info,
-                enums,
+                context,
                 &mut vox.palette[*index as usize],
                 &mut vox.materials[*index as usize + 1],
             );

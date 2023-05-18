@@ -1,23 +1,17 @@
-use std::collections::HashMap;
-
+use super::{BlockTileExt, BlockTilePlantExt};
 use crate::{
-    export::ExportSettings,
+    context::DFContext,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
     shape::{box_from_levels, box_full, slice_const, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels},
 };
-use dfhack_remote::{BuildingDefinition, PlantRawList};
-
-use super::{BlockTileExt, BlockTilePlantExt};
 
 impl CollectVoxels for BlockTile<'_> {
     fn collect_voxels(
         &self,
         map: &crate::map::Map,
-        settings: &ExportSettings,
-        plant_raws: &PlantRawList,
-        _building_defs: &HashMap<(i32, i32, i32), BuildingDefinition>,
+        context: &DFContext,
     ) -> Vec<crate::voxel::Voxel> {
         let coords = self.coords();
         if self.hidden() {
@@ -40,7 +34,7 @@ impl CollectVoxels for BlockTile<'_> {
             voxels.extend(self.collect_structure_voxels(map));
         } else {
             // plant, trees
-            voxels.extend(self.collect_plant_voxels(map, settings, plant_raws));
+            voxels.extend(self.collect_plant_voxels(map, context));
         }
 
         // liquids
