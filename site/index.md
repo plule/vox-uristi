@@ -46,8 +46,9 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Most construction items (doors, windows, bars, bridges, furnitures, workshops)
 - ☑ Flows, waves and mist
 - ☑ Seasonal plants
-- ☐ Spatters
 - ☑ Detailed materials (metallic, water, light emission)
+- ☑ Building content (books on bookcases, items in workshops, ...)
+- ☐ Spatters
 - ☐ Advanced export parameters
 
 ## Gallery
@@ -83,6 +84,11 @@ Fort Chantbell is a fortress by Neo.
 | *The Forge of Chantbell*         |
 
 ## Version History
+
+### v0.9
+
+- Render building content
+- Add many more models, covering nearly all the buildings
 
 ### v0.8
 
