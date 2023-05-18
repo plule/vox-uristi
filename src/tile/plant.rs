@@ -32,11 +32,15 @@ pub impl BlockTile<'_> {
             }
         };
         let mut rng = rand::thread_rng();
+        let item_on_tile = map
+            .buildings
+            .get(&self.coords())
+            .some_and(|i| !i.is_empty());
         let shape: Box3D<bool> = [
             slice_empty(),
             slice_empty(),
             slice_empty(),
-            slice_from_fn(|_, _| rng.gen_bool(1.0 / 7.0)),
+            slice_from_fn(|_, _| !item_on_tile && rng.gen_bool(1.0 / 7.0)),
             slice_full(),
         ];
 

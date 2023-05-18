@@ -31,3 +31,5 @@ buildings:
     connectivity: SelfOrWall
   Support:
     orientation: AgainstWall
+  Floodgate:
+    connectivity: SelfOrWall

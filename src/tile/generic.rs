@@ -41,10 +41,12 @@ pub impl BlockTile<'_> {
         let mut rng = rand::thread_rng();
         let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
-                let r = !matches!(
-                    tile_type.special(),
-                    TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD
-                );
+                let item_on_tile = map.buildings.get(&coords).some_and(|i| !i.is_empty());
+                let r = !item_on_tile
+                    && !matches!(
+                        tile_type.special(),
+                        TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD
+                    );
                 [
                     slice_empty(),
                     slice_empty(),
