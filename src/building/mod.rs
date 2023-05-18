@@ -9,7 +9,7 @@ pub use furniture::BuildingInstanceFurnitureExt;
 use itertools::Itertools;
 
 pub use self::building_type::BuildingType;
-use crate::{direction::DirectionFlat, palette::Material, voxel::FromDotVox2, Coords, WithCoords};
+use crate::{direction::DirectionFlat, palette::Material, voxel::FromPrefab, Coords, WithCoords};
 use dfhack_remote::BuildingInstance;
 use easy_ext::ext;
 use std::ops::RangeInclusive;
@@ -37,7 +37,7 @@ impl WithCoords for BuildingInstance {
     }
 }
 
-impl FromDotVox2 for BuildingInstance {
+impl FromPrefab for BuildingInstance {
     fn build_materials(&self) -> [Option<dfhack_remote::MatPair>; 8] {
         let mut iter = self.items.iter().filter_map(|item| {
             if item.mode() == 2 {

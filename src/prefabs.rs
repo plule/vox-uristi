@@ -5,18 +5,18 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::collections::HashMap;
 
-static META_BYTES: &[u8] = include_bytes!("../models/meta.yaml");
-static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/models/buildings");
+static META_BYTES: &[u8] = include_bytes!("prefabs/meta.yaml");
+static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/prefabs/buildings");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ModelsConfigFile {
-    pub buildings: HashMap<String, ModelConfigFile>,
+pub struct PrefabsConfig {
+    pub buildings: HashMap<String, PrefabConfig>,
 }
 
 #[derive(Deserialize, Default)]
 #[serde(deny_unknown_fields)]
-pub struct ModelConfigFile {
+pub struct PrefabConfig {
     #[serde(default)]
     pub model: String,
 
@@ -25,17 +25,17 @@ pub struct ModelConfigFile {
 }
 
 #[derive(Default)]
-pub struct ModelsConfig {
-    buildings: HashMap<String, ModelConfig>,
+pub struct Prefabs {
+    buildings: HashMap<String, Prefab>,
 }
 
-impl ModelsConfig {
-    pub fn building<'a>(&'a self, id: &str) -> Option<&'a ModelConfig> {
+impl Prefabs {
+    pub fn building<'a>(&'a self, id: &str) -> Option<&'a Prefab> {
         self.buildings.get(&id.to_string())
     }
 }
 
-pub struct ModelConfig {
+pub struct Prefab {
     pub model: Model,
     pub orientation_mode: OrientationMode,
 }
@@ -55,20 +55,20 @@ fn load_model(bytes: &[u8]) -> Model {
         .expect("No model in .vox")
 }
 
-pub fn load_models() -> ModelsConfig {
-    let mut meta: ModelsConfigFile = serde_yaml::from_slice(META_BYTES).unwrap();
+pub fn load_models() -> Prefabs {
+    let mut prefab_configs: PrefabsConfig = serde_yaml::from_slice(META_BYTES).unwrap();
 
     for model in BUILDING_BYTES.find("**").unwrap() {
         if let Some(model) = model.as_file() {
             match model.path().extension().and_then(|ext| ext.to_str()) {
                 Some("vox") => {
                     let path = model.path().to_string_lossy();
-                    let entry = meta
+                    let prefab = prefab_configs
                         .buildings
                         .entry(path.replace(".vox", "").to_string())
-                        .or_insert_with(ModelConfigFile::default);
-                    if entry.model.is_empty() {
-                        entry.model = path.to_string();
+                        .or_insert_with(PrefabConfig::default);
+                    if prefab.model.is_empty() {
+                        prefab.model = path.to_string();
                     }
                 }
                 _ => panic!("Unsupported file type"),
@@ -76,11 +76,11 @@ pub fn load_models() -> ModelsConfig {
         }
     }
 
-    let mut models = ModelsConfig::default();
-    for (id, cfg) in meta.buildings.into_iter() {
-        models.buildings.insert(
+    let mut prefabs = Prefabs::default();
+    for (id, cfg) in prefab_configs.buildings.into_iter() {
+        prefabs.buildings.insert(
             id.clone(),
-            ModelConfig {
+            Prefab {
                 model: load_model(
                     BUILDING_BYTES
                         .get_file(&cfg.model)
@@ -92,11 +92,11 @@ pub fn load_models() -> ModelsConfig {
             },
         );
     }
-    models
+    prefabs
 }
 
 lazy_static! {
-    pub static ref MODELS: ModelsConfig = load_models();
+    pub static ref MODELS: Prefabs = load_models();
 }
 
 #[cfg(test)]

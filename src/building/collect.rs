@@ -6,7 +6,7 @@ use crate::{
     export::ExportSettings,
     map::Map,
     shape,
-    voxel::{voxels_from_uniform_shape, CollectVoxels, FromDotVox2, Voxel},
+    voxel::{voxels_from_uniform_shape, CollectVoxels, FromPrefab, Voxel},
     WithCoords,
 };
 use dfhack_remote::{BuildingDefinition, BuildingInstance, PlantRawList};
@@ -26,8 +26,8 @@ impl CollectVoxels for BuildingInstance {
             building_type.building_subtype(),
             building_type.building_custom(),
         )) {
-            if let Some(prefab) = crate::models::MODELS.building(building_definition.id()) {
-                return self.collect_from_dot_vox(prefab, map);
+            if let Some(prefab) = crate::prefabs::MODELS.building(building_definition.id()) {
+                return self.from_prefab(prefab, map);
             }
         }
         let coords = self.origin();

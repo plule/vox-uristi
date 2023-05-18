@@ -3,10 +3,10 @@ use crate::{
     direction::{DirectionFlat, Rotating},
     export::ExportSettings,
     map::Map,
-    models::{ModelConfig, OrientationMode},
     palette::{DefaultMaterials, Material},
+    prefabs::{OrientationMode, Prefab},
     shape::Box3D,
-    Coords, WithCoords,
+    Coords,
 };
 use dfhack_remote::{BuildingDefinition, MatPair, PlantRawList};
 use dot_vox::Model;
@@ -75,17 +75,13 @@ pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     voxels_from_shape(shape, origin)
 }
 
-pub trait FromDotVox {
-    fn dot_vox(&self, voxels: &[u8]) -> Vec<Voxel>;
-}
-
-pub trait FromDotVox2 {
+pub trait FromPrefab {
     fn build_materials(&self) -> [Option<MatPair>; 8];
     fn content_materials(&self) -> [Option<MatPair>; 8];
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn bounding_box(&self) -> BoundingBox;
 
-    fn collect_from_dot_vox(&self, prefab: &ModelConfig, map: &Map) -> Vec<Voxel> {
+    fn from_prefab(&self, prefab: &Prefab, map: &Map) -> Vec<Voxel> {
         let mut model = Model {
             size: prefab.model.size,
             voxels: prefab.model.voxels.clone(),
