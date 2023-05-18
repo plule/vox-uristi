@@ -1,11 +1,8 @@
-mod building_type;
 mod collect;
-
-pub use self::building_type::BuildingType;
 use crate::{
-    direction::DirectionFlat, map::Map, palette::Material, voxel::FromPrefab, Coords, WithCoords,
+    context::DFContext, direction::DirectionFlat, map::Map, palette::Material, prefabs,
+    voxel::FromPrefab, Coords, WithCoords,
 };
-pub use building_type::*;
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
 use std::ops::RangeInclusive;
@@ -68,21 +65,22 @@ impl FromPrefab for BuildingInstance {
         )
     }
 
-    fn self_connectivity(&self, map: &Map) -> crate::direction::NeighbouringFlat<bool> {
+    fn self_connectivity(
+        &self,
+        map: &Map,
+        context: &DFContext,
+    ) -> crate::direction::NeighbouringFlat<bool> {
+        let def = context.building_definition(&self.building_type);
         map.neighbouring_flat(self.coords(), |_, buildings| {
             buildings
                 .iter()
-                .any(|building| self.building_type() == building.building_type())
+                .any(|building| def == context.building_definition(&building.building_type))
         })
     }
 }
 
 #[ext(BuildingInstanceExt)]
 pub impl BuildingInstance {
-    fn building_type(&self) -> BuildingType {
-        BuildingType::from_df(self)
-    }
-
     fn material(&self) -> Material {
         Material::Generic(self.material.get_or_default().to_owned())
     }
@@ -99,21 +97,20 @@ pub impl BuildingInstance {
         )
     }
 
-    fn is_floor(&self) -> bool {
-        matches!(
-            BuildingType::from_df(self),
-            BuildingType::TradeDepot
-                | BuildingType::Furnace(_)
-                | BuildingType::Statue
-                | BuildingType::Workshop(_)
-                | BuildingType::ScrewPump
-                | BuildingType::Windmill
-                | BuildingType::RoadPaved
-                | BuildingType::FarmPlot
-        )
+    fn is_floor(&self, context: &DFContext) -> bool {
+        if let Some(def) = context.building_definition(&self.building_type) {
+            if let Some(prefab) = prefabs::MODELS.building(def.id()) {
+                return prefab.is_floor;
+            }
+        }
+        false
     }
 
-    fn is_chair(&self) -> bool {
-        matches!(BuildingType::from_df(self), BuildingType::Chair)
+    fn is_chair(&self, context: &DFContext) -> bool {
+        if let Some(def) = context.building_definition(&self.building_type) {
+            def.id() == "Chair"
+        } else {
+            false
+        }
     }
 }

@@ -1,6 +1,18 @@
 # Model configuration
 # vox with the same name as the building are implied
 buildings:
+  Workshop/*:
+    is_floor: true
+  Furnace/*:
+    is_floor: true
+  Statue:
+    is_floor: true
+  ScrewPump:
+    is_floor: true
+  Windmill:
+    is_floor: true
+  FarmPlot:
+    is_floor: true
   Workshop/Tanners:
     model: Workshop/Craftsdwarfs.vox
   Bookcase:

@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use dfhack_remote::{
-    BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition, ListEnumsOut, ListMaterialsIn,
-    MapInfo, MaterialList, PlantRawList, TiletypeList,
+    BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition, BuildingType, ListEnumsOut,
+    ListMaterialsIn, MapInfo, MaterialList, PlantRawList, TiletypeList,
 };
 use protobuf::MessageField;
 
@@ -49,5 +49,16 @@ impl DFContext {
             ),
             inorganic_materials_map,
         })
+    }
+
+    pub fn building_definition<'a>(
+        &'a self,
+        building_type: &BuildingType,
+    ) -> Option<&'a BuildingDefinition> {
+        self.building_map.get(&(
+            building_type.building_type(),
+            building_type.building_subtype(),
+            building_type.building_custom(),
+        ))
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    building::{BuildingInstanceExt, BuildingType},
+    building::BuildingInstanceExt,
     context::DFContext,
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile},
@@ -29,7 +29,7 @@ impl<'a> Map<'a> {
         }
 
         for building in &block.buildings {
-            if building.building_type() != BuildingType::Unknown {
+            if !building.is_room() {
                 self.buildings
                     .entry(building.origin())
                     .or_default()
@@ -38,10 +38,10 @@ impl<'a> Map<'a> {
         }
     }
 
-    pub fn remove_overlapping_floors(&mut self) {
+    pub fn remove_overlapping_floors(&mut self, context: &DFContext) {
         for buildings in self.buildings.values() {
             for building in buildings {
-                if building.is_floor() {
+                if building.is_floor(context) {
                     let bounding_box = building.bounding_box();
                     for x in bounding_box.x.clone() {
                         for y in bounding_box.y.clone() {

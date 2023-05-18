@@ -76,9 +76,9 @@ pub trait FromPrefab {
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn bounding_box(&self) -> BoundingBox;
-    fn self_connectivity(&self, map: &Map) -> NeighbouringFlat<bool>;
+    fn self_connectivity(&self, map: &Map, context: &DFContext) -> NeighbouringFlat<bool>;
 
-    fn voxels_from_prefab(&self, prefab: &Prefab, map: &Map) -> Vec<Voxel> {
+    fn voxels_from_prefab(&self, prefab: &Prefab, map: &Map, context: &DFContext) -> Vec<Voxel> {
         let mut model = Model {
             size: prefab.model.size,
             voxels: prefab.model.voxels.clone(),
@@ -98,7 +98,7 @@ pub trait FromPrefab {
                 model = model.facing_away(map.wall_direction(coords));
             }
             OrientationMode::FacingChairOrAgainstWall => {
-                let c = map.neighbouring_flat(coords, |_, n| n.iter().any(|b| b.is_chair()));
+                let c = map.neighbouring_flat(coords, |_, n| n.iter().any(|b| b.is_chair(context)));
                 if let Some(chair_direction) = c.directions().first() {
                     model = model.looking_at(*chair_direction)
                 } else {
@@ -152,7 +152,7 @@ pub trait FromPrefab {
             Connectivity::SelfOrWall => {
                 let c1 =
                     map.neighbouring_flat(coords, |tile, _| tile.some_and(|tile| tile.is_wall()));
-                let c2 = self.self_connectivity(map);
+                let c2 = self.self_connectivity(map, context);
                 let cx = (model.size.x / 2) as i32;
                 let cy = (model.size.y / 2) as i32;
                 model_voxels.retain(|voxel| {

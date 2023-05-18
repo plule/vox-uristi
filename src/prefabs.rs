@@ -1,5 +1,6 @@
 use anyhow::Context;
 use dot_vox::Model;
+use glob_match::glob_match;
 use include_dir::{include_dir, Dir};
 use lazy_static::lazy_static;
 use serde::Deserialize;
@@ -17,10 +18,11 @@ pub struct PrefabsConfig {
 #[derive(Deserialize, Default)]
 #[serde(deny_unknown_fields, default)]
 pub struct PrefabConfig {
-    pub model: String,
-    pub orientation: OrientationMode,
-    pub content: ContentMode,
-    pub connectivity: Connectivity,
+    pub model: Option<String>,
+    pub orientation: Option<OrientationMode>,
+    pub content: Option<ContentMode>,
+    pub connectivity: Option<Connectivity>,
+    pub is_floor: Option<bool>,
 }
 
 #[derive(Default)]
@@ -39,9 +41,10 @@ pub struct Prefab {
     pub orientation: OrientationMode,
     pub content: ContentMode,
     pub connectivity: Connectivity,
+    pub is_floor: bool,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Copy)]
 pub enum OrientationMode {
     #[default]
     FromDwarfFortress,
@@ -49,14 +52,14 @@ pub enum OrientationMode {
     FacingChairOrAgainstWall,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Copy)]
 pub enum ContentMode {
     #[default]
     Unique,
     All,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone, Copy)]
 pub enum Connectivity {
     #[default]
     None,
@@ -83,8 +86,8 @@ pub fn load_models() -> Prefabs {
                         .buildings
                         .entry(path.replace(".vox", "").to_string())
                         .or_insert_with(PrefabConfig::default);
-                    if prefab.model.is_empty() {
-                        prefab.model = path.to_string();
+                    if prefab.model.is_none() {
+                        prefab.model = Some(path.to_string());
                     }
                 }
                 _ => panic!("Unsupported file type"),
@@ -92,21 +95,51 @@ pub fn load_models() -> Prefabs {
         }
     }
 
-    let mut prefabs = Prefabs::default();
+    // separate the glob patterns from the static patterns
+    let mut globs = HashMap::new();
+    let mut statics = HashMap::new();
     for (id, cfg) in prefab_configs.buildings.into_iter() {
+        if id.contains('*') {
+            globs.insert(id, cfg);
+        } else {
+            statics.insert(id, cfg);
+        }
+    }
+
+    // create the concrete configuration
+    let mut prefabs = Prefabs::default();
+    for (id, mut cfg) in statics.into_iter() {
+        for (glob, glob_cfg) in globs.iter() {
+            if glob_match(glob, &id) {
+                cfg.model = cfg.model.or(glob_cfg.model.clone());
+                cfg.orientation = cfg.orientation.or(glob_cfg.orientation);
+                cfg.connectivity = cfg.connectivity.or(glob_cfg.connectivity);
+                cfg.content = cfg.content.or(glob_cfg.content);
+                cfg.is_floor = cfg.is_floor.or(glob_cfg.is_floor);
+            }
+        }
+
+        let model_path = cfg
+            .model
+            .with_context(|| format!("No model for building {}", &id))
+            .unwrap();
+
         prefabs.buildings.insert(
             id.clone(),
             Prefab {
                 model: load_model(
                     BUILDING_BYTES
-                        .get_file(&cfg.model)
-                        .with_context(|| format!("Missing file: {} for model {}", &cfg.model, &id))
+                        .get_file(&model_path)
+                        .with_context(|| {
+                            format!("Missing file: {} for building {}", &model_path, &id)
+                        })
                         .unwrap()
                         .contents(),
                 ),
-                orientation: cfg.orientation,
-                content: cfg.content,
-                connectivity: cfg.connectivity,
+                orientation: cfg.orientation.unwrap_or_default(),
+                content: cfg.content.unwrap_or_default(),
+                connectivity: cfg.connectivity.unwrap_or_default(),
+                is_floor: cfg.is_floor.unwrap_or(false),
             },
         );
     }

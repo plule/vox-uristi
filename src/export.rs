@@ -104,7 +104,7 @@ pub fn try_export_voxels(
     }
 
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
-    map.remove_overlapping_floors();
+    map.remove_overlapping_floors(&context);
 
     let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
