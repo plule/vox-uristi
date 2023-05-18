@@ -107,6 +107,7 @@ pub impl BuildingInstance {
                 | BuildingType::Statue
                 | BuildingType::Workshop(_)
                 | BuildingType::ScrewPump
+                | BuildingType::Windmill
         )
     }
 

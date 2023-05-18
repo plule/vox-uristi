@@ -191,7 +191,7 @@ mod tests {
                         y,
                         model.size.y
                     );
-                    assert_eq!(5, model.size.z, "{}", def.id());
+                    assert_eq!(0, model.size.z % 5, "{}", def.id());
                 } else {
                     missing_models.push(def.id());
                 }
