@@ -1,12 +1,13 @@
 use crate::{
     building::{BoundingBox, BuildingInstanceExt},
-    direction::{DirectionFlat, Rotating},
+    direction::{DirectionFlat, NeighbouringFlat, Rotating},
     export::ExportSettings,
     map::Map,
     palette::{DefaultMaterials, Material},
-    prefabs::{ContentMode, OrientationMode, Prefab},
+    prefabs::{Connectivity, ContentMode, OrientationMode, Prefab},
     shape::Box3D,
-    Coords,
+    tile::BlockTileExt,
+    Coords, IsSomeAnd,
 };
 use dfhack_remote::{BuildingDefinition, MatPair, PlantRawList};
 use dot_vox::Model;
@@ -81,6 +82,7 @@ pub trait FromPrefab {
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn bounding_box(&self) -> BoundingBox;
+    fn self_connectivity(&self, map: &Map) -> NeighbouringFlat<bool>;
 
     fn voxels_from_prefab(&self, prefab: &Prefab, map: &Map) -> Vec<Voxel> {
         let mut model = Model {
@@ -149,7 +151,38 @@ pub trait FromPrefab {
             .chain(default_materials)
             .collect();
 
-        // Convert to actual voxels
+        // Apply connectivity rules
+        let mut model_voxels = model.voxels.clone();
+        match prefab.connectivity {
+            Connectivity::None => {}
+            Connectivity::SelfOrWall => {
+                let c1 =
+                    map.neighbouring_flat(coords, |tile, _| tile.some_and(|tile| tile.is_wall()));
+                let c2 = self.self_connectivity(map);
+                let cx = (model.size.x / 2) as i32;
+                let cy = (model.size.y / 2) as i32;
+                model_voxels.retain(|voxel| {
+                    let mut display = true;
+                    let x = voxel.x as i32 - cx;
+                    let y = voxel.y as i32 - cy;
+                    if x < 0 {
+                        display &= c1.w || c2.w;
+                    }
+                    if x > 0 {
+                        display &= c1.e || c2.e;
+                    }
+                    if y < 0 {
+                        display &= c1.s || c2.s;
+                    }
+                    if y > 0 {
+                        display &= c1.n || c2.n;
+                    }
+                    display
+                });
+            }
+        }
+
+        // Convert to voxels with materials, positionned globally
         let mut voxels = Vec::new();
         let max_y = model.size.y as i32 - 1;
         for x in bounding_box.x.clone().step_by(model.size.x as usize / 3) {
@@ -157,7 +190,7 @@ pub trait FromPrefab {
                 for z in bounding_box.z.clone() {
                     let coords = Coords::new(x, y, z);
 
-                    voxels.extend(model.voxels.iter().filter_map(|voxel| {
+                    voxels.extend(model_voxels.iter().filter_map(|voxel| {
                         let material = materials.get(voxel.i as usize).cloned().flatten();
 
                         material.map(|material| {

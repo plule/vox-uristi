@@ -21,3 +21,9 @@ buildings:
     orientation: FacingChairOrAgainstWall
   Box:
     orientation: AgainstWall
+  WindowGlass:
+    connectivity: SelfOrWall
+  WindowGem:
+    connectivity: SelfOrWall
+  Door:
+    connectivity: SelfOrWall

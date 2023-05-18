@@ -20,6 +20,7 @@ pub struct PrefabConfig {
     pub model: String,
     pub orientation: OrientationMode,
     pub content: ContentMode,
+    pub connectivity: Connectivity,
 }
 
 #[derive(Default)]
@@ -37,6 +38,7 @@ pub struct Prefab {
     pub model: Model,
     pub orientation: OrientationMode,
     pub content: ContentMode,
+    pub connectivity: Connectivity,
 }
 
 #[derive(Deserialize, Default)]
@@ -52,6 +54,13 @@ pub enum ContentMode {
     #[default]
     Unique,
     All,
+}
+
+#[derive(Deserialize, Default)]
+pub enum Connectivity {
+    #[default]
+    None,
+    SelfOrWall,
 }
 
 fn load_model(bytes: &[u8]) -> Model {
@@ -97,6 +106,7 @@ pub fn load_models() -> Prefabs {
                 ),
                 orientation: cfg.orientation,
                 content: cfg.content,
+                connectivity: cfg.connectivity,
             },
         );
     }

@@ -1,14 +1,11 @@
-mod bridge;
 mod building_type;
 mod collect;
-mod furniture;
-
-pub use bridge::BuildingInstanceBridgeExt;
-pub use building_type::*;
-pub use furniture::BuildingInstanceFurnitureExt;
 
 pub use self::building_type::BuildingType;
-use crate::{direction::DirectionFlat, palette::Material, voxel::FromPrefab, Coords, WithCoords};
+use crate::{
+    direction::DirectionFlat, map::Map, palette::Material, voxel::FromPrefab, Coords, WithCoords,
+};
+pub use building_type::*;
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
 use std::ops::RangeInclusive;
@@ -69,6 +66,14 @@ impl FromPrefab for BuildingInstance {
             self.pos_y_min()..=self.pos_y_max(),
             self.pos_z_min()..=self.pos_z_max(),
         )
+    }
+
+    fn self_connectivity(&self, map: &Map) -> crate::direction::NeighbouringFlat<bool> {
+        map.neighbouring_flat(self.coords(), |_, buildings| {
+            buildings
+                .iter()
+                .any(|building| self.building_type() == building.building_type())
+        })
     }
 }
 
