@@ -35,7 +35,7 @@ impl WithCoords for BuildingInstance {
 
 impl FromPrefab for BuildingInstance {
     fn build_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
-        Box::new(self.items.iter().filter_map(|item| {
+        Box::new(self.items.iter().cycle().filter_map(|item| {
             if item.mode() == 2 {
                 Some(item.item.material.get_or_default().to_owned())
             } else {
@@ -108,6 +108,7 @@ pub impl BuildingInstance {
                 | BuildingType::Workshop(_)
                 | BuildingType::ScrewPump
                 | BuildingType::Windmill
+                | BuildingType::RoadPaved
         )
     }
 

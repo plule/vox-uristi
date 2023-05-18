@@ -118,7 +118,6 @@ pub trait FromPrefab {
         let build_materials = self
             .build_materials()
             .map(|m| Some(Material::Generic(m)))
-            .chain(repeat(None))
             .take(8);
         // Next 8 materials are the darker versions
         let dark_build_materials = self

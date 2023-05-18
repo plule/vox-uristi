@@ -29,3 +29,5 @@ buildings:
     connectivity: SelfOrWall
   BarsVertical:
     connectivity: SelfOrWall
+  Support:
+    orientation: AgainstWall
