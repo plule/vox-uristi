@@ -41,6 +41,9 @@ buildings:
     connectivity: SelfOrWall
   BarsVertical:
     connectivity: SelfOrWall
+  GrateWall:
+    model: BarsVertical.vox
+    connectivity: SelfOrWall
   Support:
     orientation: AgainstWall
   Floodgate:
