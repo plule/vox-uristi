@@ -6,8 +6,8 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::collections::HashMap;
 
-static META_BYTES: &[u8] = include_bytes!("prefabs/meta.yaml");
-static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/prefabs/buildings");
+static META_BYTES: &[u8] = include_bytes!("../assets/prefabs.yaml");
+static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/assets/buildings");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
