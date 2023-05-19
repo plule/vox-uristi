@@ -234,8 +234,9 @@ impl Display for BlockTile<'_> {
         for spatter in self.spatters() {
             writeln!(
                 f,
-                "spatter: {}. state: {:?}. material: t{} i{}. item: t{} i{}",
+                "spatter: {} ({}). state: {:?}. material: t{} i{}. item: t{} i{}",
                 spatter.amount(),
+                spatter.amount_normalized(),
                 spatter.state(),
                 spatter.material.get_or_default().mat_type(),
                 spatter.material.get_or_default().mat_index(),
@@ -329,6 +330,23 @@ pub impl BasicMaterialInfo {
             .iter()
             .map(|flag| enums.material_flags[*flag as usize].name())
             .collect()
+    }
+}
+
+#[easy_ext::ext(SpatterExt)]
+pub impl Spatter {
+    /// spatter proportion from 0 to one
+    fn amount_normalized(&self) -> f32 {
+        match self.state() {
+            dfhack_remote::MatterState::Solid => self.amount() as f32 / 10000.0,
+            dfhack_remote::MatterState::Liquid => self.amount() as f32 / 255.0,
+            dfhack_remote::MatterState::Gas => 0.0,
+            dfhack_remote::MatterState::Powder => self.amount() as f32 / 100.0,
+            dfhack_remote::MatterState::Paste => 0.0,
+            dfhack_remote::MatterState::Pressed => 0.0,
+        }
+        .min(1.0)
+        .max(0.0)
     }
 }
 

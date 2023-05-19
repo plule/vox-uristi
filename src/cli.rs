@@ -98,7 +98,7 @@ fn export(
         (Some(elevation), None) | (None, Some(elevation)) => (elevation, elevation),
         (None, None) => {
             let elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z();
-            (elevation, elevation)
+            (elevation - 2, elevation)
         }
     };
     let range = low..high + 1;

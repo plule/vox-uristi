@@ -1,9 +1,12 @@
+use dfhack_remote::MatterState;
+use rand::Rng;
+
 use super::{BlockTileExt, BlockTilePlantExt};
 use crate::{
     context::DFContext,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
-    shape::{box_from_levels, box_full, slice_const, Box3D},
+    shape::{box_from_levels, box_full, slice_const, slice_empty, slice_from_fn, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels},
 };
 
@@ -28,6 +31,41 @@ impl CollectVoxels for BlockTile<'_> {
             );
         }
         let mut voxels = Vec::new();
+
+        // spatters
+        for spatter in self.spatters() {
+            let mut rng = rand::thread_rng();
+            let slice = match spatter.state() {
+                // solid spatter is stuff like fruits and leaves, from zero to 10 000.
+                // there are a lot of them, so step down the probability
+                MatterState::Solid => {
+                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 50_000.0).into()))
+                }
+                // liquid spatter is blood etc, from 0 to 255.
+                // completely covered is a bit weird, half the probability
+                MatterState::Liquid => {
+                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 512.0).into()))
+                }
+                // powder spatter is likely snow, going from 0 to 100. We want 100% snow to covere the ground
+                MatterState::Powder => {
+                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 100.0).into()))
+                }
+                // gas, paste and other, I don't know how the can occur
+                _ => slice_empty(),
+            };
+            let spatter_shape: Box3D<bool> = [
+                slice_empty(),
+                slice_empty(),
+                slice_empty(),
+                slice,
+                slice_empty(),
+            ];
+            voxels.extend(voxels_from_uniform_shape(
+                spatter_shape,
+                self.coords(),
+                Material::Generic(spatter.material.get_or_default().clone()),
+            ));
+        }
 
         if self.material().mat_type() != 419 {
             // classic tile structure
