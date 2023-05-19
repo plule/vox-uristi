@@ -31,7 +31,7 @@ impl<'a> Map<'a> {
         }
 
         for building in &block.buildings {
-            if !building.is_room() {
+            if building.room.is_none() {
                 self.buildings
                     .entry(building.origin())
                     .or_default()

@@ -182,7 +182,8 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
                 let bx = building.pos_x_min()..=building.pos_x_max();
                 let by = building.pos_y_min()..=building.pos_y_max();
                 let bz = building.pos_z_min()..=building.pos_z_max();
-                if bx.contains(&x) && by.contains(&y) && bz.contains(&z) {
+                if building.room.is_none() && bx.contains(&x) && by.contains(&y) && bz.contains(&z)
+                {
                     dump(
                         &building,
                         &destination,
