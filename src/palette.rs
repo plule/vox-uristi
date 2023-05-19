@@ -88,7 +88,7 @@ impl Material {
                         material.set_ior(0.0);
                         material.set_transparency(0.75);
                     }
-                    DefaultMaterials::Smoke => {
+                    DefaultMaterials::Smoke | DefaultMaterials::Miasma => {
                         material.set_glass();
                         material.set_ior(0.0);
                         material.set_transparency(0.25);
