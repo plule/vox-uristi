@@ -64,6 +64,7 @@ pub enum Connectivity {
     #[default]
     None,
     SelfOrWall,
+    SelfRemovesLayer(u8),
 }
 
 fn load_model(bytes: &[u8]) -> Model {

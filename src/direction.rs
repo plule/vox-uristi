@@ -1,6 +1,6 @@
 use crate::{Coords, WithCoords};
 use dfhack_remote::BuildingDirection;
-use std::ops::Add;
+use std::ops::{Add, BitOr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -94,6 +94,19 @@ pub trait Rotating {
 
     /// Return a copy rotated by amount time 90 degrees
     fn rotated_by(self, amount: usize) -> Self;
+}
+
+impl BitOr for NeighbouringFlat<bool> {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self {
+            n: self.n | rhs.n,
+            e: self.e | rhs.e,
+            s: self.s | rhs.s,
+            w: self.w | rhs.w,
+        }
+    }
 }
 
 impl WithCoords for Direction8Flat {

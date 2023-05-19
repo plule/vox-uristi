@@ -3,9 +3,9 @@ use crate::{
     context::DFContext,
     direction::DirectionFlat,
     map::Map,
-    shape,
+    shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, FromPrefab, Voxel},
-    Coords, WithCoords,
+    Coords,
 };
 use dfhack_remote::BuildingInstance;
 
@@ -21,7 +21,7 @@ impl CollectVoxels for BuildingInstance {
 
             // No static mesh, apply a dynamic one
             let coords = self.origin();
-            let shape = match building_definition.id() {
+            let shape: Box3D<bool> = match building_definition.id() {
                 "GrateFloor" | "BarsFloor" => [
                     shape::slice_empty(),
                     shape::slice_empty(),
@@ -31,29 +31,6 @@ impl CollectVoxels for BuildingInstance {
                         (coords.x + x as i32) % 2 == 0 || (coords.y + y as i32) % 2 == 0
                     }),
                 ],
-                "Table" | "TractionBench" => {
-                    let edges = map.neighbouring_flat(self.coords(), |_, buildings| {
-                        !buildings.iter().any(|building| {
-                            matches!(
-                                context
-                                    .building_definition(building.building_type.get_or_default())
-                                    .map(|t| t.id()),
-                                Some("Table") | Some("TractionBench")
-                            )
-                        })
-                    });
-                    [
-                        shape::slice_empty(),
-                        shape::slice_empty(),
-                        shape::slice_full(),
-                        [
-                            [edges.n && edges.w, false, edges.n && edges.e],
-                            [false, false, false],
-                            [edges.s && edges.w, false, edges.s && edges.e],
-                        ],
-                        shape::slice_empty(),
-                    ]
-                }
                 "Bridge" => {
                     let direction = DirectionFlat::maybe_from_df(&self.direction());
                     let mut voxels = Vec::new();

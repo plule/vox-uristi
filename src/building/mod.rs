@@ -5,7 +5,7 @@ use crate::{
 };
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
-use std::ops::RangeInclusive;
+use std::ops::{RangeInclusive, Sub};
 
 #[derive(Debug)]
 pub struct BoundingBox {
@@ -21,6 +21,10 @@ impl BoundingBox {
 
     pub fn origin(&self) -> Coords {
         Coords::new(*self.x.start(), *self.y.start(), *self.z.start())
+    }
+
+    pub fn contains(&self, coords: Coords) -> bool {
+        self.x.contains(&coords.x) && self.y.contains(&coords.y) && self.z.contains(&coords.z)
     }
 }
 
@@ -71,7 +75,8 @@ impl FromPrefab for BuildingInstance {
         context: &DFContext,
     ) -> crate::direction::NeighbouringFlat<bool> {
         let def = context.building_definition(&self.building_type);
-        map.neighbouring_flat(self.coords(), |_, buildings| {
+        let coords = self.coords();
+        map.neighbouring_flat(coords, |_, buildings| {
             buildings
                 .iter()
                 .any(|building| def == context.building_definition(&building.building_type))
@@ -112,5 +117,17 @@ pub impl BuildingInstance {
         } else {
             false
         }
+    }
+}
+
+impl Sub<Coords> for BoundingBox {
+    type Output = BoundingBox;
+
+    fn sub(self, rhs: Coords) -> Self::Output {
+        Self::new(
+            (self.x.start() - rhs.x)..=(self.x.end() - rhs.x),
+            (self.y.start() - rhs.y)..=(self.y.end() - rhs.y),
+            (self.z.start() - rhs.z)..=(self.z.end() - rhs.z),
+        )
     }
 }

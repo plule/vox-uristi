@@ -45,3 +45,8 @@ buildings:
     orientation: AgainstWall
   Floodgate:
     connectivity: SelfOrWall
+  Table:
+    connectivity: !SelfRemovesLayer 1
+  TractionBench:
+    model: Table.vox
+    connectivity: !SelfRemovesLayer 1

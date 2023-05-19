@@ -150,9 +150,10 @@ pub trait FromPrefab {
         match prefab.connectivity {
             Connectivity::None => {}
             Connectivity::SelfOrWall => {
-                let c1 =
+                let wall_connectivity =
                     map.neighbouring_flat(coords, |tile, _| tile.some_and(|tile| tile.is_wall()));
-                let c2 = self.self_connectivity(map, context);
+                let neighbour_connectivity = self.self_connectivity(map, context);
+                let c = wall_connectivity | neighbour_connectivity;
                 let cx = (model.size.x / 2) as i32;
                 let cy = (model.size.y / 2) as i32;
                 model_voxels.retain(|voxel| {
@@ -160,16 +161,43 @@ pub trait FromPrefab {
                     let x = voxel.x as i32 - cx;
                     let y = voxel.y as i32 - cy;
                     if x < 0 {
-                        display &= c1.w || c2.w;
+                        display &= c.w;
                     }
                     if x > 0 {
-                        display &= c1.e || c2.e;
+                        display &= c.e;
                     }
                     if y < 0 {
-                        display &= c1.s || c2.s;
+                        display &= c.s;
                     }
                     if y > 0 {
-                        display &= c1.n || c2.n;
+                        display &= c.n
+                    }
+                    display
+                });
+            }
+            Connectivity::SelfRemovesLayer(layer) => {
+                let neighbour_connectivity = self.self_connectivity(map, context);
+                let self_connectivity =
+                    NeighbouringFlat::new(|dir| bounding_box.contains(coords + dir));
+                let c = neighbour_connectivity | self_connectivity;
+                let cx = (model.size.x / 2) as i32;
+                let cy = (model.size.y / 2) as i32;
+                model_voxels.retain(|voxel| {
+                    let mut display = true;
+                    let x = voxel.x as i32 - cx;
+                    let y = voxel.y as i32 - cy;
+                    let z = voxel.z;
+                    if x < 0 && z == layer {
+                        display &= !c.w;
+                    }
+                    if x > 0 && z == layer {
+                        display &= !c.e;
+                    }
+                    if y < 0 && z == layer {
+                        display &= !c.s;
+                    }
+                    if y > 0 && z == layer {
+                        display &= !c.n;
                     }
                     display
                 });
