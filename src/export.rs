@@ -1,6 +1,6 @@
 use crate::{
     context::DFContext, dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr,
-    voxel::CollectVoxels,
+    voxel::CollectVoxels, BASE, HEIGHT,
 };
 use anyhow::Result;
 use dot_vox::DotVoxData;
@@ -109,8 +109,8 @@ pub fn try_export_voxels(
     let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
 
-    let max_y = context.map_info.block_size_y() * 16 * 3;
-    let min_z = z_range.start * 5;
+    let max_y = context.map_info.block_size_y() * 16 * BASE as i32;
+    let min_z = z_range.start * HEIGHT as i32;
 
     let total = map.buildings.len();
     progress_tx.send(Progress::start("Building constructions...", total))?;

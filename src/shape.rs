@@ -3,13 +3,13 @@
 /// It has a set of methods to build programmatically 3D boxes or 2D slices
 use std::array;
 
-use crate::direction::Rotating;
+use crate::{direction::Rotating, BASE, HEIGHT};
 
 /// A 3D box of base BxB and height H
-pub type Box3D<T, const B: usize = 3, const H: usize = 5> = [[[T; B]; B]; H];
+pub type Box3D<T, const B: usize = BASE, const H: usize = HEIGHT> = [[[T; B]; B]; H];
 
 /// A flat 2D slice of size BxB
-pub type Slice2D<T, const B: usize = 3> = [[T; B]; B];
+pub type Slice2D<T, const B: usize = BASE> = [[T; B]; B];
 
 /// Build a 3D box from a function
 pub fn box_from_fn<T: Copy, const B: usize, const H: usize, F>(mut func: F) -> Box3D<T, B, H>

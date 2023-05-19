@@ -3,12 +3,8 @@ use std::{
     ops::{Add, RangeInclusive},
 };
 
-pub const RESOLUTION: Resolution = Resolution { base: 3, height: 5 };
-
-pub struct Resolution {
-    pub base: usize,
-    pub height: usize,
-}
+pub const BASE: usize = 3;
+pub const HEIGHT: usize = 5;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct VoxelCoords {
@@ -32,7 +28,7 @@ pub trait WithDFCoords {
     fn coords(&self) -> DFCoords;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DFBoundingBox {
     pub x: RangeInclusive<i32>,
     pub y: RangeInclusive<i32>,
@@ -52,9 +48,9 @@ impl VoxelCoords {
 
     pub fn from_df(origin: DFCoords, sub_x: usize, sub_y: usize, sub_z: usize) -> Self {
         Self::new(
-            origin.x * RESOLUTION.base as i32 + sub_x as i32,
-            origin.y * RESOLUTION.base as i32 + sub_y as i32,
-            origin.z * RESOLUTION.height as i32 + sub_z as i32,
+            origin.x * BASE as i32 + sub_x as i32,
+            origin.y * BASE as i32 + sub_y as i32,
+            origin.z * HEIGHT as i32 + sub_z as i32,
         )
     }
 
@@ -65,9 +61,9 @@ impl VoxelCoords {
     ) -> Self {
         let max_y = prefab_model.size.y as i32 - 1;
         Self::new(
-            origin.x * RESOLUTION.base as i32 + voxel.x as i32,
-            origin.y * RESOLUTION.base as i32 + (max_y - voxel.y as i32),
-            origin.z * RESOLUTION.height as i32 + voxel.z as i32,
+            origin.x * BASE as i32 + voxel.x as i32,
+            origin.y * BASE as i32 + (max_y - voxel.y as i32),
+            origin.z * HEIGHT as i32 + voxel.z as i32,
         )
     }
 }

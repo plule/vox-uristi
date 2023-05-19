@@ -21,7 +21,7 @@ mod update;
 mod voxel;
 use app::App;
 pub use coords::{
-    DFBoundingBox, DFCoords, Resolution, VoxelCoords, WithDFCoords, WithVoxelCoords, RESOLUTION,
+    DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
 };
 use eframe::egui;
 

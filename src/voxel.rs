@@ -7,7 +7,7 @@ use crate::{
     prefabs::{Connectivity, ContentMode, OrientationMode, Prefab},
     shape::Box3D,
     tile::BlockTileExt,
-    DFBoundingBox, DFCoords, IsSomeAnd, VoxelCoords, RESOLUTION,
+    DFBoundingBox, DFCoords, IsSomeAnd, VoxelCoords, BASE,
 };
 use dfhack_remote::MatPair;
 use dot_vox::Model;
@@ -202,16 +202,8 @@ pub trait FromPrefab {
 
         // Convert to voxels with materials, positionned globally
         let mut voxels = Vec::new();
-        for x in bounding_box
-            .x
-            .clone()
-            .step_by(model.size.x as usize / RESOLUTION.base)
-        {
-            for y in bounding_box
-                .y
-                .clone()
-                .step_by(model.size.y as usize / RESOLUTION.base)
-            {
+        for x in bounding_box.x.clone().step_by(model.size.x as usize / BASE) {
+            for y in bounding_box.y.clone().step_by(model.size.y as usize / BASE) {
                 for z in bounding_box.z.clone() {
                     let coords = DFCoords::new(x, y, z);
 
