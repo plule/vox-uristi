@@ -6,6 +6,7 @@ mod calendar;
 #[cfg(feature = "cli")]
 mod cli;
 mod context;
+mod coords;
 mod direction;
 mod dot_vox_builder;
 mod export;
@@ -18,30 +19,14 @@ mod shape;
 mod tile;
 mod update;
 mod voxel;
-
 use app::App;
+pub use coords::{
+    DFBoundingBox, DFCoords, Resolution, VoxelCoords, WithDFCoords, WithVoxelCoords, RESOLUTION,
+};
 use eframe::egui;
-use std::fmt::Display;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct Coords {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
-impl Display for Coords {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{},{})", self.x, self.y, self.z)
-    }
-}
-
-pub trait WithCoords {
-    fn coords(&self) -> Coords;
-}
 
 pub trait IsSomeAnd<T> {
     fn some_and(self, f: impl FnOnce(T) -> bool) -> bool;

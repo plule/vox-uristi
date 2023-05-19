@@ -1,4 +1,4 @@
-use crate::Coords;
+use crate::DFCoords;
 use anyhow::Result;
 use dfhack_remote::{
     core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, BuildingDefinition,
@@ -131,9 +131,9 @@ impl<'a> BlockTile<'a> {
         }
     }
 
-    pub fn coords(&self) -> Coords {
+    pub fn coords(&self) -> DFCoords {
         let (sub_x, sub_y) = (self.index % 16, self.index / 16);
-        Coords::new(
+        DFCoords::new(
             self.block.map_x() + sub_x as i32,
             self.block.map_y() + sub_y as i32,
             self.block.map_z(),
@@ -180,18 +180,18 @@ impl<'a> BlockTile<'a> {
         self.block.water_salt[self.index]
     }
 
-    pub fn tree(&self) -> Coords {
-        Coords::new(
+    pub fn tree(&self) -> DFCoords {
+        DFCoords::new(
             self.block.tree_x[self.index],
             self.block.tree_y[self.index],
             self.block.tree_z[self.index],
         )
     }
 
-    pub fn tree_origin(&self) -> Coords {
+    pub fn tree_origin(&self) -> DFCoords {
         let coord = self.coords();
         let tree = self.tree();
-        Coords::new(coord.x - tree.x, coord.y - tree.y, coord.z + tree.z)
+        DFCoords::new(coord.x - tree.x, coord.y - tree.y, coord.z + tree.z)
     }
 
     pub fn tree_percent(&self) -> i32 {

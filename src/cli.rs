@@ -1,4 +1,4 @@
-use crate::{calendar::Month, export, rfr, update, Coords};
+use crate::{calendar::Month, export, rfr, update, DFCoords};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
@@ -168,7 +168,7 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let y = view_info.cursor_pos_y();
     let z = view_info.cursor_pos_z();
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
-    let probe = Coords::new(x, y, z);
+    let probe = DFCoords::new(x, y, z);
     for block_list in rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?
     {
         for block in block_list?.map_blocks {
@@ -191,7 +191,7 @@ fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
                 }
             }
             for (i, flow) in block.flows.iter().enumerate() {
-                if Coords::from(flow.pos.get_or_default()) == probe {
+                if DFCoords::from(flow.pos.get_or_default()) == probe {
                     dump(flow, &destination, format!("flow_{i}.json").as_str())?;
                 }
             }

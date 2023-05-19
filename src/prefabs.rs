@@ -163,6 +163,7 @@ mod tests {
         direction::{DirectionFlat, Rotating},
         rfr::create_building_def_map,
         voxel::FromPrefab,
+        RESOLUTION,
     };
 
     use super::*;
@@ -211,7 +212,7 @@ mod tests {
                     let (x, y) = building.dimension();
                     assert_eq!(
                         0,
-                        (x * 3) % model.size.x as i32,
+                        (x * RESOLUTION.base as i32) % model.size.x as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         x,
@@ -219,13 +220,13 @@ mod tests {
                     );
                     assert_eq!(
                         0,
-                        (y * 3) % model.size.y as i32,
+                        (y * RESOLUTION.base as i32) % model.size.y as i32,
                         "{}. building dimension: {}, model size: {}",
                         def.id(),
                         y,
                         model.size.y
                     );
-                    assert_eq!(0, model.size.z % 5, "{}", def.id());
+                    assert_eq!(0, model.size.z % RESOLUTION.height as u32, "{}", def.id());
                 } else {
                     missing_models.push(def.id());
                 }

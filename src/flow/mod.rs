@@ -1,9 +1,11 @@
+use std::ops::Add;
+
 use crate::{
     context::DFContext,
     palette::{DefaultMaterials, Material},
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
-    Coords, WithCoords,
+    DFCoords, WithDFCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType};
 use rand::Rng;
@@ -36,8 +38,19 @@ impl CollectVoxels for &FlowInfo {
     }
 }
 
-impl WithCoords for FlowInfo {
-    fn coords(&self) -> Coords {
+impl WithDFCoords for FlowInfo {
+    fn coords(&self) -> DFCoords {
         self.pos.get_or_default().into()
+    }
+}
+
+impl<T> Add<T> for DFCoords
+where
+    T: WithDFCoords,
+{
+    type Output = DFCoords;
+
+    fn add(self, rhs: T) -> Self::Output {
+        self + rhs.coords()
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    building::{BoundingBox, BuildingInstanceExt},
+    building::BuildingInstanceExt,
     context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat, Rotating},
     map::Map,
@@ -7,7 +7,7 @@ use crate::{
     prefabs::{Connectivity, ContentMode, OrientationMode, Prefab},
     shape::Box3D,
     tile::BlockTileExt,
-    Coords, IsSomeAnd,
+    DFBoundingBox, DFCoords, IsSomeAnd, VoxelCoords, RESOLUTION,
 };
 use dfhack_remote::MatPair;
 use dot_vox::Model;
@@ -16,12 +16,12 @@ use std::iter::repeat;
 
 #[derive(Debug)]
 pub struct Voxel {
-    pub coord: Coords,
+    pub coord: VoxelCoords,
     pub material: Material,
 }
 
 impl Voxel {
-    pub fn new(coord: Coords, material: Material) -> Self {
+    pub fn new(coord: VoxelCoords, material: Material) -> Self {
         Self { coord, material }
     }
 }
@@ -32,17 +32,13 @@ pub trait CollectVoxels {
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(
     shape: Box3D<Option<Material>, B, H>,
-    origin: Coords,
+    origin: DFCoords,
 ) -> Vec<Voxel> {
     let mut ret = Vec::new();
     for x in 0..B {
         for y in 0..B {
             for z in 0..H {
-                let coords = Coords {
-                    x: origin.x * 3 + x as i32,
-                    y: origin.y * 3 + y as i32,
-                    z: origin.z * 5 + z as i32,
-                };
+                let coords = VoxelCoords::from_df(origin, x, y, z);
                 if let Some(material) = &shape[H - 1 - z][y][x] {
                     ret.push(Voxel::new(coords, material.clone()))
                 }
@@ -54,7 +50,7 @@ pub fn voxels_from_shape<const B: usize, const H: usize>(
 
 pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     shape: Box3D<bool, B, H>,
-    origin: Coords,
+    origin: DFCoords,
     material: Material,
 ) -> Vec<Voxel> {
     let shape = shape.map(|slice| {
@@ -75,7 +71,7 @@ pub trait FromPrefab {
     fn build_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn df_orientation(&self) -> Option<DirectionFlat>;
-    fn bounding_box(&self) -> BoundingBox;
+    fn bounding_box(&self) -> DFBoundingBox;
     fn self_connectivity(&self, map: &Map, context: &DFContext) -> NeighbouringFlat<bool>;
 
     fn voxels_from_prefab(&self, prefab: &Prefab, map: &Map, context: &DFContext) -> Vec<Voxel> {
@@ -206,22 +202,25 @@ pub trait FromPrefab {
 
         // Convert to voxels with materials, positionned globally
         let mut voxels = Vec::new();
-        let max_y = model.size.y as i32 - 1;
-        for x in bounding_box.x.clone().step_by(model.size.x as usize / 3) {
-            for y in bounding_box.y.clone().step_by(model.size.y as usize / 3) {
+        for x in bounding_box
+            .x
+            .clone()
+            .step_by(model.size.x as usize / RESOLUTION.base)
+        {
+            for y in bounding_box
+                .y
+                .clone()
+                .step_by(model.size.y as usize / RESOLUTION.base)
+            {
                 for z in bounding_box.z.clone() {
-                    let coords = Coords::new(x, y, z);
+                    let coords = DFCoords::new(x, y, z);
 
                     voxels.extend(model_voxels.iter().filter_map(|voxel| {
                         let material = materials.get(voxel.i as usize).cloned().flatten();
 
                         material.map(|material| {
                             Voxel::new(
-                                Coords::new(
-                                    voxel.x as i32 + coords.x * 3,
-                                    (max_y - voxel.y as i32) + coords.y * 3,
-                                    voxel.z as i32 + coords.z * 5,
-                                ),
+                                VoxelCoords::from_prefab_voxel(coords, &model, voxel),
                                 material,
                             )
                         })

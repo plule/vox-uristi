@@ -1,13 +1,12 @@
 mod collect;
 mod generic;
 mod plant;
+use crate::{rfr::BlockTile, WithDFCoords};
 pub use generic::BlockTileExt;
 pub use plant::BlockTilePlantExt;
 
-use crate::{rfr::BlockTile, WithCoords};
-
-impl WithCoords for BlockTile<'_> {
-    fn coords(&self) -> crate::Coords {
+impl WithDFCoords for BlockTile<'_> {
+    fn coords(&self) -> crate::DFCoords {
         self.coords()
     }
 }

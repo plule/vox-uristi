@@ -5,23 +5,20 @@ use crate::{
     rfr::{self, BlockTile},
     tile::BlockTileExt,
     voxel::FromPrefab,
-    Coords, IsSomeAnd, WithCoords,
+    DFCoords, IsSomeAnd, WithDFCoords,
 };
-use dfhack_remote::{BuildingInstance, Coord, FlowInfo, MapBlock};
+use dfhack_remote::{BuildingInstance, FlowInfo, MapBlock};
 use itertools::Itertools;
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Add,
-};
+use std::collections::{HashMap, HashSet};
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
 pub struct Map<'a> {
-    pub tiles: HashMap<Coords, BlockTile<'a>>,
-    pub buildings: HashMap<Coords, Vec<&'a BuildingInstance>>,
-    pub flows: HashMap<Coords, &'a FlowInfo>,
+    pub tiles: HashMap<DFCoords, BlockTile<'a>>,
+    pub buildings: HashMap<DFCoords, Vec<&'a BuildingInstance>>,
+    pub flows: HashMap<DFCoords, &'a FlowInfo>,
 
-    pub with_building: HashSet<Coords>,
+    pub with_building: HashSet<DFCoords>,
 }
 
 impl<'a> Map<'a> {
@@ -44,7 +41,7 @@ impl<'a> Map<'a> {
                 for x in bounding_box.x.clone() {
                     for y in bounding_box.y.clone() {
                         for z in bounding_box.z.clone() {
-                            self.with_building.insert(Coords::new(x, y, z));
+                            self.with_building.insert(DFCoords::new(x, y, z));
                         }
                     }
                 }
@@ -60,7 +57,7 @@ impl<'a> Map<'a> {
                     for x in bounding_box.x.clone() {
                         for y in bounding_box.y.clone() {
                             for z in bounding_box.z.clone() {
-                                self.tiles.remove(&Coords::new(x, y, z));
+                                self.tiles.remove(&DFCoords::new(x, y, z));
                             }
                         }
                     }
@@ -70,7 +67,7 @@ impl<'a> Map<'a> {
     }
 
     /// Compute a given function for all the neighbours including above and below
-    pub fn neighbouring<F, T>(&self, coords: Coords, func: F) -> Neighbouring<T>
+    pub fn neighbouring<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring<T>
     where
         F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
     {
@@ -85,7 +82,7 @@ impl<'a> Map<'a> {
     }
 
     /// Compute a given function for all the neighbours on the same plane
-    pub fn neighbouring_flat<F, T>(&self, coords: Coords, func: F) -> NeighbouringFlat<T>
+    pub fn neighbouring_flat<F, T>(&self, coords: DFCoords, func: F) -> NeighbouringFlat<T>
     where
         F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
     {
@@ -100,7 +97,7 @@ impl<'a> Map<'a> {
     }
 
     /// Compute a given function for all the neighbours on the same plane
-    pub fn neighbouring_8flat<F, T>(&self, coords: Coords, func: F) -> Neighbouring8Flat<T>
+    pub fn neighbouring_8flat<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring8Flat<T>
     where
         F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
     {
@@ -115,7 +112,7 @@ impl<'a> Map<'a> {
     }
 
     /// Find the most "wally" direction, ie the direction to put furniture against
-    pub fn wall_direction(&self, coords: Coords) -> DirectionFlat {
+    pub fn wall_direction(&self, coords: DFCoords) -> DirectionFlat {
         let z = coords.z;
         // there's likely a nice way to write that
         // N, E, S, W
@@ -129,7 +126,7 @@ impl<'a> Map<'a> {
                 // increase the "wallyness" of a direction by 1 for corners and by 4 for direct contact
                 let wally = self
                     .tiles
-                    .get(&Coords::new(coords.x + x, coords.y + y, z))
+                    .get(&DFCoords::new(coords.x + x, coords.y + y, z))
                     .some_and(|tile| tile.is_wall());
                 if wally {
                     if x == -1 {
@@ -170,47 +167,5 @@ impl<'a> Map<'a> {
             W => DirectionFlat::West,
             _ => unreachable!(),
         }
-    }
-}
-
-impl Coords {
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
-        Self { x, y, z }
-    }
-}
-
-impl From<Coord> for Coords {
-    fn from(value: Coord) -> Self {
-        Self {
-            x: value.x(),
-            y: value.y(),
-            z: value.z(),
-        }
-    }
-}
-
-impl From<&Coord> for Coords {
-    fn from(value: &Coord) -> Self {
-        Self {
-            x: value.x(),
-            y: value.y(),
-            z: value.z(),
-        }
-    }
-}
-
-impl Add<Coords> for Coords {
-    type Output = Coords;
-
-    fn add(self, rhs: Coords) -> Self::Output {
-        Self::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
-    }
-}
-
-impl<'a> Add<Coords> for &'a Coords {
-    type Output = Coords;
-
-    fn add(self, rhs: Coords) -> Self::Output {
-        Coords::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
     }
 }

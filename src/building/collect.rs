@@ -5,7 +5,7 @@ use crate::{
     map::Map,
     shape::{self, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, FromPrefab, Voxel},
-    Coords,
+    DFCoords,
 };
 use dfhack_remote::BuildingInstance;
 
@@ -52,7 +52,7 @@ impl CollectVoxels for BuildingInstance {
                             ];
                             let mut shape_voxels = voxels_from_uniform_shape(
                                 shape,
-                                Coords::new(x, y, self.origin().z),
+                                DFCoords::new(x, y, self.origin().z),
                                 self.material(),
                             );
                             voxels.append(&mut shape_voxels);

@@ -1,6 +1,6 @@
-use crate::{Coords, WithCoords};
+use crate::{DFCoords, WithDFCoords};
 use dfhack_remote::BuildingDirection;
-use std::ops::{Add, BitOr};
+use std::ops::{BitOr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -109,8 +109,8 @@ impl BitOr for NeighbouringFlat<bool> {
     }
 }
 
-impl WithCoords for Direction8Flat {
-    fn coords(&self) -> Coords {
+impl WithDFCoords for Direction8Flat {
+    fn coords(&self) -> DFCoords {
         match self {
             Direction8Flat::North => Direction::North.coords(),
             Direction8Flat::NorthEast => Direction::North.coords() + Direction::East.coords(),
@@ -124,26 +124,26 @@ impl WithCoords for Direction8Flat {
     }
 }
 
-impl WithCoords for Direction {
-    fn coords(&self) -> Coords {
+impl WithDFCoords for Direction {
+    fn coords(&self) -> DFCoords {
         match self {
-            Direction::Above => Coords::new(0, 0, 1),
-            Direction::Below => Coords::new(0, 0, -1),
-            Direction::North => Coords::new(0, -1, 0),
-            Direction::South => Coords::new(0, 1, 0),
-            Direction::East => Coords::new(1, 0, 0),
-            Direction::West => Coords::new(-1, 0, 0),
+            Direction::Above => DFCoords::new(0, 0, 1),
+            Direction::Below => DFCoords::new(0, 0, -1),
+            Direction::North => DFCoords::new(0, -1, 0),
+            Direction::South => DFCoords::new(0, 1, 0),
+            Direction::East => DFCoords::new(1, 0, 0),
+            Direction::West => DFCoords::new(-1, 0, 0),
         }
     }
 }
 
-impl WithCoords for DirectionFlat {
-    fn coords(&self) -> Coords {
+impl WithDFCoords for DirectionFlat {
+    fn coords(&self) -> DFCoords {
         match self {
-            DirectionFlat::North => Coords::new(0, -1, 0),
-            DirectionFlat::South => Coords::new(0, 1, 0),
-            DirectionFlat::East => Coords::new(1, 0, 0),
-            DirectionFlat::West => Coords::new(-1, 0, 0),
+            DirectionFlat::North => DFCoords::new(0, -1, 0),
+            DirectionFlat::South => DFCoords::new(0, 1, 0),
+            DirectionFlat::East => DFCoords::new(1, 0, 0),
+            DirectionFlat::West => DFCoords::new(-1, 0, 0),
         }
     }
 }
@@ -228,16 +228,5 @@ impl<T> Neighbouring<T> {
             s: func(Direction::South),
             w: func(Direction::West),
         }
-    }
-}
-
-impl<T> Add<T> for Coords
-where
-    T: WithCoords,
-{
-    type Output = Coords;
-
-    fn add(self, rhs: T) -> Self::Output {
-        self + rhs.coords()
     }
 }

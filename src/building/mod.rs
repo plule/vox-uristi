@@ -1,36 +1,15 @@
 mod collect;
 use crate::{
     context::DFContext, direction::DirectionFlat, map::Map, palette::Material, prefabs,
-    voxel::FromPrefab, Coords, WithCoords,
+    voxel::FromPrefab, DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
-use std::ops::{RangeInclusive, Sub};
+use std::ops::Sub;
 
-#[derive(Debug)]
-pub struct BoundingBox {
-    pub x: RangeInclusive<i32>,
-    pub y: RangeInclusive<i32>,
-    pub z: RangeInclusive<i32>,
-}
-
-impl BoundingBox {
-    pub fn new(x: RangeInclusive<i32>, y: RangeInclusive<i32>, z: RangeInclusive<i32>) -> Self {
-        Self { x, y, z }
-    }
-
-    pub fn origin(&self) -> Coords {
-        Coords::new(*self.x.start(), *self.y.start(), *self.z.start())
-    }
-
-    pub fn contains(&self, coords: Coords) -> bool {
-        self.x.contains(&coords.x) && self.y.contains(&coords.y) && self.z.contains(&coords.z)
-    }
-}
-
-impl WithCoords for BuildingInstance {
-    fn coords(&self) -> Coords {
-        Coords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
+impl WithDFCoords for BuildingInstance {
+    fn coords(&self) -> DFCoords {
+        DFCoords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
     }
 }
 
@@ -61,8 +40,8 @@ impl FromPrefab for BuildingInstance {
             .and_then(|dir| DirectionFlat::maybe_from_df(&dir))
     }
 
-    fn bounding_box(&self) -> BoundingBox {
-        BoundingBox::new(
+    fn bounding_box(&self) -> DFBoundingBox {
+        DFBoundingBox::new(
             self.pos_x_min()..=self.pos_x_max(),
             self.pos_y_min()..=self.pos_y_max(),
             self.pos_z_min()..=self.pos_z_max(),
@@ -90,8 +69,8 @@ pub impl BuildingInstance {
         Material::Generic(self.material.get_or_default().to_owned())
     }
 
-    fn origin(&self) -> Coords {
-        Coords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
+    fn origin(&self) -> DFCoords {
+        DFCoords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
     }
 
     fn dimension(&self) -> (i32, i32) {
@@ -120,10 +99,10 @@ pub impl BuildingInstance {
     }
 }
 
-impl Sub<Coords> for BoundingBox {
-    type Output = BoundingBox;
+impl Sub<VoxelCoords> for DFBoundingBox {
+    type Output = DFBoundingBox;
 
-    fn sub(self, rhs: Coords) -> Self::Output {
+    fn sub(self, rhs: VoxelCoords) -> Self::Output {
         Self::new(
             (self.x.start() - rhs.x)..=(self.x.end() - rhs.x),
             (self.y.start() - rhs.y)..=(self.y.end() - rhs.y),
