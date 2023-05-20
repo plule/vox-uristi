@@ -35,7 +35,7 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 > ⚠ The same website has a dedicated voxel viewer. At the moment, the exported
 > files are not correctly rendered by this viewer.
 
-## Features
+## Features/Roadmap
 
 - ☑ Base building blocks (walls, floors, fortifications)
 - ☑ Water, magma and grass
@@ -49,7 +49,9 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Detailed materials (metallic, water, light emission)
 - ☑ Building content (books on bookcases, items in workshops, ...)
 - ☐ Spatters
-- ☐ Advanced export parameters
+- ☐ Item state (opened/closed)
+- ☐ Rails
+- ☐ Advanced export parameters (enable/disable/control amount of folliage, roughness voxels, building content...)
 
 ## Gallery
 
