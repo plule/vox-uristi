@@ -242,10 +242,13 @@ pub struct Palette {
 impl Palette {
     pub fn get_palette_color(&mut self, material: &Material) -> u8 {
         let palette_size = self.materials.len();
-        *self
-            .materials
-            .entry(material.clone())
-            .or_insert_with(|| palette_size.try_into().unwrap_or_default()) // would be nice to warn in case of palette overflow
+        *self.materials.entry(material.clone()).or_insert_with(|| {
+            palette_size
+                .min(std::u8::MAX as usize - 1)
+                .try_into()
+                .unwrap_or_default()
+        })
+        // would be nice to warn in case of palette overflow
     }
 
     pub fn write_palette(&self, vox: &mut DotVoxData, context: &DFContext) {
