@@ -149,7 +149,7 @@ pub fn try_export_voxels(
     let mut vox: DotVoxData = vox.into();
 
     progress_tx.send(Progress::undetermined("Writing the palette..."))?;
-    palette.write_palette(&mut vox, &context);
+    palette.write_palette(&mut vox);
     progress_tx.send(Progress::undetermined("Saving the file..."))?;
     let mut f = File::create(path.clone())?;
     vox.write_vox(&mut f)?;
@@ -170,7 +170,7 @@ fn add_voxels<T>(
     T: CollectVoxels,
 {
     for voxel in item.collect_voxels(map, context) {
-        let color = palette.get_palette_color(&voxel.material);
+        let color = palette.get_palette_color(&voxel.material, context);
         vox.add_voxel(
             voxel.coord.x,
             max_y - voxel.coord.y,

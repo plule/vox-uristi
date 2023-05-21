@@ -159,6 +159,10 @@ pub impl Material {
         }
     }
 
+    fn set_type(&mut self, type_: &str) {
+        self.set_str("_type", type_);
+    }
+
     fn set_f32(&mut self, prop: &str, value: f32) {
         self.properties.insert(prop.to_string(), value.to_string());
     }

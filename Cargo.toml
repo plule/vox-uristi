@@ -46,6 +46,7 @@ cli = ["dep:clap", "dep:protobuf-json-mapping"]
 ProductName = "Vox Uristi"
 
 [profile.release]
+#debug = true
 strip = true
 lto = true
 opt-level = "z"
