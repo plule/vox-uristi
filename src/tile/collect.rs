@@ -39,16 +39,16 @@ impl CollectVoxels for BlockTile<'_> {
                 // solid spatter is stuff like fruits and leaves, from zero to 10 000.
                 // there are a lot of them, so step down the probability
                 MatterState::Solid => {
-                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 50_000.0).into()))
+                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 50_000.0))
                 }
                 // liquid spatter is blood etc, from 0 to 255.
                 // completely covered is a bit weird, half the probability
                 MatterState::Liquid => {
-                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 512.0).into()))
+                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 512.0))
                 }
                 // powder spatter is likely snow, going from 0 to 100. We want 100% snow to covere the ground
                 MatterState::Powder => {
-                    slice_from_fn(|_, _| rng.gen_bool((spatter.amount() as f64 / 100.0).into()))
+                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 100.0))
                 }
                 // gas, paste and other, I don't know how the can occur
                 _ => slice_empty(),

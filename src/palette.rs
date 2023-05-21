@@ -166,11 +166,9 @@ impl EffectiveMaterial {
                         res.mat_type = Some("_diffuse");
                     }
                 };
-                return res;
+                res
             }
-            Material::Generic(matpair) => {
-                return Self::from_matpair(matpair, context);
-            }
+            Material::Generic(matpair) => Self::from_matpair(matpair, context),
             Material::DarkGeneric(matpair) => {
                 let mut res = Self::from_matpair(matpair, context);
                 let color = Hsv::from_color(Srgb::new(res.r, res.g, res.b).into_linear());
@@ -178,7 +176,7 @@ impl EffectiveMaterial {
                 let color: Rgb<palette::encoding::Srgb, u8> =
                     Rgb::from_linear(Rgb::from_color(color));
                 (res.r, res.g, res.b, res.a) = (color.red, color.green, color.blue, 255);
-                return res;
+                res
             }
             Material::TileGeneric(matpair, tiletype_material) => {
                 let mut res = Self::from_matpair(matpair, context);
@@ -195,15 +193,17 @@ impl EffectiveMaterial {
                     }
                     _ => {}
                 }
-                return res;
+                res
             }
             Material::Plant {
                 material: mat,
                 source_color,
                 dest_color,
             } => {
-                let mut res = EffectiveMaterial::default();
-                res.mat_type = Some("_diffuse");
+                let mut res = EffectiveMaterial {
+                    mat_type: Some("_diffuse"),
+                    ..Default::default()
+                };
                 let main_color = context
                     .materials
                     .material_list
@@ -232,7 +232,7 @@ impl EffectiveMaterial {
                 let rgb = Rgb::from_color(hsv);
                 let rgba: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(rgb);
                 (res.r, res.g, res.b, res.a) = (rgba.red, rgba.green, rgba.blue, 255);
-                return res;
+                res
             }
         }
     }
