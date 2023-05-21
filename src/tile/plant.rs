@@ -96,7 +96,8 @@ pub impl BlockTile<'_> {
         let origin = self.tree_origin();
         // The horror
         match part {
-            PlantPart::Trunk | PlantPart::Root | PlantPart::Cap => {
+            PlantPart::Root => shape::box_full(),
+            PlantPart::Trunk | PlantPart::Cap => {
                 let on_floor = coords == origin;
                 [
                     [

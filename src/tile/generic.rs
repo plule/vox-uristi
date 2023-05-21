@@ -43,6 +43,7 @@ pub impl BlockTile<'_> {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let item_on_tile = map.with_building.contains(&coords);
                 let r = !item_on_tile
+                    && tile_type.material() != TiletypeMaterial::FROZEN_LIQUID
                     && !matches!(
                         tile_type.special(),
                         TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD

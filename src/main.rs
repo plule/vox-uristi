@@ -24,6 +24,7 @@ pub use coords::{
     DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
 };
 use eframe::egui;
+use rand::Rng;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
@@ -40,6 +41,14 @@ impl<T> IsSomeAnd<T> for Option<T> {
         }
     }
 }
+
+pub trait GenBoolSafe: Rng {
+    fn gen_bool_safe(&mut self, probability: f64) -> bool {
+        self.gen_bool(probability.clamp(0.0, 1.0))
+    }
+}
+
+impl<T: Rng> GenBoolSafe for T {}
 
 fn main() -> anyhow::Result<()> {
     #[cfg(feature = "cli")]

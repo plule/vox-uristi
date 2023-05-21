@@ -1,4 +1,6 @@
-use dfhack_remote::MatterState;
+use std::collections::HashSet;
+
+use dfhack_remote::{MatterState, TiletypeMaterial};
 use rand::Rng;
 
 use super::{BlockTileExt, BlockTilePlantExt};
@@ -6,8 +8,9 @@ use crate::{
     context::DFContext,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
-    shape::{box_from_levels, box_full, slice_const, slice_empty, slice_from_fn, Box3D},
-    voxel::{voxels_from_uniform_shape, CollectVoxels},
+    shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
+    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    GenBoolSafe, VoxelCoords,
 };
 
 impl CollectVoxels for BlockTile<'_> {
@@ -31,41 +34,6 @@ impl CollectVoxels for BlockTile<'_> {
             );
         }
         let mut voxels = Vec::new();
-
-        // spatters
-        for spatter in self.spatters() {
-            let mut rng = rand::thread_rng();
-            let slice = match spatter.state() {
-                // solid spatter is stuff like fruits and leaves, from zero to 10 000.
-                // there are a lot of them, so step down the probability
-                MatterState::Solid => {
-                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 50_000.0))
-                }
-                // liquid spatter is blood etc, from 0 to 255.
-                // completely covered is a bit weird, half the probability
-                MatterState::Liquid => {
-                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 512.0))
-                }
-                // powder spatter is likely snow, going from 0 to 100. We want 100% snow to covere the ground
-                MatterState::Powder => {
-                    slice_from_fn(|_, _| rng.gen_bool(spatter.amount() as f64 / 100.0))
-                }
-                // gas, paste and other, I don't know how the can occur
-                _ => slice_empty(),
-            };
-            let spatter_shape: Box3D<bool> = [
-                slice_empty(),
-                slice_empty(),
-                slice_empty(),
-                slice,
-                slice_empty(),
-            ];
-            voxels.extend(voxels_from_uniform_shape(
-                spatter_shape,
-                self.coords(),
-                Material::Generic(spatter.material.get_or_default().clone()),
-            ));
-        }
 
         if self.material().mat_type() != 419 {
             // classic tile structure
@@ -93,6 +61,46 @@ impl CollectVoxels for BlockTile<'_> {
                 magma_shape,
                 self.coords(),
                 Material::Default(DefaultMaterials::Magma),
+            ));
+        }
+
+        // spatters
+        let occupied: HashSet<VoxelCoords> = voxels.iter().map(|v| v.coord).collect();
+        let mut spatter_voxels = Vec::new();
+        for spatter in self.spatters() {
+            // spatters sit on top of existing voxels, when there is some space
+            let material = Material::Generic(spatter.material.get_or_default().clone());
+            let mut rng = rand::thread_rng();
+            for voxel in &voxels {
+                let coords = voxel.coord + VoxelCoords::new(0, 0, 1);
+                if !occupied.contains(&coords) {
+                    let gen = match spatter.state() {
+                        // solid spatter is stuff like fruits and leaves, from zero to 10 000.
+                        // there are a lot of them, so step down the probability
+                        MatterState::Solid => rng.gen_bool_safe(spatter.amount() as f64 / 50_000.0),
+                        // liquid spatter is blood etc, from 0 to 255.
+                        // completely covered is a bit weird, half the probability
+                        MatterState::Liquid => rng.gen_bool_safe(spatter.amount() as f64 / 512.0),
+                        // powder spatter is likely snow, going from 0 to 100. We want 100% snow to covere the ground
+                        MatterState::Powder => rng.gen_bool_safe(spatter.amount() as f64 / 100.0),
+                        // gas, paste and other, I don't know how the can occur
+                        _ => false,
+                    };
+                    if gen {
+                        spatter_voxels.push(Voxel::new(coords, material.clone()));
+                    }
+                }
+            }
+        }
+        voxels.extend(spatter_voxels.into_iter());
+
+        // Fire is identified as a special tiletype material
+        if self.tile_type().material() == TiletypeMaterial::FIRE {
+            let shape: Box3D<bool> = box_from_fn(|_, _, _| rand::thread_rng().gen_bool(0.1));
+            voxels.extend(voxels_from_uniform_shape(
+                shape,
+                self.coords(),
+                Material::Default(DefaultMaterials::Fire),
             ));
         }
 

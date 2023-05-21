@@ -150,7 +150,7 @@ impl EffectiveMaterial {
                     DefaultMaterials::Fire => {
                         res.mat_type = Some("_emit");
                         res.emit = Some(50);
-                        res.flux = Some(2);
+                        res.flux = Some(1);
                     }
                     DefaultMaterials::Mist => {
                         res.mat_type = Some("_glass");
@@ -180,18 +180,10 @@ impl EffectiveMaterial {
             }
             Material::TileGeneric(matpair, tiletype_material) => {
                 let mut res = Self::from_matpair(matpair, context);
-                match tiletype_material {
-                    TiletypeMaterial::FROZEN_LIQUID => {
-                        res.mat_type = Some("_glass");
-                        res.ior = Some(50);
-                        res.transparency = Some(50);
-                    }
-                    TiletypeMaterial::CAMPFIRE | TiletypeMaterial::FIRE => {
-                        res.mat_type = Some("_emit");
-                        res.emit = Some(50);
-                        res.flux = Some(2);
-                    }
-                    _ => {}
+                if tiletype_material == &TiletypeMaterial::FROZEN_LIQUID {
+                    res.mat_type = Some("_glass");
+                    res.ior = Some(50);
+                    res.transparency = Some(50);
                 }
                 res
             }
