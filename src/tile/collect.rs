@@ -21,7 +21,7 @@ impl CollectVoxels for BlockTile<'_> {
     ) -> Vec<crate::voxel::Voxel> {
         let coords = self.coords();
         if self.hidden() {
-            let c = map.neighbouring(coords, |n, _| n.is_some());
+            let c = map.neighbouring(coords, |tile| tile.block_tile.is_some());
             if c.a && c.b && c.n && c.e && c.s && c.w {
                 // hidden block surrounded by hidden blocks, skip
                 return vec![];

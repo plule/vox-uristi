@@ -94,7 +94,8 @@ pub trait FromPrefab {
                 model = model.facing_away(map.wall_direction(coords));
             }
             OrientationMode::FacingChairOrAgainstWall => {
-                let c = map.neighbouring_flat(coords, |_, n| n.iter().any(|b| b.is_chair(context)));
+                let c = map
+                    .neighbouring_flat(coords, |n| n.buildings.iter().any(|b| b.is_chair(context)));
                 if let Some(chair_direction) = c.directions().first() {
                     model = model.looking_at(*chair_direction)
                 } else {
@@ -146,8 +147,9 @@ pub trait FromPrefab {
         match prefab.connectivity {
             Connectivity::None => {}
             Connectivity::SelfOrWall => {
-                let wall_connectivity =
-                    map.neighbouring_flat(coords, |tile, _| tile.some_and(|tile| tile.is_wall()));
+                let wall_connectivity = map.neighbouring_flat(coords, |tile| {
+                    tile.block_tile.some_and(|tile| tile.is_wall())
+                });
                 let neighbour_connectivity = self.self_connectivity(map, context);
                 let c = wall_connectivity | neighbour_connectivity;
                 let cx = (model.size.x / 2) as i32;

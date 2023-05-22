@@ -30,11 +30,11 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
 
 pub trait IsSomeAnd<T> {
-    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool;
+    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool;
 }
 
 impl<T> IsSomeAnd<T> for Option<T> {
-    fn some_and(self, f: impl FnOnce(T) -> bool) -> bool {
+    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool {
         match self {
             None => false,
             Some(x) => f(x),

@@ -57,7 +57,8 @@ pub impl BlockTile<'_> {
                 ]
             }
             TiletypeShape::WALL => {
-                let c = map.neighbouring_8flat(coords, |tile, _| tile.some_and(|t| t.is_wall()));
+                let c = map
+                    .neighbouring_8flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
                 let mat = Material::Generic(self.material().to_owned());
                 let void = Material::Default(DefaultMaterials::Hidden);
                 let slice = [
@@ -76,7 +77,8 @@ pub impl BlockTile<'_> {
                 return voxels_from_shape(shape, self.coords());
             }
             TiletypeShape::FORTIFICATION => {
-                let conn = map.neighbouring_flat(coords, |tile, _| tile.some_and(|t| t.is_wall()));
+                let conn =
+                    map.neighbouring_flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
                 #[rustfmt::skip]
                 let shape = [
                     [
@@ -107,8 +109,10 @@ pub impl BlockTile<'_> {
             TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
             TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
             TiletypeShape::RAMP => {
-                let c = map.neighbouring_flat(coords, |tile, _| {
-                    tile.map(|tile| tile.ramp_contact_kind())
+                let c = map.neighbouring_flat(coords, |tile| {
+                    tile.block_tile
+                        .as_ref()
+                        .map(|tile| tile.ramp_contact_kind())
                         .unwrap_or(RampContactKind::Empty)
                 });
 

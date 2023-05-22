@@ -140,8 +140,8 @@ pub impl BlockTile<'_> {
             ],
             PlantPart::HeavyBranch { connectivity: from } => {
                 // light branch connections
-                let to = map.neighbouring(coords, |tile, _| {
-                    tile.some_and(|tile| {
+                let to = map.neighbouring(coords, |tile| {
+                    tile.block_tile.some_and(|tile| {
                         tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
                     })
                 });
@@ -174,8 +174,8 @@ pub impl BlockTile<'_> {
                 shape
             }
             PlantPart::LightBranch => {
-                let c = map.neighbouring(coords, |tile, _| {
-                    tile.some_and(|tile| {
+                let c = map.neighbouring(coords, |tile| {
+                    tile.block_tile.some_and(|tile| {
                         tile.tree_origin() == origin
                             && matches!(
                                 tile.plant_part(),
@@ -215,8 +215,8 @@ pub impl BlockTile<'_> {
                 shape
             }
             PlantPart::Twig => {
-                let c = map.neighbouring(coords, |tile, _| {
-                    tile.some_and(|tile| {
+                let c = map.neighbouring(coords, |tile| {
+                    tile.block_tile.some_and(|tile| {
                         tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
                     })
                 });

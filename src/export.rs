@@ -113,11 +113,16 @@ pub fn try_export_voxels(
     let max_y = (context.map_info.block_size_y() * 16 * BASE as i32) / 2;
     let min_z = z_range.start * HEIGHT as i32;
 
-    let total = map.buildings.len();
-    progress_tx.send(Progress::start("Building constructions...", total))?;
-    for (curr, building_list) in map.buildings.values().enumerate() {
-        progress_tx.send(Progress::update("Building constructions...", curr, total))?;
-        for building in building_list {
+    let total = map.tiles.len();
+    progress_tx.send(Progress::start("Building tiles...", total))?;
+    for (curr, tile) in map.tiles.values().enumerate() {
+        if cancel_rx.try_iter().next().is_some() {
+            return Ok(());
+        }
+
+        progress_tx.send(Progress::update("Building tiles...", curr, total))?;
+
+        for building in &tile.buildings {
             add_voxels(
                 *building,
                 &map,
@@ -129,43 +134,34 @@ pub fn try_export_voxels(
                 min_z,
             );
         }
-    }
 
-    let total = map.tiles.len();
-    progress_tx.send(Progress::start("Building tiles...", total))?;
-    for (curr, tile) in map.tiles.values().enumerate() {
-        if cancel_rx.try_iter().next().is_some() {
-            return Ok(());
+        if let Some(df_tile) = &tile.block_tile {
+            add_voxels(
+                df_tile,
+                &map,
+                &context,
+                &mut palette,
+                &mut vox,
+                max_x,
+                max_y,
+                min_z,
+            );
         }
 
-        progress_tx.send(Progress::update("Building tiles...", curr, total))?;
-        add_voxels(
-            tile,
-            &map,
-            &context,
-            &mut palette,
-            &mut vox,
-            max_x,
-            max_y,
-            min_z,
-        );
+        for flow in &tile.flows {
+            add_voxels(
+                flow,
+                &map,
+                &context,
+                &mut palette,
+                &mut vox,
+                max_x,
+                max_y,
+                min_z,
+            );
+        }
     }
 
-    let total = map.flows.len();
-    progress_tx.send(Progress::start("Building flows...", total))?;
-    for (curr, flow) in map.flows.values().enumerate() {
-        progress_tx.send(Progress::update("Building flows...", curr, total))?;
-        add_voxels(
-            flow,
-            &map,
-            &context,
-            &mut palette,
-            &mut vox,
-            max_x,
-            max_y,
-            min_z,
-        );
-    }
     let mut vox: DotVoxData = vox.into();
 
     progress_tx.send(Progress::undetermined("Writing the palette..."))?;

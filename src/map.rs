@@ -14,27 +14,37 @@ use std::collections::{HashMap, HashSet};
 /// Intermediary format between DF and voxels
 #[derive(Default)]
 pub struct Map<'a> {
-    pub tiles: HashMap<DFCoords, BlockTile<'a>>,
-    pub buildings: HashMap<DFCoords, Vec<&'a BuildingInstance>>,
-    pub flows: HashMap<DFCoords, &'a FlowInfo>,
-
+    pub tiles: HashMap<DFCoords, Tile<'a>>,
     pub with_building: HashSet<DFCoords>,
+}
+
+#[derive(Default)]
+pub struct Tile<'a> {
+    pub block_tile: Option<BlockTile<'a>>,
+    pub buildings: Vec<&'a BuildingInstance>,
+    pub flows: Vec<&'a FlowInfo>,
 }
 
 impl<'a> Map<'a> {
     pub fn add_block(&mut self, block: &'a MapBlock, context: &'a DFContext) {
         for flow in &block.flows {
-            self.flows.insert(flow.coords(), flow);
+            self.tiles
+                .entry(flow.coords())
+                .or_default()
+                .flows
+                .push(flow);
         }
         for tile in rfr::TileIterator::new(block, &context.tile_types) {
-            self.tiles.insert(tile.coords(), tile);
+            let coords = tile.coords();
+            self.tiles.entry(coords).or_default().block_tile = Some(tile);
         }
 
         for building in &block.buildings {
             if building.room.is_none() {
-                self.buildings
+                self.tiles
                     .entry(building.origin())
                     .or_default()
+                    .buildings
                     .push(building);
 
                 let bounding_box = building.bounding_box();
@@ -50,18 +60,26 @@ impl<'a> Map<'a> {
     }
 
     pub fn remove_overlapping_floors(&mut self, context: &DFContext) {
-        for buildings in self.buildings.values() {
-            for building in buildings {
+        let mut coords = Vec::new();
+        for tile in self.tiles.values() {
+            for building in &tile.buildings {
                 if building.is_floor(context) {
                     let bounding_box = building.bounding_box();
                     for x in bounding_box.x.clone() {
                         for y in bounding_box.y.clone() {
                             for z in bounding_box.z.clone() {
-                                self.tiles.remove(&DFCoords::new(x, y, z));
+                                coords.push(DFCoords::new(x, y, z));
                             }
                         }
                     }
                 }
+            }
+        }
+
+        for coord in coords {
+            if let Some(tile) = self.tiles.get_mut(&coord) {
+                // TODO: we are also erasing the flows here, would be good not to
+                tile.block_tile = None;
             }
         }
     }
@@ -69,45 +87,36 @@ impl<'a> Map<'a> {
     /// Compute a given function for all the neighbours including above and below
     pub fn neighbouring<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring<T>
     where
-        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
+        F: Fn(&Tile<'a>) -> T,
     {
-        let empty_vec = vec![];
+        let default = Tile::default();
         Neighbouring::new(|direction| {
             let neighbour = coords + direction;
-            func(
-                self.tiles.get(&neighbour),
-                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
-            )
+            func(self.tiles.get(&neighbour).unwrap_or(&default))
         })
     }
 
     /// Compute a given function for all the neighbours on the same plane
     pub fn neighbouring_flat<F, T>(&self, coords: DFCoords, func: F) -> NeighbouringFlat<T>
     where
-        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
+        F: Fn(&Tile<'a>) -> T,
     {
-        let empty_vec = vec![];
+        let default = Tile::default();
         NeighbouringFlat::new(|direction| {
             let neighbour = coords + direction;
-            func(
-                self.tiles.get(&neighbour),
-                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
-            )
+            func(self.tiles.get(&neighbour).unwrap_or(&default))
         })
     }
 
     /// Compute a given function for all the neighbours on the same plane
     pub fn neighbouring_8flat<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring8Flat<T>
     where
-        F: Fn(Option<&BlockTile<'a>>, &Vec<&'a BuildingInstance>) -> T,
+        F: Fn(&Tile<'a>) -> T,
     {
-        let empty_vec = vec![];
+        let default = Tile::default();
         Neighbouring8Flat::new(|direction| {
             let neighbour = coords + direction;
-            func(
-                self.tiles.get(&neighbour),
-                self.buildings.get(&neighbour).unwrap_or(&empty_vec),
-            )
+            func(self.tiles.get(&neighbour).unwrap_or(&default))
         })
     }
 
@@ -127,7 +136,7 @@ impl<'a> Map<'a> {
                 let wally = self
                     .tiles
                     .get(&DFCoords::new(coords.x + x, coords.y + y, z))
-                    .some_and(|tile| tile.is_wall());
+                    .some_and(|tile| tile.block_tile.some_and(|tile| tile.is_wall()));
                 if wally {
                     if x == -1 {
                         wallyness[W] += 1;

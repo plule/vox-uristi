@@ -55,8 +55,8 @@ impl FromPrefab for BuildingInstance {
     ) -> crate::direction::NeighbouringFlat<bool> {
         let def = context.building_definition(&self.building_type);
         let coords = self.coords();
-        map.neighbouring_flat(coords, |_, buildings| {
-            buildings
+        map.neighbouring_flat(coords, |tile| {
+            tile.buildings
                 .iter()
                 .any(|building| def == context.building_definition(&building.building_type))
         })
