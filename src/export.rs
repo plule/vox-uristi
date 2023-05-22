@@ -109,7 +109,8 @@ pub fn try_export_voxels(
     let mut vox = DotVoxBuilder::default();
     let mut palette = Palette::default();
 
-    let max_y = context.map_info.block_size_y() * 16 * BASE as i32;
+    let max_x = (context.map_info.block_size_x() * 16 * BASE as i32) / 2;
+    let max_y = (context.map_info.block_size_y() * 16 * BASE as i32) / 2;
     let min_z = z_range.start * HEIGHT as i32;
 
     let total = map.buildings.len();
@@ -123,6 +124,7 @@ pub fn try_export_voxels(
                 &context,
                 &mut palette,
                 &mut vox,
+                max_x,
                 max_y,
                 min_z,
             );
@@ -137,14 +139,32 @@ pub fn try_export_voxels(
         }
 
         progress_tx.send(Progress::update("Building tiles...", curr, total))?;
-        add_voxels(tile, &map, &context, &mut palette, &mut vox, max_y, min_z);
+        add_voxels(
+            tile,
+            &map,
+            &context,
+            &mut palette,
+            &mut vox,
+            max_x,
+            max_y,
+            min_z,
+        );
     }
 
     let total = map.flows.len();
     progress_tx.send(Progress::start("Building flows...", total))?;
     for (curr, flow) in map.flows.values().enumerate() {
         progress_tx.send(Progress::update("Building flows...", curr, total))?;
-        add_voxels(flow, &map, &context, &mut palette, &mut vox, max_y, min_z);
+        add_voxels(
+            flow,
+            &map,
+            &context,
+            &mut palette,
+            &mut vox,
+            max_x,
+            max_y,
+            min_z,
+        );
     }
     let mut vox: DotVoxData = vox.into();
 
@@ -164,6 +184,7 @@ fn add_voxels<T>(
     context: &DFContext,
     palette: &mut Palette,
     vox: &mut DotVoxBuilder,
+    max_x: i32,
     max_y: i32,
     min_z: i32,
 ) where
@@ -172,7 +193,7 @@ fn add_voxels<T>(
     for voxel in item.collect_voxels(map, context) {
         let color = palette.get_palette_color(&voxel.material, context);
         vox.add_voxel(
-            voxel.coord.x,
+            voxel.coord.x - max_x,
             max_y - voxel.coord.y,
             voxel.coord.z - min_z,
             color,

@@ -83,8 +83,8 @@ impl DotVoxBuilder {
                         "_t".to_string(),
                         format!(
                             "{} {} {}",
-                            x * MODEL_EDGE,
-                            y * MODEL_EDGE,
+                            x * MODEL_EDGE + MODEL_EDGE / 2,
+                            y * MODEL_EDGE + MODEL_EDGE / 2,
                             z * MODEL_EDGE + MODEL_EDGE / 2
                         ),
                     )]),
