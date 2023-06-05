@@ -48,7 +48,7 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Seasonal plants
 - ☑ Detailed materials (metallic, water, light emission)
 - ☑ Building content (books on bookcases, items in workshops, ...)
-- ☐ Spatters
+- ☑ Spatters
 - ☐ Item state (opened/closed)
 - ☐ Rails
 - ☐ Advanced export parameters (enable/disable/control amount of folliage, roughness voxels, building content...)
@@ -61,9 +61,13 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 |-----------------------------------------------------------|
 | *The bridge of Saziramost at the time of its destruction* |
 
-| ![arelumid-2](assets/arelumid-2.jpg) |
+| ![arelumid-2](assets/arelumid-2.jpg)         |
 |----------------------------------------------|
 | *Another view of the gates of Arelumid*      |
+
+| ![arelumid-3](assets/arelumid-3.jpg) |
+|--------------------------------------|
+| *Path in the forest*                 |
 
 ### Fort Chantbell
 
@@ -85,7 +89,19 @@ Fort Chantbell is a fortress by Neo.
 |----------------------------------|
 | *The Forge of Chantbell*         |
 
+### Other
+
+| ![fire](assets/fire.jpg)    |
+|-----------------------------|
+| *A fire snowy woods*        |
+
 ## Version History
+
+### v0.10
+
+- Spatters (fallen leaves, snow, blood, vomit...)
+- Optimize the exported palette
+- Support larger embark size
 
 ### v0.9
 
