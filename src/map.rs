@@ -2,7 +2,7 @@ use crate::{
     building::BuildingInstanceExt,
     context::DFContext,
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
-    rfr::{self, BlockTile},
+    rfr::{self, BlockTile, BuildingExt, BuildingFlags},
     tile::BlockTileExt,
     voxel::FromPrefab,
     DFCoords, IsSomeAnd, WithDFCoords,
@@ -40,19 +40,28 @@ impl<'a> Map<'a> {
         }
 
         for building in &block.buildings {
-            if building.room.is_none() {
-                self.tiles
-                    .entry(building.origin())
-                    .or_default()
-                    .buildings
-                    .push(building);
+            if building.room.is_some() {
+                continue;
+            }
 
-                let bounding_box = building.bounding_box();
-                for x in bounding_box.x.clone() {
-                    for y in bounding_box.y.clone() {
-                        for z in bounding_box.z.clone() {
-                            self.with_building.insert(DFCoords::new(x, y, z));
-                        }
+            if !building
+                .building_flags_typed()
+                .contains(BuildingFlags::EXISTS)
+            {
+                continue;
+            }
+
+            self.tiles
+                .entry(building.origin())
+                .or_default()
+                .buildings
+                .push(building);
+
+            let bounding_box = building.bounding_box();
+            for x in bounding_box.x.clone() {
+                for y in bounding_box.y.clone() {
+                    for z in bounding_box.z.clone() {
+                        self.with_building.insert(DFCoords::new(x, y, z));
                     }
                 }
             }

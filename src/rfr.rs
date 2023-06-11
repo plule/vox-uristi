@@ -1,9 +1,10 @@
 use crate::DFCoords;
 use anyhow::Result;
+use bitflags::bitflags;
 use dfhack_remote::{
     core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, BuildingDefinition,
-    ColorDefinition, GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter, Tiletype, TiletypeList,
-    TreeGrowth,
+    BuildingInstance, ColorDefinition, GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter,
+    Tiletype, TiletypeList, TreeGrowth,
 };
 use palette::{named, Srgb};
 use protobuf::Enum;
@@ -43,6 +44,21 @@ pub trait RGBColor {
 
 pub trait ConsoleColor {
     fn get_console_color(&self) -> Color;
+}
+
+bitflags! {
+    /// Building flags
+    /// From https://github.com/DFHack/df-structures/blob/1f22dd8b8aa767609ea13bf1d2da8907001e0ce2/df.buildings.xml#L205
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub struct BuildingFlags: u32 {
+        const EXISTS = 0b00000001;
+        const SITE_BLOCKED = 0b00000010;
+        const ROOM_COLLISION = 0b00000100;
+        const UNK1 = 0b00001000;
+        const ALMOST_DELETED = 0b00010000;
+        const IN_UPDATE = 0b00100000;
+        const FROM_WORLDGEN = 0b01000000;
+    }
 }
 
 impl<'a> TileIterator<'a> {
@@ -347,6 +363,13 @@ pub impl Spatter {
         }
         .min(1.0)
         .max(0.0)
+    }
+}
+
+#[easy_ext::ext(BuildingExt)]
+pub impl BuildingInstance {
+    fn building_flags_typed(&self) -> BuildingFlags {
+        BuildingFlags::from_bits_retain(self.building_flags())
     }
 }
 
