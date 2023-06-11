@@ -1,11 +1,9 @@
 # ☼Vox Uristi☼
 
-Export your Dwarf Fortress map in a voxel format to create beautiful
-rendering of your fortresses.
+Export your Dwarf Fortress map in a voxel format to create beautiful rendering
+of your fortresses.
 
-| ![arelumid](assets/arelumid.jpg)                  |
-|---------------------------------------------------|
-| *The gates of Arelumid and its two giant statues* |
+![arelumid](assets/gallery/banner.jpg)
 
 **Vox Uristi** uses [DFHack's
 RemoteFortressReader](https://docs.dfhack.org/en/stable/docs/tools/RemoteFortressReader.html)
@@ -19,7 +17,10 @@ can then be opened in a software such as MagicaVoxel to render it.
 > issue you see.
 
 First, ensure you have [Dwarf
-Fortress](https://store.steampowered.com/app/975370/Dwarf_Fortress/) with [DFHack](https://store.steampowered.com/app/2346660/DFHack__Dwarf_Fortress_Modding_Engine/). Vox Uristi is mostly tested with the latest Steam release, but could work with previous versions too.
+Fortress](https://store.steampowered.com/app/975370/Dwarf_Fortress/) with
+[DFHack](https://store.steampowered.com/app/2346660/DFHack__Dwarf_Fortress_Modding_Engine/).
+Vox Uristi is mostly tested with the latest Steam release, but could work with
+previous versions too.
 
 Download [Vox Uristi]({% include latest-download.html %}).
 
@@ -34,6 +35,8 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 
 > ⚠ The same website has a dedicated voxel viewer. At the moment, the exported
 > files are not correctly rendered by this viewer.
+
+You can see the whole process on this mod spotlight made by Blind: [How-to Video](https://www.youtube.com/watch?v=CDqMuBZsNH0).
 
 ## Features/Roadmap
 
@@ -51,49 +54,77 @@ Once exported, open the `.vox` file with [MagicaVoxel](https://ephtracy.github.i
 - ☑ Spatters
 - ☐ Item state (opened/closed)
 - ☐ Rails
-- ☐ Advanced export parameters (enable/disable/control amount of folliage, roughness voxels, building content...)
+- ☐ Advanced export parameters (enable/disable/control amount of folliage,
+  roughness voxels, building content...)
+
+## Tips and troubleshooting
+
+### The corners of the map are cut when trying to render
+
+Vox Uristi exports large models, and MagicaVoxel has a limit in the number of
+voxels. This limits can be bumped by checking the option "sparse geometry" in
+the sampling settings of the rendering left panel.
+
+### Interior rendering
+
+Even though it is possible to add light sources in MagicaVoxel, the best way to
+light a scene is always from the sun and sky, making interior rendering tricky.
+
+The best approach is almost always to export with the ceiling cut to expose the
+scene to direct light. In Vox Uristi, select a lower upper bound elevation to
+remove the ceiling, and export the scene again.
+
+### Vertical Stretching
+
+Dwarf Fortress does not have defined dimensions for tiles, and Vox Uristi
+exports them with 3x3x5 voxels. This can be natural for some fortresses, or feel
+stretched up in others.
+
+It is possible in MagicaVoxel to make voxels non square, which can help setting
+appropriate dimensions: In left panel of the render tab, under "Display
+Settings", expand the "Scale" drop-down, and adjust the Z parameter.
 
 ## Gallery
 
 ### Enorid
 
-| ![saziramost](assets/saziramost.jpg)                      |
+| ![saziramost](assets/gallery/saziramost.jpg)              |
 |-----------------------------------------------------------|
 | *The bridge of Saziramost at the time of its destruction* |
 
-| ![arelumid-2](assets/arelumid-2.jpg)         |
-|----------------------------------------------|
-| *Another view of the gates of Arelumid*      |
+| ![arelumid gate](assets/gallery/arelumid-gate.jpg)   |
+|------------------------------------------------------|
+| *Another view of the gates of Arelumid*              |
 
-| ![arelumid-3](assets/arelumid-3.jpg) |
-|--------------------------------------|
-| *Path in the forest*                 |
+| ![arelumid-path](assets/gallery/arelumid-path.jpg) |
+|----------------------------------------------------|
+| *Path in the forest*                               |
 
 ### Fort Chantbell
 
 Fort Chantbell is a fortress by Neo.
 
-| ![overview](assets/chantbell-1.jpg)          |
+| ![overview](assets/gallery/chantbell-iso.jpg) |
+|-----------------------------------------------|
+| *Isometric overview of the Fort, year 62*     |
+
+| ![basilica](assets/gallery/chantbell-basilica.jpg) |
+|----------------------------------------------------|
+| *Salt Peter's Basilica*                            |
+
+| ![library](assets/gallery/chantbell-library.jpg) |
+|--------------------------------------------------|
+| *The library courtyard, lego style*              |
+
+| ![forge](assets/gallery/chantbell-forge.jpg) |
 |----------------------------------------------|
-| *Isometric overview of the Fort, year 62*    |
-
-| ![cathedral](assets/chantbell-2.jpg) |
-|--------------------------------------|
-| *Salt Peter's Basilica*              |
-
-| ![library](assets/chantbell-3.jpg) |
-|------------------------------------|
-| *The library, lego style*          |
-
-| ![forge](assets/chantbell-4.jpg) |
-|----------------------------------|
-| *The Forge of Chantbell*         |
+| *The Forge of Chantbell*                     |
 
 ### Other
 
-| ![fire](assets/fire.jpg)    |
-|-----------------------------|
-| *A fire snowy woods*        |
+| ![fire](assets/gallery/misc-fire.jpg)    |
+|------------------------------------------|
+| *A fire snowy woods*                     |
 
 ## Version History
 
