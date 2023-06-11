@@ -89,15 +89,15 @@ Settings", expand the "Scale" drop-down, and adjust the Z parameter.
 ### Enorid
 
 | ![saziramost](assets/gallery/saziramost.jpg)              |
-|-----------------------------------------------------------|
+| --------------------------------------------------------- |
 | *The bridge of Saziramost at the time of its destruction* |
 
-| ![arelumid gate](assets/gallery/arelumid-gate.jpg)   |
-|------------------------------------------------------|
-| *Another view of the gates of Arelumid*              |
+| ![arelumid gate](assets/gallery/arelumid-gate.jpg) |
+| -------------------------------------------------- |
+| *Another view of the gates of Arelumid*            |
 
 | ![arelumid-path](assets/gallery/arelumid-path.jpg) |
-|----------------------------------------------------|
+| -------------------------------------------------- |
 | *Path in the forest*                               |
 
 ### Fort Chantbell
@@ -105,26 +105,64 @@ Settings", expand the "Scale" drop-down, and adjust the Z parameter.
 Fort Chantbell is a fortress by Neo.
 
 | ![overview](assets/gallery/chantbell-iso.jpg) |
-|-----------------------------------------------|
+| --------------------------------------------- |
 | *Isometric overview of the Fort, year 62*     |
 
 | ![basilica](assets/gallery/chantbell-basilica.jpg) |
-|----------------------------------------------------|
+| -------------------------------------------------- |
 | *Salt Peter's Basilica*                            |
 
 | ![library](assets/gallery/chantbell-library.jpg) |
-|--------------------------------------------------|
+| ------------------------------------------------ |
 | *The library courtyard, lego style*              |
 
 | ![forge](assets/gallery/chantbell-forge.jpg) |
-|----------------------------------------------|
+| -------------------------------------------- |
 | *The Forge of Chantbell*                     |
+
+### Winebolted
+
+Winebolted is a fortress by Nutwick inspired by the Argonath from Lord of The
+Ring.
+
+| ![iso](assets/gallery/winebolted-iso.jpg) |
+| ----------------------------------------- |
+| *Isometric view of the Fortress*          |
+
+| ![gate](assets/gallery/winebolted-gate.jpg) |
+| ------------------------------------------- |
+| *The omnious gate of Winebolted*            |
+
+| ![inside](assets/gallery/winebolted-inside.jpg) |
+| ----------------------------------------------- |
+| *Inside the hollowed mountain*                  |
+
+### Heavenfall
+
+Heavenfall is a fortress by Horrigant. It is a tower governed by a necromancer
+dwarf queen.
+
+| ![iso](assets/gallery/heavenfall-iso.jpg) |
+| ----------------------------------------- |
+| *Isometric view of Heavenfall*            |
+
+| ![ground](assets/gallery/heavenfall-ground.jpg) |
+| ----------------------------------------------- |
+| *Heavenfall viewed from the ground*             |
+
+| ![throne](assets/gallery/heavenfall-throne.jpg) |
+| ----------------------------------------------- |
+| *The throne room of the necromancer queen*      |
+
+<video autoplay="autoplay" loop="loop" width="800" height="800">
+  <source src="/assets/gallery/heavenfall-spin.webm" type="video/webm">
+</video>
 
 ### Other
 
-| ![fire](assets/gallery/misc-fire.jpg)    |
-|------------------------------------------|
-| *A fire snowy woods*                     |
+| ![fire](assets/gallery/misc-fire.jpg) |
+| ------------------------------------- |
+| *A fire snowy woods*                  |
 
 ## Version History
 
