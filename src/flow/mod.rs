@@ -3,7 +3,7 @@ use std::ops::Add;
 use crate::{
     context::DFContext,
     palette::{DefaultMaterials, Material},
-    shape::{self, Box3D},
+    shape::{self, slice_empty, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
     DFCoords, WithDFCoords,
 };
@@ -13,9 +13,22 @@ use rand::Rng;
 impl CollectVoxels for &FlowInfo {
     fn collect_voxels(&self, _map: &crate::map::Map, _context: &DFContext) -> Vec<Voxel> {
         let coords = self.coords();
-        let shape: Box3D<bool> = shape::box_from_fn(|_, _, _| {
-            rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
-        });
+        let shape: Box3D<bool> = match self.type_() {
+            FlowType::OceanWave => [
+                slice_empty(),
+                slice_empty(),
+                slice_empty(),
+                shape::slice_from_fn(|_, _| {
+                    rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                }),
+                shape::slice_from_fn(|_, _| {
+                    rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                }),
+            ],
+            _ => shape::box_from_fn(|_, _, _| {
+                rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+            }),
+        };
         let material = match self.type_() {
             FlowType::Mist | FlowType::SeaFoam | FlowType::Steam => {
                 Material::Default(DefaultMaterials::Mist)
