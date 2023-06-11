@@ -15,13 +15,18 @@ impl WithDFCoords for BuildingInstance {
 
 impl FromPrefab for BuildingInstance {
     fn build_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
-        Box::new(self.items.iter().cycle().filter_map(|item| {
-            if item.mode() == 2 {
-                Some(item.item.material.get_or_default().to_owned())
-            } else {
-                None
-            }
-        }))
+        Box::new(
+            self.items
+                .iter()
+                .filter_map(|item| {
+                    if item.mode() == 2 {
+                        Some(item.item.material.get_or_default().to_owned())
+                    } else {
+                        None
+                    }
+                })
+                .cycle(),
+        )
     }
 
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
