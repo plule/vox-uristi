@@ -155,7 +155,7 @@ dwarf queen.
 | *The throne room of the necromancer queen*      |
 
 <video autoplay="autoplay" loop="loop" width="800" height="800">
-  <source src="/assets/gallery/heavenfall-spin.webm" type="video/webm">
+  <source src="/vox-uristi/assets/gallery/heavenfall-spin.webm" type="video/webm">
 </video>
 
 ### Other
