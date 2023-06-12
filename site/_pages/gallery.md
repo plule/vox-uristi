@@ -65,7 +65,7 @@ dwarf queen.
 
 ## Fort Chantbell
 
-Fort Chantbell is a fortress by Neo.
+Fort Chantbell is a medieval castle fortress by Neo with many twists
 
 {% include gallery id="chantbell" %}
 
