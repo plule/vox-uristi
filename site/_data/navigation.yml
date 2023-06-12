@@ -1,11 +1,11 @@
 main:
-  - title: "Home"
+  - title: <i class="fas fa-home"></i> Home
     url: /
-  - title: "Usage"
+  - title: <i class="fas fa-info"></i> Usage
     url: /usage
-  - title: "Gallery"
+  - title: <i class="fas fa-images"></i> Gallery
     url: /gallery
-  - title: Tips and troubleshooting
+  - title: <i class="fas fa-exclamation"></i> Tips and troubleshooting
     url: /tips
-  - title: Changelog
+  - title: <i class="fas fa-clock"></i> Changelog
     url: /changelog
