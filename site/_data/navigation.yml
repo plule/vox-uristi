@@ -1,0 +1,11 @@
+main:
+  - title: "Home"
+    url: /
+  - title: "Usage"
+    url: /usage
+  - title: "Gallery"
+    url: /gallery
+  - title: Tips and troubleshooting
+    url: /tips
+  - title: Changelog
+    url: /changelog
