@@ -21,10 +21,10 @@ it.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | *Heavenfall, a fortress by Horrigant*                                                                                                                    |
 
-[<i class="fas fa-info"></i> Usage](/usage){: .btn .btn--primary}
-[<i class="fas fa-images"></i> Gallery](/gallery){: .btn .btn--primary}
-[<i class="fas fa-exclamation"></i> Tips](/tips){: .btn .btn--primary}
-[<i class="fas fa-clock"></i> Changelog](/changelog){: .btn .btn--primary}
+[<i class="fas fa-info"></i> Usage](/vox-uristi/usage){: .btn .btn--primary}
+[<i class="fas fa-images"></i> Gallery](/vox-uristi/gallery){: .btn .btn--primary}
+[<i class="fas fa-exclamation"></i> Tips](/vox-uristi/tips){: .btn .btn--primary}
+[<i class="fas fa-clock"></i> Changelog](/vox-uristi/changelog){: .btn .btn--primary}
 
 ## Features/Roadmap
 
