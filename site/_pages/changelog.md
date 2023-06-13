@@ -6,7 +6,7 @@ permalink: /changelog
 
 ### v0.10
 
-![v0.10](/assets/changelog/v0.10.png)
+![v0.10](/vox-uristi/assets/changelog/v0.10.png)
 
 - Spatters (fallen leaves, snow, blood, vomit...)
 - Optimize the exported palette
