@@ -28,6 +28,8 @@ it.
 
 ## Features/Roadmap
 
+### Next
+
 - ☑ Base building blocks (walls, floors, fortifications)
 - ☑ Water, magma and grass
 - ☑ Basic material colors
@@ -44,6 +46,15 @@ it.
 - ☐ Rails
 - ☐ Advanced export parameters (enable/disable/control amount of folliage,
   roughness voxels, building content...)
+
+### Maybe some day
+
+- ☐ Export the buildings as individual selectable objects
+- ☐ Export the z levels as separate layers
+- ☐ Export some animations
+- ☐ Customizable models
+- ☐ Support different voxel resolutions
+- ☐ Minecraft map format
 
 ## Other Dwarf Fortress visualisation tools
 

@@ -47,6 +47,9 @@ misc:
     - url: /assets/gallery/misc/fire.jpg
       image_path: /assets/gallery/misc/fire.jpg
       title: A fire snowy woods
+    - url: /assets/gallery/misc/snow.jpg
+      image_path: /assets/gallery/misc/snow.jpg
+      title: Snowy volcano embark
 ---
 
 ## Winebolted
