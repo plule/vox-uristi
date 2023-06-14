@@ -44,6 +44,7 @@ pub fn check_update() -> Result<UpdateStatus> {
 
     if latest_version > current_version {
         let asset_url = latest.assets.iter().find_map(|asset| {
+            // TODO linux
             if asset.name.ends_with(".exe") {
                 Some(asset.browser_download_url.clone())
             } else {
