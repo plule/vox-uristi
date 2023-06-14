@@ -70,6 +70,7 @@ jobs:
       run: cargo build --release
     - name: Copy file to release
       run: cp target/release/${{ matrix.file-name }} ${{ matrix.dst-file-name }}
+      # TODO: move this release out of the matrix job
     - name: Release
       uses: softprops/action-gh-release@v1
       env:
