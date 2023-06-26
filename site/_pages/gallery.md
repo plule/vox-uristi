@@ -3,6 +3,19 @@ title: "Gallery"
 layout: single
 permalink: /gallery
 
+northbridge:
+    - url: /assets/gallery/northbridge/iso.jpg
+      image_path: /assets/gallery/northbridge/iso.jpg
+      title: Isometric view of Northbridge
+    - url: /assets/gallery/northbridge/overview.jpg
+      image_path: /assets/gallery/northbridge/overview.jpg
+      title: Evenening view, highlighting the gem windows
+    - url: /assets/gallery/northbridge/foggy.jpg
+      image_path: /assets/gallery/northbridge/foggy.jpg
+      title: Northbridge in the fog
+    - url: /assets/gallery/northbridge/coast.jpg
+      image_path: /assets/gallery/northbridge/coast.jpg
+      title: As seen from the coast
 winebolted:
     - url: /assets/gallery/winebolted/iso.jpg
       image_path: /assets/gallery/winebolted/iso.jpg
@@ -51,6 +64,14 @@ misc:
       image_path: /assets/gallery/misc/snow.jpg
       title: Snowy volcano embark
 ---
+
+## Northbridge
+
+Norbridge is a bridge fortress by Kruggsmash. You can watch the whole story of
+its construction in this [incredible video
+series](https://www.youtube.com/watch?v=M0YzooOyiYQ&list=PLXX7Rp0iXj0kZtpaGAntf_kAAYNcv53Dg).
+
+{% include gallery id="northbridge" %}
 
 ## Winebolted
 
