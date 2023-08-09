@@ -1,4 +1,4 @@
-use super::BlockTileExt;
+use super::{generic::ramp_shape, BlockTileExt};
 use crate::{
     context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat},
@@ -28,13 +28,16 @@ pub impl BlockTile<'_> {
         };
         let mut rng = rand::thread_rng();
         let item_on_tile = map.with_building.contains(&self.coords());
-        let shape: Box3D<bool> = [
-            slice_empty(),
-            slice_empty(),
-            slice_empty(),
-            slice_from_fn(|_, _| !item_on_tile && rng.gen_bool(1.0 / 7.0)),
-            slice_full(),
-        ];
+        let shape: Box3D<bool> = match self.tile_type().shape() {
+            dfhack_remote::TiletypeShape::RAMP => ramp_shape(map, self.coords()),
+            _ => [
+                slice_empty(),
+                slice_empty(),
+                slice_empty(),
+                slice_from_fn(|_, _| !item_on_tile && rng.gen_bool(1.0 / 7.0)),
+                slice_full(),
+            ],
+        };
 
         voxels_from_uniform_shape(shape, self.coords(), material)
     }

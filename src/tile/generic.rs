@@ -10,11 +10,29 @@ use crate::{
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
-    IsSomeAnd,
+    DFCoords, IsSomeAnd,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use easy_ext::ext;
 use rand::Rng;
+
+pub fn ramp_shape(map: &Map, coords: DFCoords) -> [[[bool; 3]; 3]; 5] {
+    let c = map.neighbouring_flat(coords, |tile| {
+        tile.block_tile
+            .as_ref()
+            .map(|tile| tile.ramp_contact_kind())
+            .unwrap_or(RampContactKind::Empty)
+    });
+
+    #[rustfmt::skip]
+                let levels = [
+                    [corner_ramp_level(c.n, c.w) , c.n.height(), corner_ramp_level(c.n, c.e)],
+                    [c.w.height()                , 3           , c.e.height()               ],
+                    [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
+                ];
+
+    box_from_levels(levels)
+}
 
 #[ext(BlockTileExt)]
 pub impl BlockTile<'_> {
@@ -108,23 +126,7 @@ pub impl BlockTile<'_> {
             TiletypeShape::STAIR_UP => stairs(true, true, false, true, coords.z),
             TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
             TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
-            TiletypeShape::RAMP => {
-                let c = map.neighbouring_flat(coords, |tile| {
-                    tile.block_tile
-                        .as_ref()
-                        .map(|tile| tile.ramp_contact_kind())
-                        .unwrap_or(RampContactKind::Empty)
-                });
-
-                #[rustfmt::skip]
-                            let levels = [
-                                [corner_ramp_level(c.n, c.w) , c.n.height(), corner_ramp_level(c.n, c.e)],
-                                [c.w.height()                , 3           , c.e.height()               ],
-                                [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
-                            ];
-
-                box_from_levels(levels)
-            }
+            TiletypeShape::RAMP => ramp_shape(map, coords),
             TiletypeShape::TREE_SHAPE => box_empty(), // TODO
             TiletypeShape::SAPLING => box_empty(),    // TODO
             TiletypeShape::SHRUB => box_empty(),      // TODO
