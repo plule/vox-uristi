@@ -42,10 +42,12 @@ jobs:
           include:
             - os: windows-latest
               file-name: vox-uristi.exe
-              dst-file-name: vox-uristi-${{ github.ref_name }}.exe
+              dst-file-name: vox-uristi-${{ github.ref_name }}-windows.exe
+              artifact-name: vox-uristi-${{ github.ref_name }}-windows.exe
             - os: ubuntu-latest
               file-name: vox-uristi
-              dst-file-name: vox-uristi-${{ github.ref_name }}-experimental
+              dst-file-name: vox-uristi-${{ github.ref_name }}-linux
+              artifact-name: vox-uristi-${{ github.ref_name }}-linux.tar
     runs-on: ${{ matrix.os }}
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
@@ -70,13 +72,16 @@ jobs:
       run: cargo build --release
     - name: Copy file to release
       run: cp target/release/${{ matrix.file-name }} ${{ matrix.dst-file-name }}
+    - name: Make executable and archive
+      run: chmod +x ${{ matrix.dst-file-name }} && tar -cvf ${{ matrix.artifact-name }} ${{ matrix.dst-file-name }}
+      if: ${{ matrix.os=='ubuntu-latest' }}
       # TODO: move this release out of the matrix job
     - name: Release
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: ${{ matrix.dst-file-name }}
+        files: ${{ matrix.artifact-name }}
         draft: true
         body: |-
           # ☼Vox Uristi ${{ github.ref_name }}☼

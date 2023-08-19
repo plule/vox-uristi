@@ -26,6 +26,16 @@ pub enum UpdateStatus {
     },
 }
 
+#[cfg(target_os = "windows")]
+fn assets_is_for_current_platform(asset: &Asset) -> bool {
+    asset.name.contains("windows")
+}
+
+#[cfg(target_os = "linux")]
+fn assets_is_for_current_platform(asset: &Asset) -> bool {
+    asset.name.contains("linux")
+}
+
 pub fn check_update() -> Result<UpdateStatus> {
     let client = reqwest::blocking::Client::builder()
         .user_agent("plule/vox-uristi")
@@ -44,8 +54,7 @@ pub fn check_update() -> Result<UpdateStatus> {
 
     if latest_version > current_version {
         let asset_url = latest.assets.iter().find_map(|asset| {
-            // TODO linux
-            if asset.name.ends_with(".exe") {
+            if assets_is_for_current_platform(asset) {
                 Some(asset.browser_download_url.clone())
             } else {
                 None
