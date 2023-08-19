@@ -5,7 +5,7 @@ use crate::{
     palette::{DefaultMaterials, Material},
     shape::{self, slice_empty, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
-    DFCoords, WithDFCoords,
+    DFCoords, StableRng, WithDFCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType};
 use rand::Rng;
@@ -13,20 +13,21 @@ use rand::Rng;
 impl CollectVoxels for &FlowInfo {
     fn collect_voxels(&self, _map: &crate::map::Map, _context: &DFContext) -> Vec<Voxel> {
         let coords = self.coords();
+        let mut rng = self.stable_rng();
         let shape: Box3D<bool> = match self.type_() {
             FlowType::OceanWave => [
                 slice_empty(),
                 slice_empty(),
                 slice_empty(),
                 shape::slice_from_fn(|_, _| {
-                    rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                    rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
                 }),
                 shape::slice_from_fn(|_, _| {
-                    rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                    rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
                 }),
             ],
             _ => shape::box_from_fn(|_, _, _| {
-                rand::thread_rng().gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
             }),
         };
         let material = match self.type_() {

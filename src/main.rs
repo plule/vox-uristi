@@ -24,7 +24,7 @@ pub use coords::{
     DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
 };
 use eframe::egui;
-use rand::Rng;
+use rand::{rngs::StdRng, Rng};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
@@ -49,6 +49,10 @@ pub trait GenBoolSafe: Rng {
 }
 
 impl<T: Rng> GenBoolSafe for T {}
+
+pub trait StableRng {
+    fn stable_rng(&self) -> StdRng;
+}
 
 fn main() -> anyhow::Result<()> {
     #[cfg(feature = "cli")]

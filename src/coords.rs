@@ -1,7 +1,13 @@
 use std::{
+    collections::hash_map::DefaultHasher,
     fmt::Display,
+    hash::{Hash, Hasher},
     ops::{Add, RangeInclusive},
 };
+
+use rand::{rngs::StdRng, SeedableRng};
+
+use crate::StableRng;
 
 pub const BASE: usize = 3;
 pub const HEIGHT: usize = 5;
@@ -143,5 +149,17 @@ impl DFBoundingBox {
 
     pub fn contains(&self, coords: DFCoords) -> bool {
         self.x.contains(&coords.x) && self.y.contains(&coords.y) && self.z.contains(&coords.z)
+    }
+}
+
+impl<T> StableRng for T
+where
+    T: WithDFCoords,
+{
+    fn stable_rng(&self) -> StdRng {
+        let mut s = DefaultHasher::new();
+        self.coords().hash(&mut s);
+        let hash = s.finish();
+        SeedableRng::seed_from_u64(hash)
     }
 }

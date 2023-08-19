@@ -10,7 +10,7 @@ use crate::{
     rfr::BlockTile,
     shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
     voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
-    GenBoolSafe, VoxelCoords,
+    GenBoolSafe, StableRng, VoxelCoords,
 };
 
 impl CollectVoxels for BlockTile<'_> {
@@ -20,6 +20,7 @@ impl CollectVoxels for BlockTile<'_> {
         context: &DFContext,
     ) -> Vec<crate::voxel::Voxel> {
         let coords = self.coords();
+        let mut rng = self.stable_rng();
         if self.hidden() {
             let c = map.neighbouring(coords, |tile| tile.block_tile.is_some());
             if c.a && c.b && c.n && c.e && c.s && c.w {
@@ -70,7 +71,6 @@ impl CollectVoxels for BlockTile<'_> {
         for spatter in self.spatters() {
             // spatters sit on top of existing voxels, when there is some space
             let material = Material::Generic(spatter.material.get_or_default().clone());
-            let mut rng = rand::thread_rng();
             for voxel in &voxels {
                 let coords = voxel.coord + VoxelCoords::new(0, 0, 1);
                 if !occupied.contains(&coords) {
@@ -96,7 +96,7 @@ impl CollectVoxels for BlockTile<'_> {
 
         // Fire is identified as a special tiletype material
         if self.tile_type().material() == TiletypeMaterial::FIRE {
-            let shape: Box3D<bool> = box_from_fn(|_, _, _| rand::thread_rng().gen_bool(0.1));
+            let shape: Box3D<bool> = box_from_fn(|_, _, _| rng.gen_bool(0.1));
             voxels.extend(voxels_from_uniform_shape(
                 shape,
                 self.coords(),

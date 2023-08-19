@@ -7,15 +7,16 @@ use crate::{
     rfr::{BlockTile, ConsoleColor, GetTiming},
     shape::{self, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
-    IsSomeAnd,
+    IsSomeAnd, StableRng,
 };
 use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeSpecial};
 use easy_ext::ext;
-use rand::{seq::SliceRandom, Rng};
+use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
     fn collect_plant_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
+        let mut rng = self.stable_rng();
         let material = match self.tile_type().material() {
             TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
             TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
@@ -26,7 +27,6 @@ pub impl BlockTile<'_> {
                 return self.collect_tree_voxels(map, context);
             }
         };
-        let mut rng = rand::thread_rng();
         let item_on_tile = map.with_building.contains(&self.coords());
         let shape: Box3D<bool> = match self.tile_type().shape() {
             dfhack_remote::TiletypeShape::RAMP => ramp_shape(map, self.coords()),
@@ -43,9 +43,9 @@ pub impl BlockTile<'_> {
     }
 
     fn collect_tree_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
+        let mut rng = self.stable_rng();
         let part = self.plant_part();
         let coords = self.coords();
-        let mut rng = rand::thread_rng();
         let tile_type = self.tile_type();
         let plant_index = self.material().mat_index();
         let alive = !matches!(
@@ -77,7 +77,7 @@ pub impl BlockTile<'_> {
         );
         let growth_materials = self.growth_materials(&part, context);
         if alive && !growth_materials.is_empty() {
-            let growth = BlockTile::growth_shape(&part).map(|slice| {
+            let growth = BlockTile::growth_shape(&part, &mut rng).map(|slice| {
                 slice.map(|col| {
                     col.map(|t| {
                         if t {
@@ -94,7 +94,7 @@ pub impl BlockTile<'_> {
     }
 
     fn plant_structure_shape(&self, part: &PlantPart, map: &Map) -> Box3D<bool> {
-        let mut r = rand::thread_rng();
+        let mut r = self.stable_rng();
         let coords = self.coords();
         let origin = self.tree_origin();
         // The horror
@@ -245,8 +245,7 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn growth_shape(part: &PlantPart) -> Box3D<bool> {
-        let mut r = rand::thread_rng();
+    fn growth_shape(part: &PlantPart, r: &mut StdRng) -> Box3D<bool> {
         match part {
             PlantPart::Root | PlantPart::Trunk | PlantPart::Cap | PlantPart::HeavyBranch { .. } => {
                 [

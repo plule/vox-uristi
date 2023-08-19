@@ -10,7 +10,7 @@ use crate::{
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
-    DFCoords, IsSomeAnd,
+    DFCoords, IsSomeAnd, StableRng,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use easy_ext::ext;
@@ -54,9 +54,9 @@ pub impl BlockTile<'_> {
     }
 
     fn collect_structure_voxels(&self, map: &Map) -> Vec<Voxel> {
+        let mut rng = self.stable_rng();
         let coords = self.coords();
         let tile_type = self.tile_type();
-        let mut rng = rand::thread_rng();
         let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let item_on_tile = map.with_building.contains(&coords);
