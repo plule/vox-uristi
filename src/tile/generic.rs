@@ -1,6 +1,6 @@
 use super::{
     corner_ramp_level,
-    plant::{connectivity_from_direction_string, PlantPart},
+    tree::{connectivity_from_direction_string, PlantPart},
     RampContactKind,
 };
 use crate::{
@@ -57,11 +57,21 @@ pub impl BlockTile<'_> {
         let mut rng = self.stable_rng();
         let coords = self.coords();
         let tile_type = self.tile_type();
+        let material = match self.tile_type().material() {
+            // Grass don't have proper materials in the raw
+            TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
+            TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
+            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
+                Material::Default(DefaultMaterials::DeadGrass)
+            }
+            // Generic material from raw
+            mat => Material::TileGeneric(self.material().clone(), mat),
+        };
         let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let item_on_tile = map.with_building.contains(&coords);
-                let r = !item_on_tile
-                    && tile_type.material() != TiletypeMaterial::FROZEN_LIQUID
+                let rough = !item_on_tile // no roughness if there is a rendered item
+                    && tile_type.material() != TiletypeMaterial::FROZEN_LIQUID // no roughness for ice, it looks bad
                     && !matches!(
                         tile_type.special(),
                         TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD
@@ -70,21 +80,20 @@ pub impl BlockTile<'_> {
                     slice_empty(),
                     slice_empty(),
                     slice_empty(),
-                    slice_from_fn(|_, _| r && rng.gen_bool(1.0 / 7.0)),
+                    slice_from_fn(|_, _| rough && rng.gen_bool(1.0 / 7.0)),
                     slice_full(),
                 ]
             }
             TiletypeShape::WALL => {
                 let c = map
                     .neighbouring_8flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
-                let mat = Material::Generic(self.material().to_owned());
                 let void = Material::Default(DefaultMaterials::Hidden);
                 let slice = [
                     [c.n && c.w && c.nw, c.n, c.n && c.e && c.ne],
                     [c.w, true, c.e],
                     [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
                 ]
-                .map(|col| col.map(|b| Some(if b { void.clone() } else { mat.clone() })));
+                .map(|col| col.map(|b| Some(if b { void.clone() } else { material.clone() })));
                 let shape = [
                     slice.clone(),
                     slice.clone(),
@@ -136,7 +145,6 @@ pub impl BlockTile<'_> {
             _ => box_empty(),
         };
 
-        let material = Material::TileGeneric(self.material().clone(), tile_type.material());
         voxels_from_uniform_shape(shape, self.coords(), material)
     }
 

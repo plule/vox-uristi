@@ -1,9 +1,9 @@
 mod collect;
 mod generic;
-mod plant;
+mod tree;
 use crate::{rfr::BlockTile, WithDFCoords};
 pub use generic::BlockTileExt;
-pub use plant::BlockTilePlantExt;
+pub use tree::BlockTilePlantExt;
 
 impl WithDFCoords for BlockTile<'_> {
     fn coords(&self) -> crate::DFCoords {

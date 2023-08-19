@@ -1,47 +1,20 @@
-use super::{generic::ramp_shape, BlockTileExt};
+use super::BlockTileExt;
 use crate::{
     context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat},
     map::Map,
     palette::{DefaultMaterials, Material},
     rfr::{BlockTile, ConsoleColor, GetTiming},
-    shape::{self, slice_empty, slice_from_fn, slice_full, Box3D},
+    shape::{self, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
     IsSomeAnd, StableRng,
 };
-use dfhack_remote::{MatPair, TiletypeMaterial, TiletypeSpecial};
+use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
-    fn collect_plant_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
-        let mut rng = self.stable_rng();
-        let material = match self.tile_type().material() {
-            TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
-            TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
-            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
-                Material::Default(DefaultMaterials::DeadGrass)
-            }
-            _ => {
-                return self.collect_tree_voxels(map, context);
-            }
-        };
-        let item_on_tile = map.with_building.contains(&self.coords());
-        let shape: Box3D<bool> = match self.tile_type().shape() {
-            dfhack_remote::TiletypeShape::RAMP => ramp_shape(map, self.coords()),
-            _ => [
-                slice_empty(),
-                slice_empty(),
-                slice_empty(),
-                slice_from_fn(|_, _| !item_on_tile && rng.gen_bool(1.0 / 7.0)),
-                slice_full(),
-            ],
-        };
-
-        voxels_from_uniform_shape(shape, self.coords(), material)
-    }
-
     fn collect_tree_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
         let mut rng = self.stable_rng();
         let part = self.plant_part();

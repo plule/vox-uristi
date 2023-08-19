@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use dfhack_remote::{MatterState, TiletypeMaterial};
+use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape};
 use rand::Rng;
 
 use super::{BlockTileExt, BlockTilePlantExt};
@@ -36,12 +36,28 @@ impl CollectVoxels for BlockTile<'_> {
         }
         let mut voxels = Vec::new();
 
-        if self.material().mat_type() != 419 {
-            // classic tile structure
-            voxels.extend(self.collect_structure_voxels(map));
-        } else {
-            // plant, trees
-            voxels.extend(self.collect_plant_voxels(map, context));
+        match (self.tile_type().material(), self.tile_type().shape()) {
+            (
+                TiletypeMaterial::ROOT
+                | TiletypeMaterial::MUSHROOM
+                | TiletypeMaterial::PLANT
+                | TiletypeMaterial::TREE_MATERIAL,
+                _,
+            )
+            | (
+                _,
+                TiletypeShape::SAPLING
+                | TiletypeShape::TWIG
+                | TiletypeShape::SHRUB
+                | TiletypeShape::BRANCH,
+            ) => {
+                // plant, trees
+                voxels.extend(self.collect_tree_voxels(map, context));
+            }
+            _ => {
+                // classic tile structure
+                voxels.extend(self.collect_structure_voxels(map));
+            }
         }
 
         // liquids
