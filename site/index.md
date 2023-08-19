@@ -7,7 +7,8 @@ header:
   overlay_image: /assets/gallery/banner.jpg
 ---
 
-[<i class='fas fa-download'></i> Download Latest]({%include latest-download.html%}){: .btn .btn--success .btn--x-large}
+[<i class='fas fa-download'></i> Download for Windows]({%include latest-download-windows.html%}){: .btn .btn--success .btn--x-large}
+[<i class='fas fa-download'></i> Download for Linux]({%include latest-download-linux.html%}){: .btn .btn--success .btn--x-large}
 [<i class='fas fa-external-link-alt'></i> View on Github](https://github.com/plule/vox-uristi){: .btn .btn--primary .btn--x-large}
 
 **Vox Uristi** exports Dwarf Fortress maps in a voxel format to create beautiful

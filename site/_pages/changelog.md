@@ -4,6 +4,14 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.11
+
+![v0.11](/vox-uristi/assets/changelog/v0.11.png)
+
+- Publish a linux build
+- Fix grassy ramps
+- Make random blocks stable between exports
+
 ### v0.10
 
 ![v0.10](/vox-uristi/assets/changelog/v0.10.png)
