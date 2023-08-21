@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.72"
+anyhow = "1.0.75"
 bitflags = "2.4.0"
 clap = { version = "4.3.23", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
