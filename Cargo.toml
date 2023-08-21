@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.72"
 bitflags = "2.4.0"
-clap = { version = "4.3.21", features = ["derive"], optional = true }
+clap = { version = "4.3.23", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1.0.1"
