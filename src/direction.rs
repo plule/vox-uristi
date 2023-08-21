@@ -1,6 +1,6 @@
 use crate::{DFCoords, WithDFCoords};
 use dfhack_remote::BuildingDirection;
-use std::ops::{BitOr};
+use std::ops::BitOr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {

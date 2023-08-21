@@ -1,10 +1,6 @@
-use super::{
-    corner_ramp_level,
-    tree::{connectivity_from_direction_string, PlantPart},
-    RampContactKind,
-};
+use super::tree::{connectivity_from_direction_string, PlantPart};
 use crate::{
-    direction::Rotating,
+    direction::{Neighbouring8Flat, Rotating},
     map::Map,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
@@ -17,19 +13,31 @@ use easy_ext::ext;
 use rand::Rng;
 
 pub fn ramp_shape(map: &Map, coords: DFCoords) -> [[[bool; 3]; 3]; 5] {
-    let c = map.neighbouring_flat(coords, |tile| {
+    let c = map.neighbouring_8flat(coords, |tile| {
         tile.block_tile
             .as_ref()
-            .map(|tile| tile.ramp_contact_kind())
-            .unwrap_or(RampContactKind::Empty)
+            .map(|tile| tile.ramp_contact_height())
+            .unwrap_or(1)
     });
+    let nw = c.nw.max(c.n).max(c.w);
+    let ne = c.ne.max(c.n).max(c.e);
+    let sw = c.sw.max(c.s).max(c.w);
+    let se = c.se.max(c.s).max(c.e);
 
-    #[rustfmt::skip]
-                let levels = [
-                    [corner_ramp_level(c.n, c.w) , c.n.height(), corner_ramp_level(c.n, c.e)],
-                    [c.w.height()                , 3           , c.e.height()               ],
-                    [corner_ramp_level(c.s, c.w) , c.s.height(), corner_ramp_level(c.s, c.e)],
-                ];
+    let c = Neighbouring8Flat {
+        n: (nw + ne) / 2,
+        ne,
+        e: (ne + se) / 2,
+        se,
+        s: (sw + se) / 2,
+        sw,
+        w: (nw + sw) / 2,
+        nw,
+    };
+
+    let max = nw.max(ne).max(sw).max(se);
+
+    let levels = [[c.nw, c.n, c.ne], [c.w, max / 2, c.e], [c.sw, c.s, c.se]];
 
     box_from_levels(levels)
 }
@@ -43,13 +51,11 @@ pub impl BlockTile<'_> {
         )
     }
 
-    fn ramp_contact_kind(&self) -> RampContactKind {
+    fn ramp_contact_height(&self) -> usize {
         if self.is_wall() {
-            RampContactKind::Wall
-        } else if self.tile_type().shape() == TiletypeShape::RAMP {
-            RampContactKind::Ramp
+            6
         } else {
-            RampContactKind::Empty
+            1
         }
     }
 
