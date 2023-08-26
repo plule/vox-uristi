@@ -16,6 +16,12 @@ nest:
   - url: /assets/gallery/nest/foggy.jpg
     image_path: /assets/gallery/nest/foggy.jpg
     title: Foggy render
+  - url: /assets/gallery/nest/general.jpg
+    image_path: /assets/gallery/nest/general.jpg
+    title: General view
+  - url: /assets/gallery/nest/ground.jpg
+    image_path: /assets/gallery/nest/ground.jpg
+    title: View from the ground
 northbridge:
   - url: /assets/gallery/northbridge/iso.jpg
     image_path: /assets/gallery/northbridge/iso.jpg
