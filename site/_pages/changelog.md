@@ -4,6 +4,13 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.12
+
+![v0.12](/vox-uristi/assets/changelog/v0.12.png)
+
+- Better ramp shape
+- Altars now emit light
+
 ### v0.11
 
 ![v0.11](/vox-uristi/assets/changelog/v0.11.png)
