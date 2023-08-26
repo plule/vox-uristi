@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.72"
+anyhow = "1.0.75"
 bitflags = "2.4.0"
-clap = { version = "4.3.21", features = ["derive"], optional = true }
+clap = { version = "4.3.23", features = ["derive"], optional = true }
 dfhack-remote = "0.7.0"
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1.0.1"
@@ -29,13 +29,13 @@ reqwest = { version = "0.11.18", features = ["blocking", "json"] }
 rfd = "0.11.4"
 rgb = "0.8.36"
 semver = "1.0.18"
-serde = "1.0.183"
+serde = "1.0.185"
 serde_yaml = "0.9.25"
 strum = { version = "0.25.0", features = ["derive"] }
 tracing-subscriber = "0.3.16"
 
 [build-dependencies]
-image = "0.24.6"
+image = "0.24.7"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
