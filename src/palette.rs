@@ -45,6 +45,7 @@ pub enum DefaultMaterials {
     LightGrass,
     DeadGrass,
     Wood,
+    Light,
 }
 
 pub trait RGBAColor {
@@ -72,6 +73,7 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
             DefaultMaterials::DeadGrass => (102, 102, 0, 255),
             DefaultMaterials::Wood => (75, 21, 0, 255),
+            DefaultMaterials::Light => (255, 255, 255, 255),
         }
     }
 }
@@ -161,6 +163,11 @@ impl EffectiveMaterial {
                         res.mat_type = Some("_glass");
                         res.ior = Some(0);
                         res.transparency = Some(25);
+                    }
+                    DefaultMaterials::Light => {
+                        res.mat_type = Some("_emit");
+                        res.emit = Some(75);
+                        res.flux = Some(2);
                     }
                     _ => {
                         res.mat_type = Some("_diffuse");

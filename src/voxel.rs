@@ -134,6 +134,7 @@ pub trait FromPrefab {
         let default_materials = [
             Some(Material::Default(DefaultMaterials::Fire)),
             Some(Material::Default(DefaultMaterials::Wood)),
+            Some(Material::Default(DefaultMaterials::Light)),
         ];
 
         let materials: Vec<Option<Material>> = build_materials
