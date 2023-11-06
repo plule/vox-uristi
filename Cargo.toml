@@ -30,7 +30,7 @@ rfd = "0.12.1"
 rgb = "0.8.37"
 semver = "1.0.20"
 serde = "1.0.190"
-serde_yaml = "0.9.25"
+serde_yaml = "0.9.27"
 strum = { version = "0.25.0", features = ["derive"] }
 tracing-subscriber = "0.3.16"
 
