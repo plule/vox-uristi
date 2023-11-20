@@ -108,7 +108,7 @@ impl CollectVoxels for BlockTile<'_> {
                 }
             }
         }
-        voxels.extend(spatter_voxels.into_iter());
+        voxels.extend(spatter_voxels);
 
         // Fire is identified as a special tiletype material
         if self.tile_type().material() == TiletypeMaterial::FIRE {

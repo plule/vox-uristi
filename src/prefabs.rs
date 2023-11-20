@@ -86,7 +86,7 @@ pub fn load_models() -> Prefabs {
                     let prefab = prefab_configs
                         .buildings
                         .entry(path.replace(".vox", "").to_string())
-                        .or_insert_with(PrefabConfig::default);
+                        .or_default();
                     if prefab.model.is_none() {
                         prefab.model = Some(path.to_string());
                     }

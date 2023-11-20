@@ -1,4 +1,4 @@
-///! Generic functions for shape management
+/// Generic functions for shape management
 ///
 /// It has a set of methods to build programmatically 3D boxes or 2D slices
 use std::array;

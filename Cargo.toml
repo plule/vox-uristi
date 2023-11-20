@@ -9,21 +9,21 @@ edition = "2021"
 anyhow = "1.0.75"
 bitflags = "2.4.1"
 clap = { version = "4.4.8", features = ["derive"], optional = true }
-dfhack-remote = "0.7.0"
+dfhack-remote = "0.8.0"
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1.0.1"
 eframe = { version = "0.23.0", features = ["persistence"] }
 glob-match = "0.2.1"
 include_dir = { version = "0.7.3", features = ["glob"] }
 indicatif = "0.17.7"
-itertools = "0.11.0"
+itertools = "0.12.0"
 lazy_static = "1.4.0"
 num-integer = "0.1.45"
-num_enum = "0.7.0"
+num_enum = "0.7.1"
 opener = { version = "0.6.1", features = ["reveal"] }
 palette = "0.7.3"
-protobuf = { version = "3.2.0" }
-protobuf-json-mapping = { version = "3.2.0", optional = true }
+protobuf = { version = "3.3.0" }
+protobuf-json-mapping = { version = "3.3.0", optional = true }
 rand = "0.8.5"
 reqwest = { version = "0.11.22", features = ["blocking", "json"] }
 rfd = "0.12.1"
@@ -32,7 +32,7 @@ semver = "1.0.20"
 serde = "1.0.192"
 serde_yaml = "0.9.27"
 strum = { version = "0.25.0", features = ["derive"] }
-tracing-subscriber = "0.3.16"
+tracing-subscriber = "0.3.18"
 
 [build-dependencies]
 image = "0.24.7"

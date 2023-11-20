@@ -126,7 +126,7 @@ impl App {
 
                             if let Some(path) = rfd::FileDialog::new()
                                 .set_title("Model destination")
-                                .set_file_name(&file_name)
+                                .set_file_name(file_name)
                                 .add_filter("MagicaVoxel", &["vox"])
                                 .save_file()
                             {
