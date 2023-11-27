@@ -67,12 +67,13 @@ fn main() -> anyhow::Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
     let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(320.0, 320.0)),
-        icon_data: Some(eframe::IconData {
-            rgba: ICON.to_vec(),
-            width: 256,
-            height: 256,
-        }),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([320.0, 240.0])
+            .with_icon(egui::IconData {
+                rgba: ICON.to_vec(),
+                width: 256,
+                height: 256,
+            }),
         ..Default::default()
     };
     match eframe::run_native(
