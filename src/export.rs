@@ -35,6 +35,26 @@ pub enum Progress {
 }
 
 impl Progress {
+    pub fn text(&self) -> String {
+        match self {
+            Self::Undetermined { message } => message.to_string(),
+            Self::Start { message, .. } => message.to_string(),
+            Self::Progress { message, .. } => message.to_string(),
+            Self::Done { .. } => "Done".to_string(),
+            Self::Error(e) => e.to_string(),
+        }
+    }
+
+    pub fn ratio(&self) -> f64 {
+        match self {
+            Self::Undetermined { .. } => 0.0,
+            Self::Start { .. } => 0.0,
+            Self::Progress { curr, total, .. } => *curr as f64 / *total as f64,
+            Self::Done { .. } => 1.0,
+            Self::Error(_) => 1.0,
+        }
+    }
+
     pub fn undetermined(message: &'static str) -> Self {
         Self::Undetermined { message }
     }

@@ -4,7 +4,10 @@ use clap::{Parser, Subcommand};
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
 use indicatif::{ProgressBar, ProgressStyle};
 use protobuf::{Message, MessageDyn, MessageField};
-use std::{path::PathBuf, thread};
+use std::{
+    path::{Path, PathBuf},
+    thread,
+};
 use strum::IntoEnumIterator;
 
 #[derive(Parser)]
@@ -16,6 +19,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// Run with an interactive text user interface
+    Tui {},
     /// Export the map in the .vox folder
     Export {
         /// Lower point to export
@@ -58,6 +63,7 @@ pub enum Command {
 
 pub fn run_cli_command(command: Command) -> Result<()> {
     match command {
+        Command::Tui {} => crate::ui::tui::run(),
         Command::Export {
             low: elevation_low,
             high: elevation_high,
@@ -221,7 +227,7 @@ fn regen_test_data() -> Result<(), anyhow::Error> {
     let building_defs = client.remote_fortress_reader().get_building_def_list()?;
     let data = building_defs.write_to_bytes()?;
     let mut dest = destination.clone();
-    dest.push(format!("building_defs.dat"));
+    dest.push("building_defs.dat");
     println!("{}", &dest.display());
     std::fs::write(dest, data)?;
 
@@ -288,9 +294,9 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn dump(message: &dyn MessageDyn, folder: &PathBuf, filename: &str) -> Result<()> {
+fn dump(message: &dyn MessageDyn, folder: &Path, filename: &str) -> Result<()> {
     let json = protobuf_json_mapping::print_to_string(message)?;
-    let mut dest = folder.clone();
+    let mut dest = folder.to_path_buf();
     dest.push(filename);
     println!("{}", &dest.display());
     std::fs::write(dest, json)?;

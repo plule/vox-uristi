@@ -1,12 +1,27 @@
+use clap::ValueEnum;
 use eframe::egui;
-use itertools::Itertools;
-use num_enum::IntoPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-use strum::{Display, EnumIter, IntoEnumIterator};
+use std::{
+    fmt::Display,
+    ops::{Add, Sub},
+};
+use strum::{Display, EnumIter};
 
-#[derive(Clone, Copy, Display, IntoPrimitive, Serialize, Deserialize, PartialEq, EnumIter)]
-#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+use crate::ui::tui::{self, TermColor};
+
+#[derive(
+    Clone,
+    Copy,
+    Display,
+    IntoPrimitive,
+    TryFromPrimitive,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    EnumIter,
+    ValueEnum,
+)]
 #[repr(i32)]
 pub enum Month {
     Granite,
@@ -30,50 +45,113 @@ impl Month {
     }
 }
 
+impl Add<i32> for Month {
+    type Output = Self;
+
+    fn add(self, rhs: i32) -> Self::Output {
+        let index: i32 = self.into();
+        Self::try_from((index + rhs).rem_euclid(12)).unwrap()
+    }
+}
+
+impl Sub<i32> for Month {
+    type Output = Self;
+
+    fn sub(self, rhs: i32) -> Self::Output {
+        let index: i32 = self.into();
+        Self::try_from((index - rhs).rem_euclid(12)).unwrap()
+    }
+}
+
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TimeOfTheYear {
-    Tick(i32),
+    Current,
     Month(Month),
 }
 
 impl TimeOfTheYear {
-    pub fn ticks(&self) -> i32 {
+    pub fn ticks(&self, df: &mut dfhack_remote::Client) -> i32 {
         match self {
-            TimeOfTheYear::Tick(tick) => *tick,
+            TimeOfTheYear::Current => df
+                .remote_fortress_reader()
+                .get_world_map()
+                .map(|wm| wm.cur_year_tick())
+                .unwrap_or_default(),
             TimeOfTheYear::Month(month) => month.year_tick(),
         }
     }
-}
 
-impl Display for TimeOfTheYear {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    pub fn tui_color(&self) -> ratatui::prelude::Color {
         match self {
-            TimeOfTheYear::Tick(tick) => {
-                for (month, next_month) in Month::iter().circular_tuple_windows() {
-                    if (month.year_tick()..=next_month.year_tick()).contains(tick) {
-                        return f.write_fmt(format_args!("~{}", month));
-                    }
-                }
-                f.write_str("?")
-            }
-            TimeOfTheYear::Month(month) => month.fmt(f),
+            TimeOfTheYear::Current => tui::THEME.text().term_color(),
+            TimeOfTheYear::Month(month) => month.tui_color(),
         }
     }
 }
 
 impl Default for TimeOfTheYear {
     fn default() -> Self {
-        Self::Tick(0)
+        Self::Current
+    }
+}
+
+impl Display for TimeOfTheYear {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TimeOfTheYear::Current => f.write_str("Current"),
+            /*TimeOfTheYear::Tick(tick) => {
+                for (month, next_month) in Month::iter().circular_tuple_windows() {
+                    if (month.year_tick()..=next_month.year_tick()).contains(tick) {
+                        return f.write_fmt(format_args!("~{}", month));
+                    }
+                }
+                f.write_str("?")
+            }*/
+            TimeOfTheYear::Month(month) => month.fmt(f),
+        }
+    }
+}
+
+impl Add<i32> for TimeOfTheYear {
+    type Output = Self;
+
+    fn add(self, rhs: i32) -> Self::Output {
+        let month = match self {
+            TimeOfTheYear::Current => Month::Granite,
+            TimeOfTheYear::Month(month) => month,
+        };
+        Self::Month(month + rhs)
+    }
+}
+
+impl Sub<i32> for TimeOfTheYear {
+    type Output = Self;
+
+    fn sub(self, rhs: i32) -> Self::Output {
+        let month = match self {
+            TimeOfTheYear::Current => Month::Granite,
+            TimeOfTheYear::Month(month) => month,
+        };
+        Self::Month(month - rhs)
     }
 }
 
 impl Month {
-    pub fn color(&self) -> egui::Color32 {
+    pub fn gui_color(&self) -> egui::Color32 {
         match self {
             Month::Granite | Month::Slate | Month::Felsite => egui::Color32::GREEN,
             Month::Hematite | Month::Malachite | Month::Galena => egui::Color32::YELLOW,
             Month::Limestone | Month::Sandstone | Month::Timber => egui::Color32::RED,
             Month::Moonstone | Month::Opal | Month::Obsidian => egui::Color32::BLUE,
+        }
+    }
+
+    pub fn tui_color(&self) -> ratatui::style::Color {
+        match self {
+            Month::Granite | Month::Slate | Month::Felsite => tui::THEME.green().term_color(),
+            Month::Hematite | Month::Malachite | Month::Galena => tui::THEME.yellow().term_color(),
+            Month::Limestone | Month::Sandstone | Month::Timber => tui::THEME.red().term_color(),
+            Month::Moonstone | Month::Opal | Month::Obsidian => tui::THEME.blue().term_color(),
         }
     }
 }

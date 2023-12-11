@@ -9,35 +9,15 @@ use eframe::{
     epaint::Vec2,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    path::PathBuf,
-    sync::mpsc::{Receiver, Sender},
-    thread,
-};
+use std::thread;
 use strum::IntoEnumIterator;
 
-enum CheckUpdateStatus {
-    NotDone,
-    Doing(Receiver<Result<UpdateStatus>>),
-    Done(UpdateStatus),
-}
+use super::{CheckUpdateStatus, Elevation, FromDwarfFortress, State};
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
-    low_elevation: i32,
-    high_elevation: i32,
-
-    #[serde(skip)]
-    time: TimeOfTheYear,
-    #[serde(skip)]
-    error: Option<String>,
-    #[serde(skip)]
-    progress: Option<(Progress, Receiver<Progress>, Sender<Cancel>)>,
-    #[serde(skip)]
-    exported_path: Option<PathBuf>,
-    #[serde(skip)]
-    update_status: CheckUpdateStatus,
+    state: crate::ui::State,
     #[serde(skip)]
     df: Result<dfhack_remote::Client>,
 }
@@ -55,13 +35,13 @@ impl App {
         ui.heading("☀Vox Uristi☀");
 
         let mut canceled = false;
-        match &mut self.progress {
+        match &mut self.state.progress {
             Some((progress, rx, tx)) => {
                 ctx.request_repaint();
                 if ui.button("Cancel").clicked() {
                     canceled = true;
                     if let Err(err) = tx.send(Cancel) {
-                        self.error = Some(format!("Failed to cancel: {err}"));
+                        self.state.error = Some(format!("Failed to cancel: {err}"));
                     }
                 }
                 if let Some(new_progress) = rx.try_iter().last() {
@@ -85,12 +65,12 @@ impl App {
                         total: _,
                     } => {}
                     Progress::Done { path } => {
-                        self.exported_path = Some(path.to_path_buf());
-                        self.progress = None;
+                        self.state.exported_path = Some(path.to_path_buf());
+                        self.state.progress = None;
                     }
                     Progress::Error(err) => {
-                        self.error = Some(err.to_string());
-                        self.progress = None;
+                        self.state.error = Some(err.to_string());
+                        self.state.progress = None;
                     }
                 }
             }
@@ -102,21 +82,25 @@ impl App {
                         ui.horizontal(|ui| {
                             ui.add_space(ui.available_width());
                         });
-                        if elevation_picker(ui, "⏶", &mut self.high_elevation, df)?.changed() {
-                            self.low_elevation = self.low_elevation.min(self.high_elevation);
+                        if elevation_picker(ui, "⏶", &mut self.state.high_elevation, df)?.changed()
+                        {
+                            self.state.low_elevation.0 =
+                                self.state.low_elevation.0.min(self.state.high_elevation.0);
                         };
-                        if elevation_picker(ui, "⏷", &mut self.low_elevation, df)?.changed() {
-                            self.high_elevation = self.high_elevation.max(self.low_elevation);
+                        if elevation_picker(ui, "⏷", &mut self.state.low_elevation, df)?.changed()
+                        {
+                            self.state.high_elevation.0 =
+                                self.state.high_elevation.0.max(self.state.low_elevation.0);
                         }
 
-                        time_picker(ui, &mut self.time, df)?;
+                        time_picker(ui, &mut self.state.time, df)?;
                         ui.separator();
                         let button = Button::new(RichText::new("💾 Export").heading());
                         if ui
                             .add_sized(Vec2::new(ui.available_width(), 40.0), button)
                             .clicked()
                         {
-                            self.error = None;
+                            self.state.error = None;
                             let world_map = df.remote_fortress_reader().get_world_map()?;
                             let file_name = format!(
                                 "{}_{}.vox",
@@ -132,14 +116,16 @@ impl App {
                             {
                                 let (progress_tx, progress_rx) = std::sync::mpsc::channel();
                                 let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
-                                let range = self.low_elevation..self.high_elevation + 1;
-                                self.progress = Some((
+                                let range =
+                                    (self.state.low_elevation.0)..(self.state.high_elevation.0) + 1;
+                                self.state.progress = Some((
                                     Progress::undetermined("Connecting..."),
                                     progress_rx,
                                     cancel_tx,
                                 ));
-                                let tick = self.time.ticks();
                                 let mut df = dfhack_remote::connect()?;
+                                let tick = self.state.time.ticks(&mut df);
+
                                 thread::spawn(move || {
                                     export_voxels(
                                         &mut df,
@@ -158,15 +144,15 @@ impl App {
             }
         }
         if canceled {
-            self.progress = None;
+            self.state.progress = None;
         }
 
-        if let Some(path) = &self.exported_path {
+        if let Some(path) = &self.state.exported_path {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
                     if ui.button("🗁 Show in explorer").clicked() {
                         if let Err(err) = opener::reveal(path) {
-                            self.error = Some(err.to_string());
+                            self.state.error = Some(err.to_string());
                         }
                     }
                     ui.label(format!(
@@ -178,7 +164,7 @@ impl App {
             });
         }
 
-        if let Some(err) = &self.error {
+        if let Some(err) = &self.state.error {
             ui.label("Is Dwarf Fortress running with DFHack installed?");
             ui.label(err);
         }
@@ -198,11 +184,11 @@ impl App {
     }
 
     fn status_bar(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| match &self.update_status {
+        ui.horizontal(|ui| match &self.state.update_status {
             CheckUpdateStatus::NotDone => {
                 if ui.button("🔃 Check for updates").clicked() {
                     let (sender, receiver) = std::sync::mpsc::channel();
-                    self.update_status = CheckUpdateStatus::Doing(receiver);
+                    self.state.update_status = CheckUpdateStatus::Doing(receiver);
                     let ctx = ui.ctx().clone();
                     std::thread::spawn(move || {
                         sender.send(check_update()).unwrap();
@@ -235,27 +221,12 @@ impl App {
 
 impl Default for App {
     fn default() -> Self {
-        let mut df = match dfhack_remote::connect() {
+        let df = match dfhack_remote::connect() {
             Ok(df) => Ok(df),
             Err(err) => Err(anyhow!(err)),
         };
-        let time = df
-            .as_mut()
-            .map(|df| {
-                df.remote_fortress_reader()
-                    .get_world_map()
-                    .map(|wm| wm.cur_year_tick())
-                    .unwrap_or_default()
-            })
-            .unwrap_or_default();
         Self {
-            low_elevation: 100,
-            high_elevation: 110,
-            time: TimeOfTheYear::Tick(time),
-            error: None,
-            progress: None,
-            exported_path: None,
-            update_status: CheckUpdateStatus::NotDone,
+            state: State::default(),
             df,
         }
     }
@@ -267,15 +238,15 @@ impl eframe::App for App {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let CheckUpdateStatus::Doing(receiver) = &self.update_status {
+        if let CheckUpdateStatus::Doing(receiver) = &self.state.update_status {
             if let Some(update_status) = receiver.try_iter().last() {
                 match update_status {
                     Ok(update_status) => {
-                        self.update_status = CheckUpdateStatus::Done(update_status);
+                        self.state.update_status = CheckUpdateStatus::Done(update_status);
                     }
                     Err(err) => {
-                        self.update_status = CheckUpdateStatus::NotDone;
-                        self.error = Some(err.to_string());
+                        self.state.update_status = CheckUpdateStatus::NotDone;
+                        self.state.error = Some(err.to_string());
                     }
                 }
             }
@@ -293,7 +264,7 @@ impl eframe::App for App {
 fn elevation_picker(
     ui: &mut Ui,
     text: &str,
-    elevation: &mut i32,
+    elevation: &mut Elevation,
     df: &mut dfhack_remote::Client,
 ) -> Result<Response> {
     ui.horizontal(|ui| {
@@ -302,10 +273,10 @@ fn elevation_picker(
             .button("☉")
             .on_hover_text("Set the elevation from the current view.");
         if button.clicked() {
-            *elevation = df.remote_fortress_reader().get_view_info()?.view_pos_z();
+            elevation.do_read_from_df(df)?;
         }
         let mut resp = ui
-            .add(DragValue::new(elevation).clamp_range(0..=300))
+            .add(DragValue::new(&mut elevation.0).clamp_range(0..=300))
             .on_hover_text("Defines the elevation range that will be exported.");
         if button.clicked() {
             resp.mark_changed();
@@ -327,14 +298,13 @@ fn time_picker(
             .on_hover_text("Set the time of the year to the current time.")
             .clicked()
         {
-            let world_map = df.remote_fortress_reader().get_world_map()?;
-            *time = TimeOfTheYear::Tick(world_map.cur_year_tick());
+            time.do_read_from_df(df)?;
         }
         egui::ComboBox::from_label("")
             .selected_text(format!("{}", time))
             .show_ui(ui, |ui| {
                 for month in Month::iter() {
-                    let text = egui::RichText::new(format!("{}", month)).color(month.color());
+                    let text = egui::RichText::new(format!("{}", month)).color(month.gui_color());
                     ui.selectable_value(time, TimeOfTheYear::Month(month), text);
                 }
             }).response.on_hover_text("Define the time of the year of the export. This affects the vegetation appearance.");

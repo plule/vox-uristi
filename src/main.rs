@@ -1,10 +1,7 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod app;
 mod building;
 mod calendar;
-#[cfg(feature = "cli")]
-mod cli;
 mod context;
 mod coords;
 mod direction;
@@ -17,9 +14,11 @@ mod prefabs;
 mod rfr;
 mod shape;
 mod tile;
+mod ui;
 mod update;
 mod voxel;
-use app::App;
+
+use clap::Parser;
 pub use coords::{
     DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
 };
@@ -55,14 +54,10 @@ pub trait StableRng {
 }
 
 fn main() -> anyhow::Result<()> {
-    #[cfg(feature = "cli")]
-    {
-        use clap::Parser;
-        let cli = cli::Cli::parse();
+    let cli = ui::cli::Cli::parse();
 
-        if let Some(command) = cli.command {
-            return cli::run_cli_command(command);
-        }
+    if let Some(command) = cli.command {
+        return ui::cli::run_cli_command(command);
     }
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
@@ -79,7 +74,7 @@ fn main() -> anyhow::Result<()> {
     match eframe::run_native(
         format!("Vox Uristi v{VERSION}").as_str(),
         options,
-        Box::new(|cc| Box::<App>::new(app::App::new(cc))),
+        Box::new(|cc| Box::<ui::gui::App>::new(ui::gui::App::new(cc))),
     ) {
         Ok(_) => Ok(()),
         Err(e) => Err(anyhow::format_err!("{}", e.to_string())),
