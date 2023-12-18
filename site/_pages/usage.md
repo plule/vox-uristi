@@ -34,3 +34,9 @@ files are not correctly rendered by this viewer.
 You can see the whole process on this mod spotlight made by Blind.
 
 {% include video id="CDqMuBZsNH0" provider="youtube" %}
+
+On Linux, Vox Uristi can also be used in command-line:
+
+`vox-uristi export --low -2 --high 17 fortress.vox`.
+
+Run `vox-uristi --help` to get the full list of options.
