@@ -1,10 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod app;
 mod building;
 mod calendar;
-#[cfg(feature = "cli")]
-mod cli;
 mod context;
 mod coords;
 mod direction;
@@ -17,71 +14,122 @@ mod prefabs;
 mod rfr;
 mod shape;
 mod tile;
+mod traits;
+mod ui;
+#[cfg(feature = "self-update")]
 mod update;
 mod voxel;
-use app::App;
+
+use std::path::PathBuf;
+
+use calendar::Month;
+use export::Elevation;
+pub use traits::*;
+
+use clap::{Parser, Subcommand};
 pub use coords::{
     DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
 };
-use eframe::egui;
-use rand::{rngs::StdRng, Rng};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-const ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon"));
 
-pub trait IsSomeAnd<T> {
-    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool;
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub struct Cli {
+    #[cfg(feature = "gui")]
+    #[command(subcommand)]
+    pub command: Option<Command>,
+
+    #[cfg(not(feature = "gui"))]
+    #[command(subcommand)]
+    pub command: Command,
 }
 
-impl<T> IsSomeAnd<T> for Option<T> {
-    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool {
-        match self {
-            None => false,
-            Some(x) => f(x),
-        }
+#[derive(Subcommand)]
+pub enum Command {
+    /// Run with a graphical user interface
+    #[cfg(feature = "gui")]
+    Gui,
+    /// Export the map in the .vox format
+    Export {
+        /// Lower point to export
+        #[arg(long, allow_hyphen_values = true)]
+        low: Option<i32>,
+        /// Higher point to export
+        #[arg(long, allow_hyphen_values = true)]
+        high: Option<i32>,
+        /// Season for export
+        #[arg(long)]
+        month: Option<Month>,
+        /// Destination file
+        destination: PathBuf,
+    },
+    /// Export one .vox file per month of the year
+    ExportYear {
+        /// Lower point to export
+        #[arg(long, allow_hyphen_values = true)]
+        low: Option<i32>,
+        /// Higher point to export
+        #[arg(long, allow_hyphen_values = true)]
+        high: Option<i32>,
+        /// Destination folder
+        destination: PathBuf,
+    },
+    /// Check for new versions
+    #[cfg(feature = "self-update")]
+    CheckUpdate,
+    /// Developper utilities
+    #[cfg(feature = "dev")]
+    #[command(subcommand)]
+    Dev(DevCommand),
+}
+
+#[derive(Subcommand)]
+pub enum DevCommand {
+    /// Regen test data from df
+    RegenTestData,
+    /// Debug the tile under the cursor
+    Probe {
+        /// Destination folder
+        destination: PathBuf,
+    },
+    /// Dump the material, plant, raw lists...
+    DumpLists {
+        /// Destination folder
+        destination: PathBuf,
+    },
+}
+
+impl Cli {
+    #[cfg(feature = "gui")]
+    pub fn command(self) -> Command {
+        self.command.unwrap_or(Command::Gui)
     }
-}
 
-pub trait GenBoolSafe: Rng {
-    fn gen_bool_safe(&mut self, probability: f64) -> bool {
-        self.gen_bool(probability.clamp(0.0, 1.0))
+    #[cfg(not(feature = "gui"))]
+    pub fn command(self) -> Command {
+        self.command
     }
-}
-
-impl<T: Rng> GenBoolSafe for T {}
-
-pub trait StableRng {
-    fn stable_rng(&self) -> StdRng;
 }
 
 fn main() -> anyhow::Result<()> {
-    #[cfg(feature = "cli")]
-    {
-        use clap::Parser;
-        let cli = cli::Cli::parse();
-
-        if let Some(command) = cli.command {
-            return cli::run_cli_command(command);
-        }
-    }
-    // Log to stdout (if you run with `RUST_LOG=debug`).
-    tracing_subscriber::fmt::init();
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([320.0, 240.0])
-            .with_icon(egui::IconData {
-                rgba: ICON.to_vec(),
-                width: 256,
-                height: 256,
-            }),
-        ..Default::default()
-    };
-    match eframe::run_native(
-        format!("Vox Uristi v{VERSION}").as_str(),
-        options,
-        Box::new(|cc| Box::<App>::new(app::App::new(cc))),
-    ) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(anyhow::format_err!("{}", e.to_string())),
+    match Cli::parse().command() {
+        #[cfg(feature = "gui")]
+        Command::Gui => ui::gui::run(),
+        Command::Export {
+            low,
+            high,
+            destination,
+            month,
+        } => ui::cli::export(low.map(Elevation), high.map(Elevation), destination, month),
+        Command::ExportYear {
+            low,
+            high,
+            destination,
+        } => ui::cli::export_year(low.map(Elevation), high.map(Elevation), destination),
+        #[cfg(feature = "self-update")]
+        Command::CheckUpdate => ui::cli::check_update(),
+        #[cfg(feature = "dev")]
+        Command::Dev(cmd) => ui::cli::dev::run(cmd),
     }
 }

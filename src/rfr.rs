@@ -14,6 +14,23 @@ use std::{
     ops::{Range, RangeInclusive},
 };
 
+/// General DFHack remote helper extensions
+#[easy_ext::ext(DFHackExt)]
+pub impl dfhack_remote::Client {
+    /// Offset between the z view position and the displayed elevation
+    fn elevation_offset(&mut self) -> dfhack_remote::Result<i32> {
+        let map_info = self.remote_fortress_reader().get_map_info()?;
+        Ok(map_info.block_pos_z() - 100)
+    }
+
+    /// Get the current elevation as displayed in dwarf fortress
+    fn elevation(&mut self) -> dfhack_remote::Result<i32> {
+        let offset = self.elevation_offset()?;
+        let view_info = self.remote_fortress_reader().get_view_info()?;
+        Ok(view_info.view_pos_z() + offset)
+    }
+}
+
 /// Wrapper around dwarf fortress blocks to help access individual tile properties
 #[derive(Debug)]
 pub struct BlockTile<'a> {

@@ -1,15 +1,31 @@
 use crate::{
-    context::DFContext, dot_vox_builder::DotVoxBuilder, map::Map, palette::Palette, rfr,
-    voxel::CollectVoxels, BASE, HEIGHT,
+    calendar::TimeOfTheYear,
+    context::DFContext,
+    dot_vox_builder::DotVoxBuilder,
+    map::Map,
+    palette::Palette,
+    rfr::{self, DFHackExt},
+    voxel::CollectVoxels,
+    FromDwarfFortress, BASE, HEIGHT,
 };
 use anyhow::Result;
 use dot_vox::DotVoxData;
+use serde::{Deserialize, Serialize};
 use std::{
+    fmt::Display,
     fs::File,
-    ops::Range,
+    ops::{Add, Range, Sub},
     path::PathBuf,
     sync::mpsc::{Receiver, Sender},
+    thread::JoinHandle,
 };
+
+pub struct ExportParams {
+    pub elevation_low: Elevation,
+    pub elevation_high: Elevation,
+    pub time: TimeOfTheYear,
+    pub path: PathBuf,
+}
 
 pub struct ExportSettings {
     pub year_tick: i32,
@@ -62,9 +78,41 @@ impl Progress {
 
 pub struct Cancel;
 
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct Elevation(pub i32);
+
+impl FromDwarfFortress for Elevation {
+    fn read_from_df(&mut self, df: &mut dfhack_remote::Client) -> Result<()> {
+        self.0 = df.elevation()?;
+        Ok(())
+    }
+}
+
+impl Add<i32> for Elevation {
+    type Output = Self;
+
+    fn add(self, rhs: i32) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl Sub<i32> for Elevation {
+    type Output = Self;
+
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
+impl Display for Elevation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub fn try_export_voxels(
     client: &mut dfhack_remote::Client,
-    z_range: Range<i32>,
+    elevation_range: Range<Elevation>,
     year_tick: i32,
     path: PathBuf,
     progress_tx: Sender<Progress>,
@@ -73,6 +121,8 @@ pub fn try_export_voxels(
     progress_tx.send(Progress::undetermined("Starting..."))?;
     client.remote_fortress_reader().set_pause_state(true)?;
     client.remote_fortress_reader().reset_map_hashes()?;
+    let z_offset = client.elevation_offset()?;
+    let z_range = (elevation_range.start.0 - z_offset)..(elevation_range.end.0 - z_offset);
     let settings = ExportSettings { year_tick };
     let context = DFContext::try_new(client, settings)?;
     let block_list_iterator =
@@ -197,24 +247,45 @@ fn add_voxels<T>(
     }
 }
 
-pub fn export_voxels(
-    client: &mut dfhack_remote::Client,
-    elevation_range: Range<i32>,
-    yeah_tick: i32,
-    path: PathBuf,
+pub fn try_run_export(
+    params: ExportParams,
+    df: Option<dfhack_remote::Client>,
     progress_tx: Sender<Progress>,
     cancel_rx: Receiver<Cancel>,
-) {
-    if let Err(err) = try_export_voxels(
-        client,
-        elevation_range,
-        yeah_tick,
-        path,
-        progress_tx.clone(),
+) -> Result<()> {
+    let mut df = match df {
+        Some(df) => df,
+        None => dfhack_remote::connect()?,
+    };
+
+    let ticks = params.time.ticks(&mut df);
+
+    try_export_voxels(
+        &mut df,
+        params.elevation_low..(params.elevation_high + 1),
+        ticks,
+        params.path,
+        progress_tx,
         cancel_rx,
-    ) {
-        progress_tx
-            .send(Progress::error(err))
-            .expect("Failed to report error");
-    }
+    )?;
+
+    Ok(())
+}
+
+/// Run the export in a background thread, returns progress and cancellation channels
+pub fn run_export_thread(
+    params: ExportParams,
+    df: Option<dfhack_remote::Client>,
+) -> (Receiver<Progress>, Sender<Cancel>, JoinHandle<()>) {
+    let (progress_tx, progress_rx) = std::sync::mpsc::channel();
+    let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
+
+    let handle = std::thread::spawn(move || {
+        if let Err(err) = try_run_export(params, df, progress_tx.clone(), cancel_rx) {
+            // eat send error
+            let _ = progress_tx.send(Progress::error(err));
+        }
+    });
+
+    (progress_rx, cancel_tx, handle)
 }
