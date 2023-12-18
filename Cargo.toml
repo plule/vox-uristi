@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 bitflags = "2.4.1"
-clap = { version = "4.4.8", features = ["derive"], optional = true }
+clap = { version = "4.4.11", features = ["derive"], optional = true }
 dfhack-remote = "0.8.0"
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1.0.1"
@@ -29,7 +29,7 @@ reqwest = { version = "0.11.22", features = ["blocking", "json"] }
 rfd = "0.12.1"
 rgb = "0.8.37"
 semver = "1.0.20"
-serde = "1.0.192"
+serde = "1.0.193"
 serde_yaml = "0.9.27"
 strum = { version = "0.25.0", features = ["derive"] }
 tracing-subscriber = "0.3.18"
