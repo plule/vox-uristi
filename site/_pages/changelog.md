@@ -4,6 +4,10 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.13
+
+- Vox Uristi can now be used with GUI
+
 ### v0.12
 
 ![v0.12](/vox-uristi/assets/changelog/v0.12.png)
