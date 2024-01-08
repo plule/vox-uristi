@@ -36,7 +36,7 @@ reqwest = { version = "0.11.23", features = [
 ], optional = true }
 rfd = { version = "0.12.1", optional = true }
 rgb = "0.8.37"
-semver = "1.0.20"
+semver = "1.0.21"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_yaml = "0.9.30"
 strum = { version = "0.25.0", features = ["derive"] }
