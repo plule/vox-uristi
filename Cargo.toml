@@ -37,7 +37,7 @@ reqwest = { version = "0.11.23", features = [
 rfd = { version = "0.12.1", optional = true }
 rgb = "0.8.37"
 semver = "1.0.20"
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 serde_yaml = "0.9.29"
 strum = { version = "0.25.0", features = ["derive"] }
 tracing-subscriber = "0.3.18"
