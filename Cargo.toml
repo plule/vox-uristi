@@ -11,7 +11,7 @@ self-update = ["reqwest"]
 
 
 [dependencies]
-anyhow = "1.0.78"
+anyhow = "1.0.79"
 bitflags = "2.4.1"
 clap = { version = "4.4.16", features = ["derive"] }
 dfhack-remote = "0.8.0"
