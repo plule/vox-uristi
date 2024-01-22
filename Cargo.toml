@@ -12,7 +12,7 @@ self-update = ["reqwest"]
 
 [dependencies]
 anyhow = "1.0.79"
-bitflags = "2.4.1"
+bitflags = "2.4.2"
 clap = { version = "4.4.18", features = ["derive"] }
 dfhack-remote = "0.8.0"
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
