@@ -38,7 +38,7 @@ rfd = { version = "0.13.0", optional = true }
 rgb = "0.8.37"
 semver = "1.0.21"
 serde = { version = "1.0.193", features = ["derive"] }
-serde_yaml = "0.9.30"
+serde_yaml = "0.9.31"
 strum = { version = "0.25.0", features = ["derive"] }
 tracing-subscriber = "0.3.18"
 
