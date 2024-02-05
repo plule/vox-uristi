@@ -21,7 +21,7 @@ eframe = { version = "0.24.1", features = ["persistence"], optional = true }
 glob-match = "0.2.1"
 include_dir = { version = "0.7.3", features = ["glob"] }
 indicatif = "0.17.7"
-itertools = "0.12.0"
+itertools = "0.12.1"
 lazy_static = "1.4.0"
 num-integer = "0.1.45"
 num_enum = "0.7.2"
