@@ -20,7 +20,7 @@ easy-ext = "1.0.1"
 eframe = { version = "0.26.0", features = ["persistence"], optional = true }
 glob-match = "0.2.1"
 include_dir = { version = "0.7.3", features = ["glob"] }
-indicatif = "0.17.7"
+indicatif = "0.17.8"
 itertools = "0.12.1"
 lazy_static = "1.4.0"
 num-integer = "0.1.45"
