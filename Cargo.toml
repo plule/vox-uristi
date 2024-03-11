@@ -39,7 +39,7 @@ rgb = "0.8.37"
 semver = "1.0.22"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_yaml = "0.9.32"
-strum = { version = "0.26.1", features = ["derive"] }
+strum = { version = "0.26.2", features = ["derive"] }
 tracing-subscriber = "0.3.18"
 
 [build-dependencies]
