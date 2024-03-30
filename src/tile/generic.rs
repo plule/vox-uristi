@@ -1,8 +1,9 @@
 use super::tree::{connectivity_from_direction_string, PlantPart};
 use crate::{
+    context::DFContext,
     direction::{Neighbouring8Flat, Rotating},
     map::Map,
-    palette::{DefaultMaterials, Material},
+    palette::{DefaultMaterials, EffectiveMaterial, Material},
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
@@ -59,7 +60,7 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn collect_structure_voxels(&self, map: &Map) -> Vec<Voxel> {
+    fn collect_structure_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
         let mut rng = self.stable_rng();
         let coords = self.coords();
         let tile_type = self.tile_type();
@@ -93,13 +94,20 @@ pub impl BlockTile<'_> {
             TiletypeShape::WALL => {
                 let c = map
                     .neighbouring_8flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
-                let void = Material::Default(DefaultMaterials::Hidden);
+                // Inside the wall is either the "hidden" material, or the material of the wall if
+                // it's transparent. It could be worth avoiding building the whole effective mat here...
+                let effective_material = EffectiveMaterial::from_material(&material, context);
+                let inside = if effective_material.transparency.is_some() {
+                    material.clone()
+                } else {
+                    Material::Default(DefaultMaterials::Hidden)
+                };
                 let slice = [
                     [c.n && c.w && c.nw, c.n, c.n && c.e && c.ne],
                     [c.w, true, c.e],
                     [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
                 ]
-                .map(|col| col.map(|b| Some(if b { void.clone() } else { material.clone() })));
+                .map(|col| col.map(|b| Some(if b { inside.clone() } else { material.clone() })));
                 let shape = [
                     slice.clone(),
                     slice.clone(),

@@ -34,18 +34,16 @@ pub fn voxels_from_shape<const B: usize, const H: usize>(
     shape: Box3D<Option<Material>, B, H>,
     origin: DFCoords,
 ) -> Vec<Voxel> {
-    let mut ret = Vec::new();
-    for x in 0..B {
-        for y in 0..B {
-            for z in 0..H {
+    (0..B)
+        .cartesian_product(0..B)
+        .cartesian_product(0..H)
+        .filter_map(|((x, y), z)| {
+            shape[H - 1 - z][y][x].as_ref().map(|material| {
                 let coords = VoxelCoords::from_df(origin, x, y, z);
-                if let Some(material) = &shape[H - 1 - z][y][x] {
-                    ret.push(Voxel::new(coords, material.clone()))
-                }
-            }
-        }
-    }
-    ret
+                Voxel::new(coords, material.clone())
+            })
+        })
+        .collect()
 }
 
 pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(

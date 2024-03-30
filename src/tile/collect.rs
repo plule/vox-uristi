@@ -56,7 +56,7 @@ impl CollectVoxels for BlockTile<'_> {
             }
             _ => {
                 // classic tile structure
-                voxels.extend(self.collect_structure_voxels(map));
+                voxels.extend(self.collect_structure_voxels(map, context));
             }
         }
 
