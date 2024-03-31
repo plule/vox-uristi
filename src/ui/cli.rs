@@ -57,7 +57,7 @@ pub fn export(
                     pb.println(message);
                     pb.set_length(total as u64);
                 }
-                export::Progress::Progress {
+                export::Progress::Update {
                     message: _,
                     curr,
                     total: _,

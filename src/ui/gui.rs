@@ -78,7 +78,7 @@ impl App {
                         ui.label(*message);
                         ui.spinner();
                     }
-                    Progress::Progress {
+                    Progress::Update {
                         message,
                         curr,
                         total,

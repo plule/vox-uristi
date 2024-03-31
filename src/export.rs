@@ -39,7 +39,7 @@ pub enum Progress {
         message: &'static str,
         total: usize,
     },
-    Progress {
+    Update {
         message: &'static str,
         curr: usize,
         total: usize,
@@ -60,7 +60,7 @@ impl Progress {
     }
 
     pub fn update(message: &'static str, curr: usize, total: usize) -> Self {
-        Self::Progress {
+        Self::Update {
             message,
             curr,
             total,
