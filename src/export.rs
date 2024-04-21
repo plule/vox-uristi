@@ -1,11 +1,12 @@
 use crate::{
     calendar::TimeOfTheYear,
     context::DFContext,
+    coords::WithBoundingBox,
     dot_vox_builder::DotVoxBuilder,
     map::Map,
     palette::Palette,
     rfr::{self, DFHackExt},
-    voxel::CollectVoxels,
+    voxel::{CollectObjectVoxels, CollectTerrainVoxels},
     FromDwarfFortress, BASE, HEIGHT,
 };
 use anyhow::Result;
@@ -173,7 +174,7 @@ pub fn try_export_voxels(
         progress_tx.send(Progress::update("Building tiles...", curr, total))?;
 
         for building in &tile.buildings {
-            add_voxels(
+            add_object_voxels(
                 *building,
                 &map,
                 &context,
@@ -186,7 +187,7 @@ pub fn try_export_voxels(
         }
 
         if let Some(df_tile) = &tile.block_tile {
-            add_voxels(
+            add_terrain_voxels(
                 df_tile,
                 &map,
                 &context,
@@ -199,7 +200,7 @@ pub fn try_export_voxels(
         }
 
         for flow in &tile.flows {
-            add_voxels(
+            add_terrain_voxels(
                 flow,
                 &map,
                 &context,
@@ -224,7 +225,7 @@ pub fn try_export_voxels(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn add_voxels<T>(
+fn add_terrain_voxels<T>(
     item: &T,
     map: &Map,
     context: &DFContext,
@@ -234,16 +235,33 @@ fn add_voxels<T>(
     max_y: i32,
     min_z: i32,
 ) where
-    T: CollectVoxels,
+    T: CollectTerrainVoxels,
 {
-    for voxel in item.collect_voxels(map, context) {
+    for voxel in item.collect_terrain_voxels(map, context) {
         let color = palette.get_palette_color(&voxel.material, context);
-        vox.add_voxel(
-            voxel.coord.x - max_x,
-            max_y - voxel.coord.y,
-            voxel.coord.z - min_z,
-            color,
-        );
+        vox.add_terrain_voxel(voxel.coord.into_global_coords(max_x, max_y, min_z), color);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_object_voxels<T>(
+    item: &T,
+    map: &Map,
+    context: &DFContext,
+    palette: &mut Palette,
+    vox: &mut DotVoxBuilder,
+    max_x: i32,
+    max_y: i32,
+    min_z: i32,
+) where
+    T: CollectObjectVoxels + WithBoundingBox,
+{
+    if let Some(model) = item.build(map, context, palette) {
+        let coords = item
+            .bounding_box()
+            .dot_vox_coords()
+            .into_global_coords(max_x, max_y, min_z);
+        vox.insert_model(coords, model);
     }
 }
 

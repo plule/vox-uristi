@@ -1,11 +1,29 @@
-mod collect;
 use crate::{
-    context::DFContext, direction::DirectionFlat, map::Map, palette::Material, prefabs,
-    voxel::FromPrefab, DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords,
+    context::DFContext,
+    coords::WithBoundingBox,
+    direction::DirectionFlat,
+    map::Map,
+    palette::Palette,
+    prefabs::{self, FromPrefab},
+    voxel::CollectObjectVoxels,
+    DFBoundingBox, DFCoords, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
-use std::ops::Sub;
+
+impl CollectObjectVoxels for BuildingInstance {
+    fn build(
+        &self,
+        map: &Map,
+        context: &DFContext,
+        palette: &mut Palette,
+    ) -> Option<dot_vox::Model> {
+        let building_definition =
+            context.building_definition(self.building_type.get_or_default())?;
+        let prefab = crate::prefabs::MODELS.building(building_definition.id())?;
+        Some(self.apply_prefab(prefab, map, context, palette))
+    }
+}
 
 impl WithDFCoords for BuildingInstance {
     fn coords(&self) -> DFCoords {
@@ -45,14 +63,6 @@ impl FromPrefab for BuildingInstance {
             .and_then(|dir| DirectionFlat::maybe_from_df(&dir))
     }
 
-    fn bounding_box(&self) -> DFBoundingBox {
-        DFBoundingBox::new(
-            self.pos_x_min()..=self.pos_x_max(),
-            self.pos_y_min()..=self.pos_y_max(),
-            self.pos_z_min()..=self.pos_z_max(),
-        )
-    }
-
     fn self_connectivity(
         &self,
         map: &Map,
@@ -68,24 +78,18 @@ impl FromPrefab for BuildingInstance {
     }
 }
 
-#[ext(BuildingInstanceExt)]
-pub impl BuildingInstance {
-    fn material(&self) -> Material {
-        Material::Generic(self.material.get_or_default().to_owned())
-    }
-
-    fn origin(&self) -> DFCoords {
-        DFCoords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
-    }
-
-    fn dimension(&self) -> (i32, i32) {
-        let bounding_box = self.bounding_box();
-        (
-            1 + bounding_box.x.end() - bounding_box.x.start(),
-            1 + bounding_box.y.end() - bounding_box.y.start(),
+impl WithBoundingBox for BuildingInstance {
+    fn bounding_box(&self) -> DFBoundingBox {
+        DFBoundingBox::new(
+            self.pos_x_min()..=self.pos_x_max(),
+            self.pos_y_min()..=self.pos_y_max(),
+            self.pos_z_min()..=self.pos_z_max(),
         )
     }
+}
 
+#[ext(BuildingInstanceExt)]
+pub impl BuildingInstance {
     fn is_floor(&self, context: &DFContext) -> bool {
         if let Some(def) = context.building_definition(&self.building_type) {
             if let Some(prefab) = prefabs::MODELS.building(def.id()) {
@@ -101,17 +105,5 @@ pub impl BuildingInstance {
         } else {
             false
         }
-    }
-}
-
-impl Sub<VoxelCoords> for DFBoundingBox {
-    type Output = DFBoundingBox;
-
-    fn sub(self, rhs: VoxelCoords) -> Self::Output {
-        Self::new(
-            (self.x.start() - rhs.x)..=(self.x.end() - rhs.x),
-            (self.y.start() - rhs.y)..=(self.y.end() - rhs.y),
-            (self.z.start() - rhs.z)..=(self.z.end() - rhs.z),
-        )
     }
 }

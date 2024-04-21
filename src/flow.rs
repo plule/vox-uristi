@@ -4,14 +4,14 @@ use crate::{
     context::DFContext,
     palette::{DefaultMaterials, Material},
     shape::{self, slice_empty, Box3D},
-    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    voxel::{voxels_from_uniform_shape, CollectTerrainVoxels, Voxel},
     DFCoords, StableRng, WithDFCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType};
 use rand::Rng;
 
-impl CollectVoxels for &FlowInfo {
-    fn collect_voxels(&self, _map: &crate::map::Map, _context: &DFContext) -> Vec<Voxel> {
+impl CollectTerrainVoxels for &FlowInfo {
+    fn collect_terrain_voxels(&self, _map: &crate::map::Map, _context: &DFContext) -> Vec<Voxel> {
         let coords = self.coords();
         let mut rng = self.stable_rng();
         let shape: Box3D<bool> = match self.type_() {

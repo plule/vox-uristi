@@ -1,10 +1,10 @@
 use crate::{
     building::BuildingInstanceExt,
     context::DFContext,
+    coords::WithBoundingBox,
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile, BuildingExt, BuildingFlags},
     tile::BlockTileExt,
-    voxel::FromPrefab,
     DFCoords, IsSomeAnd, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, FlowInfo, MapBlock};
@@ -51,8 +51,16 @@ impl<'a> Map<'a> {
                 continue;
             }
 
+            // HACK: buildings are iterated twice under unknown circumstances?
+            if self
+                .with_building
+                .contains(&building.bounding_box().origin())
+            {
+                continue;
+            }
+
             self.tiles
-                .entry(building.origin())
+                .entry(building.bounding_box().origin())
                 .or_default()
                 .buildings
                 .push(building);

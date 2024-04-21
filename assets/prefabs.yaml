@@ -53,3 +53,7 @@ buildings:
   TractionBench:
     model: Table.vox
     connectivity: !SelfRemovesLayer 1
+  GrateFloor:
+    is_floor: true
+  BarsFloor:
+    is_floor: true

@@ -9,12 +9,12 @@ use crate::{
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
     shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
-    voxel::{voxels_from_uniform_shape, CollectVoxels, Voxel},
+    voxel::{voxels_from_uniform_shape, CollectTerrainVoxels, Voxel},
     GenBoolSafe, StableRng, VoxelCoords,
 };
 
-impl CollectVoxels for BlockTile<'_> {
-    fn collect_voxels(
+impl CollectTerrainVoxels for BlockTile<'_> {
+    fn collect_terrain_voxels(
         &self,
         map: &crate::map::Map,
         context: &DFContext,

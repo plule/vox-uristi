@@ -2,7 +2,7 @@ use std::{
     collections::hash_map::DefaultHasher,
     fmt::Display,
     hash::{Hash, Hasher},
-    ops::{Add, RangeInclusive},
+    ops::{Add, RangeInclusive, Sub},
 };
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -12,6 +12,9 @@ use crate::StableRng;
 pub const BASE: usize = 3;
 pub const HEIGHT: usize = 5;
 
+/// Global voxel coordinates
+/// They are in voxel (multiplied by BASE and HEIGHT), but
+/// they are oriented like in dwarf fortress and not fitted to zero
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct VoxelCoords {
     pub x: i32,
@@ -19,8 +22,33 @@ pub struct VoxelCoords {
     pub z: i32,
 }
 
+/// Coordinates in the global dot_vox space
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub struct DotVoxModelCoords {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+}
+
+impl DotVoxModelCoords {
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+}
+
+/// Voxel coordinates in a model
+pub struct DotVoxSubCoords {
+    pub x: u8,
+    pub y: u8,
+    pub z: u8,
+}
+
 pub trait WithVoxelCoords {
     fn coords(&self) -> VoxelCoords;
+}
+
+pub trait WithBoundingBox {
+    fn bounding_box(&self) -> DFBoundingBox;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -28,6 +56,11 @@ pub struct DFCoords {
     pub x: i32,
     pub y: i32,
     pub z: i32,
+}
+
+pub struct DFDimensions {
+    pub x: u32,
+    pub y: u32,
 }
 
 pub trait WithDFCoords {
@@ -60,17 +93,31 @@ impl VoxelCoords {
         )
     }
 
-    pub fn from_prefab_voxel(
-        origin: DFCoords,
-        prefab_model: &dot_vox::Model,
-        voxel: &dot_vox::Voxel,
-    ) -> Self {
-        let max_y = prefab_model.size.y as i32 - 1;
-        Self::new(
-            origin.x * BASE as i32 + voxel.x as i32,
-            origin.y * BASE as i32 + (max_y - voxel.y as i32),
-            origin.z * HEIGHT as i32 + voxel.z as i32,
-        )
+    pub fn into_global_coords(self, max_x: i32, max_y: i32, min_z: i32) -> DotVoxModelCoords {
+        DotVoxModelCoords {
+            x: self.x - max_x,
+            y: max_y - self.y,
+            z: self.z - min_z,
+        }
+    }
+}
+
+impl From<DFDimensions> for dot_vox::Size {
+    fn from(value: DFDimensions) -> Self {
+        Self {
+            x: value.x * BASE as u32,
+            y: value.y * BASE as u32,
+            z: HEIGHT as u32,
+        }
+    }
+}
+
+impl From<dot_vox::Size> for DFDimensions {
+    fn from(value: dot_vox::Size) -> Self {
+        Self {
+            x: value.x / BASE as u32,
+            y: value.y / BASE as u32,
+        }
     }
 }
 
@@ -149,6 +196,36 @@ impl DFBoundingBox {
 
     pub fn contains(&self, coords: DFCoords) -> bool {
         self.x.contains(&coords.x) && self.y.contains(&coords.y) && self.z.contains(&coords.z)
+    }
+
+    pub fn dimension(&self) -> DFDimensions {
+        DFDimensions {
+            x: (1 + self.x.end() - self.x.start()) as u32,
+            y: (1 + self.y.end() - self.y.start()) as u32,
+        }
+    }
+
+    pub fn dot_vox_coords(&self) -> VoxelCoords {
+        let size = dot_vox::Size::from(self.dimension());
+        VoxelCoords::from_df(
+            self.origin(),
+            // Weird centering due to model coordinates beeing centered
+            (size.x as usize) / 2,
+            (size.y as usize - 1) / 2,
+            2,
+        )
+    }
+}
+
+impl Sub<VoxelCoords> for DFBoundingBox {
+    type Output = DFBoundingBox;
+
+    fn sub(self, rhs: VoxelCoords) -> Self::Output {
+        Self::new(
+            (self.x.start() - rhs.x)..=(self.x.end() - rhs.x),
+            (self.y.start() - rhs.y)..=(self.y.end() - rhs.y),
+            (self.z.start() - rhs.z)..=(self.z.end() - rhs.z),
+        )
     }
 }
 
