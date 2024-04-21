@@ -43,15 +43,13 @@ it.
 - ☑ Detailed materials (metallic, water, light emission)
 - ☑ Building content (books on bookcases, items in workshops, ...)
 - ☑ Spatters
+- ☑ Export the buildings as individual selectable objects
 - ☐ Item state (opened/closed)
 - ☐ Rails
-- ☐ Advanced export parameters (enable/disable/control amount of folliage,
-  roughness voxels, building content...)
+- ☐ Split the export into useful layers
 
 ### Maybe some day
 
-- ☐ Export the buildings as individual selectable objects
-- ☐ Export the z levels as separate layers
 - ☐ Export some animations
 - ☐ Customizable models
 - ☐ Support different voxel resolutions

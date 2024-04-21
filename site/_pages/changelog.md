@@ -4,9 +4,16 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.14
+
+![v0.12](/vox-uristi/assets/changelog/v0.14.png)
+
+- The exported buildings are now individual objects that can be moved and rotated
+- Transparent walls don't have anymore an opaque black layer inside
+
 ### v0.13
 
-- Vox Uristi can now be used with GUI
+- Vox Uristi can now be used in command line
 
 ### v0.12
 
