@@ -1,4 +1,6 @@
-use dot_vox::{Dict, DotVoxData, Frame, Material, Model, SceneNode, ShapeModel, Size, Voxel};
+use dot_vox::{
+    Dict, DotVoxData, Frame, Layer, Material, Model, SceneNode, ShapeModel, Size, Voxel,
+};
 use easy_ext::ext;
 use num_integer::div_mod_floor;
 use std::collections::HashMap;
@@ -56,7 +58,12 @@ impl Default for DotVoxBuilder {
                     })
                     .collect(),
                 scenes: root_scene_graph,
-                layers: vec![],
+                layers: vec![
+                    Layer {
+                        attributes: Default::default(),
+                    };
+                    32
+                ],
             },
             terrain_models: Default::default(),
         }
@@ -65,15 +72,25 @@ impl Default for DotVoxBuilder {
 
 impl DotVoxBuilder {
     /// Insert a model in the .vox data, return its index
-    pub fn insert_model(&mut self, coordinates: DotVoxModelCoords, model: Model) -> usize {
+    pub fn insert_model(
+        &mut self,
+        coordinates: DotVoxModelCoords,
+        model: Model,
+        layer: u32,
+        name: Option<String>,
+    ) -> usize {
         let index = self.data.models.len();
         self.data.models.push(model);
 
         // Insert the transform and shape nodes for this model in the scene graph
         let transform_node = self.data.scenes.len();
         let shape_node = transform_node + 1;
+        let mut transform_attributes = Dict::new();
+        if let Some(name) = name {
+            transform_attributes.insert("_name".to_string(), name);
+        }
         self.data.scenes.push(SceneNode::Transform {
-            attributes: Default::default(),
+            attributes: transform_attributes,
             frames: vec![Frame {
                 attributes: Dict::from([(
                     "_t".to_string(),
@@ -81,7 +98,7 @@ impl DotVoxBuilder {
                 )]),
             }],
             child: shape_node as u32,
-            layer_id: 0,
+            layer_id: layer,
         });
         self.data.scenes.push(SceneNode::Shape {
             attributes: Default::default(),
@@ -124,6 +141,8 @@ impl DotVoxBuilder {
                         coords.z * MODEL_EDGE + MODEL_EDGE / 2,
                     ),
                     model,
+                    0,
+                    Some(format!("terrain_{}_{}_{}", coords.x, coords.y, coords.z)),
                 );
                 self.terrain_models.insert(coords, index);
                 index

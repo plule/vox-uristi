@@ -5,7 +5,7 @@ use crate::{
     map::Map,
     palette::Palette,
     prefabs::{self, FromPrefab},
-    voxel::CollectObjectVoxels,
+    voxel::{self, CollectObjectVoxels, VoxelObject},
     DFBoundingBox, DFCoords, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, MatPair};
@@ -17,11 +17,17 @@ impl CollectObjectVoxels for BuildingInstance {
         map: &Map,
         context: &DFContext,
         palette: &mut Palette,
-    ) -> Option<dot_vox::Model> {
+    ) -> Option<voxel::VoxelObject> {
         let building_definition =
             context.building_definition(self.building_type.get_or_default())?;
+
+        let name = building_definition.name();
         let prefab = crate::prefabs::MODELS.building(building_definition.id())?;
-        Some(self.apply_prefab(prefab, map, context, palette))
+        Some(VoxelObject {
+            model: self.apply_prefab(prefab, map, context, palette),
+            name: Some(name.to_owned()),
+            layer: 1,
+        })
     }
 }
 

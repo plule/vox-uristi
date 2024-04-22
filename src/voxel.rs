@@ -21,8 +21,15 @@ impl Voxel {
     }
 }
 
+/// A dwarf fortress object represented as voxels
+pub struct VoxelObject {
+    pub model: Model,
+    pub name: Option<String>,
+    pub layer: u32,
+}
+
 pub trait CollectObjectVoxels {
-    fn build(&self, map: &Map, context: &DFContext, palette: &mut Palette) -> Option<Model>;
+    fn build(&self, map: &Map, context: &DFContext, palette: &mut Palette) -> Option<VoxelObject>;
 }
 
 pub trait CollectTerrainVoxels {

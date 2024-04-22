@@ -256,12 +256,12 @@ fn add_object_voxels<T>(
 ) where
     T: CollectObjectVoxels + WithBoundingBox,
 {
-    if let Some(model) = item.build(map, context, palette) {
+    if let Some(obj) = item.build(map, context, palette) {
         let coords = item
             .bounding_box()
             .dot_vox_coords()
             .into_global_coords(max_x, max_y, min_z);
-        vox.insert_model(coords, model);
+        vox.insert_model(coords, obj.model, obj.layer, obj.name);
     }
 }
 
