@@ -84,6 +84,7 @@ pub enum Command {
     Dev(DevCommand),
 }
 
+#[cfg(feature = "dev")]
 #[derive(Subcommand)]
 pub enum DevCommand {
     /// Regen test data from df
@@ -97,6 +98,12 @@ pub enum DevCommand {
     DumpLists {
         /// Destination folder
         destination: PathBuf,
+    },
+    /// Set the view elevation
+    SetElevation {
+        /// Elevation to set
+        #[arg(allow_hyphen_values = true)]
+        elevation: i32,
     },
 }
 

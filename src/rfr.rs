@@ -29,6 +29,21 @@ pub impl dfhack_remote::Client {
         let view_info = self.remote_fortress_reader().get_view_info()?;
         Ok(view_info.view_pos_z() + offset)
     }
+
+    fn set_elevation(&mut self, elevation: i32) -> dfhack_remote::Result<()> {
+        let offset = self.elevation_offset()?;
+        let scriptlet = format!(
+            r#"df.global.window_z={}
+df.global.game.minimap.mustmake=1
+df.global.game.minimap.update=1"#,
+            elevation - offset
+        );
+        let mut req = dfhack_remote::CoreRunCommandRequest::new();
+        req.set_command("lua".to_string());
+        req.arguments.push(scriptlet);
+        self.core().run_command(req)?;
+        Ok(())
+    }
 }
 
 /// Wrapper around dwarf fortress blocks to help access individual tile properties
