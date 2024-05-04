@@ -261,7 +261,7 @@ fn add_object_voxels<T>(
             .bounding_box()
             .dot_vox_coords()
             .into_global_coords(max_x, max_y, min_z);
-        vox.insert_model(coords, obj.model, obj.layer, obj.name);
+        vox.insert_model_shape(coords, obj.model, obj.layer, obj.name);
     }
 }
 
