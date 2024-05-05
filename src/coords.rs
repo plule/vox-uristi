@@ -7,7 +7,7 @@ use std::{
 
 use rand::{rngs::StdRng, SeedableRng};
 
-use crate::StableRng;
+use crate::{block::BLOCK_SIZE, StableRng};
 
 pub const BASE: usize = 3;
 pub const HEIGHT: usize = 5;
@@ -23,7 +23,7 @@ pub struct VoxelCoords {
 }
 
 /// Coordinates in the global dot_vox space
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Hash, PartialEq, Eq)]
 pub struct DotVoxModelCoords {
     pub x: i32,
     pub y: i32,
@@ -36,26 +36,58 @@ impl DotVoxModelCoords {
     }
 }
 
-/// Voxel coordinates in a model
-pub struct DotVoxSubCoords {
-    pub x: u8,
-    pub y: u8,
-    pub z: u8,
-}
-
-pub trait WithVoxelCoords {
-    fn coords(&self) -> VoxelCoords;
-}
-
 pub trait WithBoundingBox {
     fn bounding_box(&self) -> DFBoundingBox;
 }
 
+/// Coordinates of a tile in the dwarf fortress map
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct DFCoords {
+pub struct DFMapCoords {
     pub x: i32,
     pub y: i32,
     pub z: i32,
+}
+
+/// Coordinates of a tile in a dwarf fortress block
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct DFLocalCoords {
+    pub x: u8,
+    pub y: u8,
+}
+
+impl DFLocalCoords {
+    pub fn new(x: u8, y: u8) -> Self {
+        Self { x, y }
+    }
+
+    pub fn from_index(index: usize) -> Self {
+        Self {
+            x: (index % BLOCK_SIZE) as u8,
+            y: (index / BLOCK_SIZE) as u8,
+        }
+    }
+}
+
+/// Coordinates of a block in the dwarf fortress map
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct DFBlockCoords {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+}
+
+impl DFBlockCoords {
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+}
+
+impl Add<DFLocalCoords> for DFBlockCoords {
+    type Output = DFMapCoords;
+
+    fn add(self, rhs: DFLocalCoords) -> Self::Output {
+        DFMapCoords::new(self.x + rhs.x as i32, self.y + rhs.y as i32, self.z)
+    }
 }
 
 pub struct DFDimensions {
@@ -64,7 +96,11 @@ pub struct DFDimensions {
 }
 
 pub trait WithDFCoords {
-    fn coords(&self) -> DFCoords;
+    fn coords(&self) -> DFMapCoords;
+}
+
+pub trait WithBlockCoords {
+    fn block_coords(&self) -> DFBlockCoords;
 }
 
 #[derive(Debug, Clone)]
@@ -74,7 +110,7 @@ pub struct DFBoundingBox {
     pub z: RangeInclusive<i32>,
 }
 
-impl DFCoords {
+impl DFMapCoords {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
     }
@@ -85,7 +121,15 @@ impl VoxelCoords {
         Self { x, y, z }
     }
 
-    pub fn from_df(origin: DFCoords, sub_x: usize, sub_y: usize, sub_z: usize) -> Self {
+    pub fn from_local_df(origin: DFLocalCoords, sub_x: usize, sub_y: usize, sub_z: usize) -> Self {
+        Self::new(
+            origin.x as i32 * BASE as i32 + sub_x as i32,
+            BLOCK_SIZE as i32 - origin.y as i32 * BASE as i32 + sub_y as i32,
+            sub_z as i32,
+        )
+    }
+
+    pub fn from_df(origin: DFMapCoords, sub_x: usize, sub_y: usize, sub_z: usize) -> Self {
         Self::new(
             origin.x * BASE as i32 + sub_x as i32,
             origin.y * BASE as i32 + sub_y as i32,
@@ -98,6 +142,14 @@ impl VoxelCoords {
             x: self.x - max_x,
             y: max_y - self.y,
             z: self.z - min_z,
+        }
+    }
+
+    pub fn into_layer_global_coords(self, max_x: i32, max_y: i32) -> DotVoxModelCoords {
+        DotVoxModelCoords {
+            x: self.x - max_x,
+            y: max_y - self.y,
+            z: 0,
         }
     }
 }
@@ -121,7 +173,7 @@ impl From<dot_vox::Size> for DFDimensions {
     }
 }
 
-impl From<dfhack_remote::Coord> for DFCoords {
+impl From<dfhack_remote::Coord> for DFMapCoords {
     fn from(value: dfhack_remote::Coord) -> Self {
         Self {
             x: value.x(),
@@ -131,7 +183,7 @@ impl From<dfhack_remote::Coord> for DFCoords {
     }
 }
 
-impl From<&dfhack_remote::Coord> for DFCoords {
+impl From<&dfhack_remote::Coord> for DFMapCoords {
     fn from(value: &dfhack_remote::Coord) -> Self {
         Self {
             x: value.x(),
@@ -157,19 +209,19 @@ impl<'a> Add<VoxelCoords> for &'a VoxelCoords {
     }
 }
 
-impl Add<DFCoords> for DFCoords {
-    type Output = DFCoords;
+impl Add<DFMapCoords> for DFMapCoords {
+    type Output = DFMapCoords;
 
-    fn add(self, rhs: DFCoords) -> Self::Output {
+    fn add(self, rhs: DFMapCoords) -> Self::Output {
         Self::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
     }
 }
 
-impl<'a> Add<DFCoords> for &'a DFCoords {
-    type Output = DFCoords;
+impl<'a> Add<DFMapCoords> for &'a DFMapCoords {
+    type Output = DFMapCoords;
 
-    fn add(self, rhs: DFCoords) -> Self::Output {
-        DFCoords::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    fn add(self, rhs: DFMapCoords) -> Self::Output {
+        DFMapCoords::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
     }
 }
 
@@ -179,7 +231,7 @@ impl Display for VoxelCoords {
     }
 }
 
-impl Display for DFCoords {
+impl Display for DFMapCoords {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({},{},{})", self.x, self.y, self.z)
     }
@@ -190,11 +242,11 @@ impl DFBoundingBox {
         Self { x, y, z }
     }
 
-    pub fn origin(&self) -> DFCoords {
-        DFCoords::new(*self.x.start(), *self.y.start(), *self.z.start())
+    pub fn origin(&self) -> DFMapCoords {
+        DFMapCoords::new(*self.x.start(), *self.y.start(), *self.z.start())
     }
 
-    pub fn contains(&self, coords: DFCoords) -> bool {
+    pub fn contains(&self, coords: DFMapCoords) -> bool {
         self.x.contains(&coords.x) && self.y.contains(&coords.y) && self.z.contains(&coords.z)
     }
 
@@ -213,6 +265,17 @@ impl DFBoundingBox {
             (size.x as usize) / 2,
             (size.y as usize - 1) / 2,
             2,
+        )
+    }
+
+    pub fn layer_dot_vox_coords(&self) -> VoxelCoords {
+        let size = dot_vox::Size::from(self.dimension());
+        VoxelCoords::from_df(
+            self.origin(),
+            // Weird centering due to model coordinates beeing centered
+            (size.x as usize) / 2,
+            (size.y as usize - 1) / 2,
+            0,
         )
     }
 }

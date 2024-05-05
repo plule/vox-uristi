@@ -3,22 +3,27 @@ use crate::{
     context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat},
     map::Map,
-    palette::{DefaultMaterials, Material},
+    palette::{DefaultMaterials, Material, Palette},
     rfr::{BlockTile, ConsoleColor, GetTiming},
     shape::{self, Box3D},
-    voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
+    voxel::{voxels_from_shape, voxels_from_uniform_shape},
     IsSomeAnd, StableRng,
 };
 use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
+use itertools::Itertools;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
-    fn collect_tree_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
+    fn build_trees(
+        &self,
+        map: &Map,
+        context: &DFContext,
+        palette: &mut Palette,
+    ) -> Vec<dot_vox::Voxel> {
         let mut rng = self.stable_rng();
         let part = self.plant_part();
-        let coords = self.coords();
         let tile_type = self.tile_type();
         let plant_index = self.material().mat_index();
         let alive = !matches!(
@@ -45,10 +50,14 @@ pub impl BlockTile<'_> {
         };
         let mut voxels = voxels_from_uniform_shape(
             self.plant_structure_shape(&part, map),
-            coords,
-            structure_material,
+            self.local_coords(),
+            palette.get(&structure_material, context),
         );
-        let growth_materials = self.growth_materials(&part, context);
+        let growth_materials = self
+            .growth_materials(&part, context)
+            .into_iter()
+            .map(|m| palette.get(&m, context))
+            .collect_vec();
         if alive && !growth_materials.is_empty() {
             let growth = BlockTile::growth_shape(&part, &mut rng).map(|slice| {
                 slice.map(|col| {
@@ -61,14 +70,14 @@ pub impl BlockTile<'_> {
                     })
                 })
             });
-            voxels.append(&mut voxels_from_shape(growth, coords));
+            voxels.append(&mut voxels_from_shape(growth, self.local_coords()));
         }
         voxels
     }
 
     fn plant_structure_shape(&self, part: &PlantPart, map: &Map) -> Box3D<bool> {
         let mut r = self.stable_rng();
-        let coords = self.coords();
+        let coords = self.global_coords();
         let origin = self.tree_origin();
         // The horror
         match part {
@@ -116,9 +125,9 @@ pub impl BlockTile<'_> {
             ],
             PlantPart::HeavyBranch { connectivity: from } => {
                 // light branch connections
-                let to = map.neighbouring(coords, |tile| {
-                    tile.block_tile.some_and(|tile| {
-                        tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
+                let to = map.neighbouring(coords, |o| {
+                    o.block_tile.some_and(|t| {
+                        t.tree_origin() == origin && t.plant_part() == PlantPart::LightBranch
                     })
                 });
 
@@ -150,11 +159,11 @@ pub impl BlockTile<'_> {
                 shape
             }
             PlantPart::LightBranch => {
-                let c = map.neighbouring(coords, |tile| {
-                    tile.block_tile.some_and(|tile| {
-                        tile.tree_origin() == origin
+                let c = map.neighbouring(coords, |o| {
+                    o.block_tile.some_and(|t| {
+                        t.tree_origin() == origin
                             && matches!(
-                                tile.plant_part(),
+                                t.plant_part(),
                                 PlantPart::HeavyBranch { .. } | PlantPart::Twig
                             )
                     })
@@ -191,9 +200,9 @@ pub impl BlockTile<'_> {
                 shape
             }
             PlantPart::Twig => {
-                let c = map.neighbouring(coords, |tile| {
-                    tile.block_tile.some_and(|tile| {
-                        tile.tree_origin() == origin && tile.plant_part() == PlantPart::LightBranch
+                let c = map.neighbouring(coords, |o| {
+                    o.block_tile.some_and(|t| {
+                        t.tree_origin() == origin && t.plant_part() == PlantPart::LightBranch
                     })
                 });
 

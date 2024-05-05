@@ -1,21 +1,13 @@
-use dot_vox::{
-    Dict, DotVoxData, Frame, Layer, Material, Model, SceneNode, ShapeModel, Size, Voxel,
-};
+use dot_vox::{Dict, DotVoxData, Frame, Layer, Material, Model, SceneNode, ShapeModel, Size};
 use easy_ext::ext;
-use num_integer::div_mod_floor;
-use std::collections::HashMap;
 
-use crate::coords::{DotVoxModelCoords, DotVoxSubCoords};
+use crate::coords::DotVoxModelCoords;
 
-const MODEL_EDGE: i32 = 256;
 pub struct DotVoxBuilder {
     // The .vox raw data
-    data: DotVoxData,
+    pub data: DotVoxData,
 
-    // List of model indexes in the .vox associated with terrain coordinates
-    terrain_models: HashMap<DotVoxModelCoords, usize>,
-
-    root_group: usize,
+    pub root_group: usize,
 }
 
 impl Default for DotVoxBuilder {
@@ -68,13 +60,19 @@ impl Default for DotVoxBuilder {
                     32
                 ],
             },
-            terrain_models: Default::default(),
             root_group: 1,
         }
     }
 }
 
 impl DotVoxBuilder {
+    pub fn new_model(size: Size) -> Model {
+        Model {
+            size,
+            voxels: vec![],
+        }
+    }
+
     fn insert_model(&mut self, model: Model) -> usize {
         let index = self.data.models.len();
         self.data.models.push(model);
@@ -123,6 +121,32 @@ impl DotVoxBuilder {
         group_index
     }
 
+    pub fn insert_group_node_simple(
+        &mut self,
+        parent_group: usize,
+        name: impl Into<String>,
+        coordinates: Option<DotVoxModelCoords>,
+        layer_id: u32,
+    ) -> usize {
+        let transform_attributes = Dict::from([("_name".to_string(), name.into())]);
+        let mut frames = Vec::new();
+        if let Some(coordinates) = coordinates {
+            frames.push(Frame {
+                attributes: Dict::from([(
+                    "_t".to_string(),
+                    format!("{} {} {}", coordinates.x, coordinates.y, coordinates.z),
+                )]),
+            });
+        }
+        self.insert_group_node(
+            parent_group,
+            transform_attributes,
+            frames,
+            layer_id,
+            Default::default(),
+        )
+    }
+
     // Insert the transform/shape pair, return the shape index
     pub fn insert_shape_node(
         &mut self,
@@ -153,27 +177,29 @@ impl DotVoxBuilder {
     /// Insert a model in the .vox data, return its index
     pub fn insert_model_shape(
         &mut self,
-        coordinates: DotVoxModelCoords,
+        parent_group: usize,
+        coordinates: Option<DotVoxModelCoords>,
         model: Model,
         layer_id: u32,
-        name: Option<String>,
+        name: impl Into<String>,
     ) -> usize {
         let index = self.insert_model(model);
 
         // Insert the transform and shape nodes for this model in the scene graph
-        let mut transform_attributes = Dict::new();
-        if let Some(name) = name {
-            transform_attributes.insert("_name".to_string(), name);
-        }
-        self.insert_shape_node(
-            self.root_group,
-            transform_attributes,
-            vec![Frame {
+        let transform_attributes = Dict::from([("_name".to_string(), name.into())]);
+        let mut frames = Vec::new();
+        if let Some(coordinates) = coordinates {
+            frames.push(Frame {
                 attributes: Dict::from([(
                     "_t".to_string(),
                     format!("{} {} {}", coordinates.x, coordinates.y, coordinates.z),
                 )]),
-            }],
+            });
+        }
+        self.insert_shape_node(
+            parent_group,
+            transform_attributes,
+            frames,
             layer_id,
             Default::default(),
             vec![ShapeModel {
@@ -184,45 +210,16 @@ impl DotVoxBuilder {
         index
     }
 
-    fn get_or_insert_terrain_model(&mut self, coords: DotVoxModelCoords) -> &mut Model {
-        let index = self
-            .terrain_models
-            .get(&coords)
-            .copied()
-            .unwrap_or_else(|| {
-                let model = Model {
-                    size: Size {
-                        x: MODEL_EDGE as u32,
-                        y: MODEL_EDGE as u32,
-                        z: MODEL_EDGE as u32,
-                    },
-                    voxels: vec![],
-                };
-                let index = self.insert_model_shape(
-                    DotVoxModelCoords::new(
-                        coords.x * MODEL_EDGE + MODEL_EDGE / 2,
-                        coords.y * MODEL_EDGE + MODEL_EDGE / 2,
-                        coords.z * MODEL_EDGE + MODEL_EDGE / 2,
-                    ),
-                    model,
-                    0,
-                    Some(format!("terrain_{}_{}_{}", coords.x, coords.y, coords.z)),
-                );
-                self.terrain_models.insert(coords, index);
-                index
-            });
-        &mut self.data.models[index]
-    }
-
-    pub fn add_terrain_voxel(&mut self, coords: DotVoxModelCoords, i: u8) {
-        let (model_coords, sub) = in_terrain_chunk_coords(coords);
-        let model = self.get_or_insert_terrain_model(model_coords);
-        model.voxels.push(Voxel {
-            x: sub.x,
-            y: sub.y,
-            z: sub.z,
-            i,
-        });
+    pub fn insert_model_and_group(
+        &mut self,
+        parent_group: usize,
+        name: impl Into<String>,
+        model: Model,
+        layer_id: u32,
+    ) {
+        let name: String = name.into();
+        let group = self.insert_group_node_simple(parent_group, name.clone(), None, layer_id);
+        self.insert_model_shape(group, None, model, layer_id, name);
     }
 }
 
@@ -230,22 +227,6 @@ impl From<DotVoxBuilder> for DotVoxData {
     fn from(value: DotVoxBuilder) -> Self {
         value.data
     }
-}
-
-/// Split the given coordinates into the terrain chunk model coordinates and the coordinates within the model
-fn in_terrain_chunk_coords(coords: DotVoxModelCoords) -> (DotVoxModelCoords, DotVoxSubCoords) {
-    let (x, sub_x) = div_mod_floor(coords.x, MODEL_EDGE);
-    let (y, sub_y) = div_mod_floor(coords.y, MODEL_EDGE);
-    let (z, sub_z) = div_mod_floor(coords.z, MODEL_EDGE);
-
-    (
-        DotVoxModelCoords { x, y, z },
-        DotVoxSubCoords {
-            x: sub_x as u8,
-            y: sub_y as u8,
-            z: sub_z as u8,
-        },
-    )
 }
 
 #[ext(MaterialExt)]
@@ -444,12 +425,7 @@ mod tests {
             size: Size { x: 1, y: 1, z: 1 },
             voxels: vec![],
         };
-        let index = builder.insert_model_shape(
-            DotVoxModelCoords::new(0, 0, 0),
-            model,
-            0,
-            Some("test".to_string()),
-        );
+        let index = builder.insert_model_shape(builder.root_group, None, model, 0, "test");
         match &builder.data.scenes[builder.root_group] {
             SceneNode::Group { children, .. } => {
                 assert_eq!(1, children.len());

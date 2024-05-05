@@ -35,7 +35,6 @@ pub struct PrefabConfig {
     pub orientation: Option<OrientationMode>,
     pub content: Option<ContentMode>,
     pub connectivity: Option<Connectivity>,
-    pub is_floor: Option<bool>,
 }
 
 #[derive(Default)]
@@ -56,7 +55,6 @@ pub struct Prefab {
     pub orientation: OrientationMode,
     pub content: ContentMode,
     pub connectivity: Connectivity,
-    pub is_floor: bool,
 }
 
 #[derive(Debug, Deserialize, Default, Clone, Copy)]
@@ -131,7 +129,6 @@ pub fn load_models() -> Prefabs {
                 cfg.orientation = cfg.orientation.or(glob_cfg.orientation);
                 cfg.connectivity = cfg.connectivity.or(glob_cfg.connectivity);
                 cfg.content = cfg.content.or(glob_cfg.content);
-                cfg.is_floor = cfg.is_floor.or(glob_cfg.is_floor);
             }
         }
 
@@ -156,7 +153,6 @@ pub fn load_models() -> Prefabs {
                 orientation: cfg.orientation.unwrap_or_default(),
                 content: cfg.content.unwrap_or_default(),
                 connectivity: cfg.connectivity.unwrap_or_default(),
-                is_floor: cfg.is_floor.unwrap_or(false),
             },
         );
     }
@@ -172,26 +168,28 @@ pub trait FromPrefab: WithBoundingBox {
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_>;
     fn df_orientation(&self) -> Option<DirectionFlat>;
     fn self_connectivity(&self, map: &Map, context: &DFContext) -> NeighbouringFlat<bool>;
+}
 
-    fn apply_prefab(
+impl Prefab {
+    pub fn build(
         &self,
-        prefab: &Prefab,
+        obj: &impl FromPrefab,
         map: &Map,
         context: &DFContext,
         palette: &mut Palette,
     ) -> Model {
         let mut model = Model {
-            size: prefab.model.size,
-            voxels: prefab.model.voxels.clone(),
+            size: self.model.size,
+            voxels: self.model.voxels.clone(),
         };
 
-        let bounding_box = self.bounding_box();
+        let bounding_box = obj.bounding_box();
         let coords = bounding_box.origin();
 
         // Rotate the model based on the preference
-        match prefab.orientation {
+        match self.orientation {
             OrientationMode::FromDwarfFortress => {
-                if let Some(direction) = self.df_orientation() {
+                if let Some(direction) = obj.df_orientation() {
                     model = model.looking_at(direction);
                 }
             }
@@ -200,7 +198,7 @@ pub trait FromPrefab: WithBoundingBox {
             }
             OrientationMode::FacingChairOrAgainstWall => {
                 let c = map
-                    .neighbouring_flat(coords, |n| n.buildings.iter().any(|b| b.is_chair(context)));
+                    .neighbouring_flat(coords, |o| o.buildings.iter().any(|b| b.is_chair(context)));
                 if let Some(chair_direction) = c.directions().first() {
                     model = model.looking_at(*chair_direction)
                 } else {
@@ -211,25 +209,25 @@ pub trait FromPrefab: WithBoundingBox {
 
         // Collect the material palette
         // First 8 materials of the palette are the build materials
-        let build_materials = self
+        let build_materials = obj
             .build_materials()
             .map(|m| Some(Material::Generic(m)))
             .chain(repeat(None))
             .take(8);
         // Next 8 materials are the darker versions
-        let dark_build_materials = self
+        let dark_build_materials = obj
             .build_materials()
             .map(|m| Some(Material::DarkGeneric(m)))
             .chain(repeat(None))
             .take(8);
         // Next 8 are the content materials
-        let content_materials = match prefab.content {
-            ContentMode::Unique => self
+        let content_materials = match self.content {
+            ContentMode::Unique => obj
                 .content_materials()
                 .unique_by(|m| (m.mat_index(), m.mat_type()))
                 .take(8)
                 .collect_vec(),
-            ContentMode::All => self.content_materials().take(8).collect_vec(),
+            ContentMode::All => obj.content_materials().take(8).collect_vec(),
         }
         .into_iter()
         .map(|m| Some(Material::Generic(m)))
@@ -252,7 +250,7 @@ pub trait FromPrefab: WithBoundingBox {
         model.voxels.retain_mut(|voxel| {
             let material = materials.get(voxel.i as usize).cloned().flatten();
             if let Some(material) = material {
-                voxel.i = palette.get_palette_color(&material, context);
+                voxel.i = palette.get(&material, context);
                 true
             } else {
                 false
@@ -319,13 +317,12 @@ pub trait FromPrefab: WithBoundingBox {
         model.voxels = voxels;
 
         // Apply connectivity rules
-        match prefab.connectivity {
+        match self.connectivity {
             Connectivity::None => {}
             Connectivity::SelfOrWall => {
-                let wall_connectivity = map.neighbouring_flat(coords, |tile| {
-                    tile.block_tile.some_and(|tile| tile.is_wall())
-                });
-                let neighbour_connectivity = self.self_connectivity(map, context);
+                let wall_connectivity =
+                    map.neighbouring_flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
+                let neighbour_connectivity = obj.self_connectivity(map, context);
                 let c = wall_connectivity | neighbour_connectivity;
                 let cx = (model.size.x / 2) as i32;
                 let cy = (model.size.y / 2) as i32;
@@ -349,7 +346,7 @@ pub trait FromPrefab: WithBoundingBox {
                 });
             }
             Connectivity::SelfRemovesLayer(layer) => {
-                let neighbour_connectivity = self.self_connectivity(map, context);
+                let neighbour_connectivity = obj.self_connectivity(map, context);
                 let self_connectivity =
                     NeighbouringFlat::new(|dir| bounding_box.contains(coords + dir));
                 let c = neighbour_connectivity | self_connectivity;

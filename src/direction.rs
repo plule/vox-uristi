@@ -1,4 +1,4 @@
-use crate::{DFCoords, WithDFCoords};
+use crate::{DFMapCoords, WithDFCoords};
 use dfhack_remote::BuildingDirection;
 use std::ops::BitOr;
 
@@ -110,7 +110,7 @@ impl BitOr for NeighbouringFlat<bool> {
 }
 
 impl WithDFCoords for Direction8Flat {
-    fn coords(&self) -> DFCoords {
+    fn coords(&self) -> DFMapCoords {
         match self {
             Direction8Flat::North => Direction::North.coords(),
             Direction8Flat::NorthEast => Direction::North.coords() + Direction::East.coords(),
@@ -125,25 +125,25 @@ impl WithDFCoords for Direction8Flat {
 }
 
 impl WithDFCoords for Direction {
-    fn coords(&self) -> DFCoords {
+    fn coords(&self) -> DFMapCoords {
         match self {
-            Direction::Above => DFCoords::new(0, 0, 1),
-            Direction::Below => DFCoords::new(0, 0, -1),
-            Direction::North => DFCoords::new(0, -1, 0),
-            Direction::South => DFCoords::new(0, 1, 0),
-            Direction::East => DFCoords::new(1, 0, 0),
-            Direction::West => DFCoords::new(-1, 0, 0),
+            Direction::Above => DFMapCoords::new(0, 0, 1),
+            Direction::Below => DFMapCoords::new(0, 0, -1),
+            Direction::North => DFMapCoords::new(0, -1, 0),
+            Direction::South => DFMapCoords::new(0, 1, 0),
+            Direction::East => DFMapCoords::new(1, 0, 0),
+            Direction::West => DFMapCoords::new(-1, 0, 0),
         }
     }
 }
 
 impl WithDFCoords for DirectionFlat {
-    fn coords(&self) -> DFCoords {
+    fn coords(&self) -> DFMapCoords {
         match self {
-            DirectionFlat::North => DFCoords::new(0, -1, 0),
-            DirectionFlat::South => DFCoords::new(0, 1, 0),
-            DirectionFlat::East => DFCoords::new(1, 0, 0),
-            DirectionFlat::West => DFCoords::new(-1, 0, 0),
+            DirectionFlat::North => DFMapCoords::new(0, -1, 0),
+            DirectionFlat::South => DFMapCoords::new(0, 1, 0),
+            DirectionFlat::East => DFMapCoords::new(1, 0, 0),
+            DirectionFlat::West => DFMapCoords::new(-1, 0, 0),
         }
     }
 }

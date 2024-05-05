@@ -1,4 +1,7 @@
-use crate::DFCoords;
+use crate::{
+    coords::{DFBlockCoords, DFLocalCoords, WithBlockCoords},
+    DFMapCoords,
+};
 use anyhow::Result;
 use bitflags::bitflags;
 use dfhack_remote::{
@@ -43,6 +46,12 @@ df.global.game.minimap.update=1"#,
         req.arguments.push(scriptlet);
         self.core().run_command(req)?;
         Ok(())
+    }
+}
+
+impl WithBlockCoords for MapBlock {
+    fn block_coords(&self) -> DFBlockCoords {
+        DFBlockCoords::new(self.map_x(), self.map_y(), self.map_z())
     }
 }
 
@@ -179,13 +188,12 @@ impl<'a> BlockTile<'a> {
         }
     }
 
-    pub fn coords(&self) -> DFCoords {
-        let (sub_x, sub_y) = (self.index % 16, self.index / 16);
-        DFCoords::new(
-            self.block.map_x() + sub_x as i32,
-            self.block.map_y() + sub_y as i32,
-            self.block.map_z(),
-        )
+    pub fn local_coords(&self) -> DFLocalCoords {
+        DFLocalCoords::from_index(self.index)
+    }
+
+    pub fn global_coords(&self) -> DFMapCoords {
+        self.block.block_coords() + self.local_coords()
     }
 
     pub fn hidden(&self) -> bool {
@@ -228,18 +236,18 @@ impl<'a> BlockTile<'a> {
         self.block.water_salt[self.index]
     }
 
-    pub fn tree(&self) -> DFCoords {
-        DFCoords::new(
+    pub fn tree(&self) -> DFMapCoords {
+        DFMapCoords::new(
             self.block.tree_x[self.index],
             self.block.tree_y[self.index],
             self.block.tree_z[self.index],
         )
     }
 
-    pub fn tree_origin(&self) -> DFCoords {
-        let coord = self.coords();
+    pub fn tree_origin(&self) -> DFMapCoords {
+        let coord = self.global_coords();
         let tree = self.tree();
-        DFCoords::new(coord.x - tree.x, coord.y - tree.y, coord.z + tree.z)
+        DFMapCoords::new(coord.x - tree.x, coord.y - tree.y, coord.z + tree.z)
     }
 
     pub fn tree_percent(&self) -> i32 {
@@ -265,7 +273,7 @@ impl<'a> BlockTile<'a> {
 
 impl Display for BlockTile<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "coords: {}", self.coords())?;
+        writeln!(f, "coords: {}", self.global_coords())?;
         writeln!(f, "hidden: {}", self.hidden())?;
         writeln!(f, "water: {}", self.water())?;
         writeln!(f, "tile_type: {}", self.tile_type())?;

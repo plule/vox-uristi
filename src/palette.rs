@@ -88,7 +88,7 @@ pub struct Palette {
 }
 
 impl Palette {
-    pub fn get_palette_color(&mut self, material: &Material, context: &DFContext) -> u8 {
+    pub fn get(&mut self, material: &Material, context: &DFContext) -> u8 {
         if let Some(from_cache) = self.material_cache.get(material) {
             return *from_cache;
         }

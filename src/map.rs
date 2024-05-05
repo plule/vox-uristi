@@ -1,45 +1,54 @@
 use crate::{
-    building::BuildingInstanceExt,
     context::DFContext,
-    coords::WithBoundingBox,
+    coords::{WithBlockCoords, WithBoundingBox},
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     rfr::{self, BlockTile, BuildingExt, BuildingFlags},
     tile::BlockTileExt,
-    DFCoords, IsSomeAnd, WithDFCoords,
+    DFMapCoords, IsSomeAnd,
 };
-use dfhack_remote::{BuildingInstance, FlowInfo, MapBlock};
+use dfhack_remote::{BuildingInstance, MapBlock};
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+
+#[derive(Default)]
+pub struct LayerData<'a> {
+    pub blocks: Vec<&'a MapBlock>,
+    pub buildings: Vec<&'a BuildingInstance>,
+}
 
 /// Intermediary format between DF and voxels
 #[derive(Default)]
 pub struct Map<'a> {
-    pub tiles: HashMap<DFCoords, Tile<'a>>,
-    pub with_building: HashSet<DFCoords>,
+    /// The map stored by layers
+    pub layers: HashMap<i32, LayerData<'a>>,
+    /// Quick access to the occupancy data of each tile, for connectivity checks
+    pub occupancy: HashMap<DFMapCoords, Occupancy<'a>>,
+    /// True if the building where added already, they are streamed multiple times
+    buildings_added: bool,
 }
 
 #[derive(Default)]
-pub struct Tile<'a> {
+pub struct Occupancy<'a> {
     pub block_tile: Option<BlockTile<'a>>,
     pub buildings: Vec<&'a BuildingInstance>,
-    pub flows: Vec<&'a FlowInfo>,
 }
 
 impl<'a> Map<'a> {
     pub fn add_block(&mut self, block: &'a MapBlock, context: &'a DFContext) {
-        for flow in &block.flows {
-            self.tiles
-                .entry(flow.coords())
-                .or_default()
-                .flows
-                .push(flow);
+        if !self.buildings_added {
+            self.add_buildings(&block.buildings);
         }
-        for tile in rfr::TileIterator::new(block, &context.tile_types) {
-            let coords = tile.coords();
-            self.tiles.entry(coords).or_default().block_tile = Some(tile);
-        }
+        let layer = block.block_coords().z;
+        self.layers.entry(layer).or_default().blocks.push(block);
 
-        for building in &block.buildings {
+        for tile in rfr::TileIterator::new(block, &context.tile_types) {
+            let coords = tile.global_coords();
+            self.occupancy.entry(coords).or_default().block_tile = Some(tile);
+        }
+    }
+
+    fn add_buildings(&mut self, buildings: &'a Vec<BuildingInstance>) {
+        for building in buildings {
             if building.room.is_some() {
                 continue;
             }
@@ -51,16 +60,8 @@ impl<'a> Map<'a> {
                 continue;
             }
 
-            // HACK: buildings are iterated twice under unknown circumstances?
-            if self
-                .with_building
-                .contains(&building.bounding_box().origin())
-            {
-                continue;
-            }
-
-            self.tiles
-                .entry(building.bounding_box().origin())
+            self.layers
+                .entry(building.bounding_box().origin().z)
                 .or_default()
                 .buildings
                 .push(building);
@@ -69,76 +70,56 @@ impl<'a> Map<'a> {
             for x in bounding_box.x.clone() {
                 for y in bounding_box.y.clone() {
                     for z in bounding_box.z.clone() {
-                        self.with_building.insert(DFCoords::new(x, y, z));
+                        self.occupancy
+                            .entry(DFMapCoords::new(x, y, z))
+                            .or_default()
+                            .buildings
+                            .push(building);
                     }
                 }
             }
         }
-    }
-
-    pub fn remove_overlapping_floors(&mut self, context: &DFContext) {
-        let mut coords = Vec::new();
-        for tile in self.tiles.values() {
-            for building in &tile.buildings {
-                if building.is_floor(context) {
-                    let bounding_box = building.bounding_box();
-                    for x in bounding_box.x.clone() {
-                        for y in bounding_box.y.clone() {
-                            for z in bounding_box.z.clone() {
-                                coords.push(DFCoords::new(x, y, z));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for coord in coords {
-            if let Some(tile) = self.tiles.get_mut(&coord) {
-                // TODO: we are also erasing the flows here, would be good not to
-                tile.block_tile = None;
-            }
-        }
+        self.buildings_added = true;
     }
 
     /// Compute a given function for all the neighbours including above and below
-    pub fn neighbouring<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring<T>
+    pub fn neighbouring<F, T>(&self, coords: DFMapCoords, func: F) -> Neighbouring<T>
     where
-        F: Fn(&Tile<'a>) -> T,
+        F: Fn(&Occupancy<'a>) -> T,
     {
-        let default = Tile::default();
+        let default = Occupancy::default();
         Neighbouring::new(|direction| {
             let neighbour = coords + direction;
-            func(self.tiles.get(&neighbour).unwrap_or(&default))
+            func(self.occupancy.get(&neighbour).unwrap_or(&default))
         })
     }
 
     /// Compute a given function for all the neighbours on the same plane
-    pub fn neighbouring_flat<F, T>(&self, coords: DFCoords, func: F) -> NeighbouringFlat<T>
+    pub fn neighbouring_flat<F, T>(&self, coords: DFMapCoords, func: F) -> NeighbouringFlat<T>
     where
-        F: Fn(&Tile<'a>) -> T,
+        F: Fn(&Occupancy<'a>) -> T,
     {
-        let default = Tile::default();
+        let default = Occupancy::default();
         NeighbouringFlat::new(|direction| {
             let neighbour = coords + direction;
-            func(self.tiles.get(&neighbour).unwrap_or(&default))
+            func(self.occupancy.get(&neighbour).unwrap_or(&default))
         })
     }
 
     /// Compute a given function for all the neighbours on the same plane
-    pub fn neighbouring_8flat<F, T>(&self, coords: DFCoords, func: F) -> Neighbouring8Flat<T>
+    pub fn neighbouring_8flat<F, T>(&self, coords: DFMapCoords, func: F) -> Neighbouring8Flat<T>
     where
-        F: Fn(&Tile<'a>) -> T,
+        F: Fn(&Occupancy<'a>) -> T,
     {
-        let default = Tile::default();
+        let default = Occupancy::default();
         Neighbouring8Flat::new(|direction| {
             let neighbour = coords + direction;
-            func(self.tiles.get(&neighbour).unwrap_or(&default))
+            func(self.occupancy.get(&neighbour).unwrap_or(&default))
         })
     }
 
     /// Find the most "wally" direction, ie the direction to put furniture against
-    pub fn wall_direction(&self, coords: DFCoords) -> DirectionFlat {
+    pub fn wall_direction(&self, coords: DFMapCoords) -> DirectionFlat {
         let z = coords.z;
         // there's likely a nice way to write that
         // N, E, S, W
@@ -151,8 +132,8 @@ impl<'a> Map<'a> {
             for y in -1..=1 {
                 // increase the "wallyness" of a direction by 1 for corners and by 4 for direct contact
                 let wally = self
-                    .tiles
-                    .get(&DFCoords::new(coords.x + x, coords.y + y, z))
+                    .occupancy
+                    .get(&DFMapCoords::new(coords.x + x, coords.y + y, z))
                     .some_and(|tile| tile.block_tile.some_and(|tile| tile.is_wall()));
                 if wally {
                     if x == -1 {
