@@ -3,7 +3,7 @@ use crate::{
     calendar::TimeOfTheYear,
     context::DFContext,
     coords::DotVoxModelCoords,
-    dot_vox_builder::DotVoxBuilder,
+    dot_vox_builder::{DotVoxBuilder, LayerId},
     map::Map,
     palette::Palette,
     rfr::{self, DFHackExt},
@@ -22,13 +22,13 @@ use std::{
     thread::JoinHandle,
 };
 
-pub const TERRAIN_LAYER: u32 = 1;
-pub const LIQUID_LAYER: u32 = 2;
-pub const SPATTER_LAYER: u32 = 3;
-pub const FIRE_LAYER: u32 = 4;
-pub const BUILDING_LAYER: u32 = 5;
-pub const FLOWS_LAYER: u32 = 6;
-pub const VOID_LAYER: u32 = 31;
+pub const TERRAIN_LAYER: LayerId = LayerId(1);
+pub const LIQUID_LAYER: LayerId = LayerId(2);
+pub const SPATTER_LAYER: LayerId = LayerId(3);
+pub const FIRE_LAYER: LayerId = LayerId(4);
+pub const BUILDING_LAYER: LayerId = LayerId(5);
+pub const FLOWS_LAYER: LayerId = LayerId(6);
+pub const VOID_LAYER: LayerId = LayerId(31);
 
 pub struct ExportParams {
     pub elevation_low: Elevation,
@@ -168,25 +168,25 @@ pub fn try_export_voxels(
     let mut vox = DotVoxBuilder::default();
 
     // Setup the layers
-    vox.data.layers[TERRAIN_LAYER as usize]
+    vox.data.layers[*TERRAIN_LAYER]
         .attributes
         .insert("_name".to_string(), "terrain".to_string());
-    vox.data.layers[LIQUID_LAYER as usize]
+    vox.data.layers[*LIQUID_LAYER]
         .attributes
         .insert("_name".to_string(), "liquids".to_string());
-    vox.data.layers[SPATTER_LAYER as usize]
+    vox.data.layers[*SPATTER_LAYER]
         .attributes
         .insert("_name".to_string(), "spatter".to_string());
-    vox.data.layers[FIRE_LAYER as usize]
+    vox.data.layers[*FIRE_LAYER]
         .attributes
         .insert("_name".to_string(), "fire".to_string());
-    vox.data.layers[BUILDING_LAYER as usize]
+    vox.data.layers[*BUILDING_LAYER]
         .attributes
         .insert("_name".to_string(), "buildings".to_string());
-    vox.data.layers[FLOWS_LAYER as usize]
+    vox.data.layers[*FLOWS_LAYER]
         .attributes
         .insert("_name".to_string(), "flows".to_string());
-    vox.data.layers[VOID_LAYER as usize]
+    vox.data.layers[*VOID_LAYER]
         .attributes
         .insert("_name".to_string(), "void".to_string());
 
@@ -207,7 +207,7 @@ pub fn try_export_voxels(
             vox.root_group,
             format!("elevation {}", layer + z_offset),
             Some(DotVoxModelCoords::new(0, 0, z)),
-            0,
+            LayerId(0),
         );
 
         for block in &layer_data.blocks {

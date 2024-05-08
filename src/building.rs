@@ -1,6 +1,11 @@
 use crate::{
-    context::DFContext, coords::WithBoundingBox, direction::DirectionFlat,
-    dot_vox_builder::DotVoxBuilder, export::BUILDING_LAYER, map::Map, prefabs::FromPrefab,
+    context::DFContext,
+    coords::WithBoundingBox,
+    direction::DirectionFlat,
+    dot_vox_builder::{DotVoxBuilder, NodeId},
+    export::BUILDING_LAYER,
+    map::Map,
+    prefabs::FromPrefab,
     DFBoundingBox, DFMapCoords, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, MatPair};
@@ -77,7 +82,7 @@ pub impl BuildingInstance {
         context: &DFContext,
         vox: &mut DotVoxBuilder,
         palette: &mut crate::palette::Palette,
-        group: usize,
+        group: NodeId,
     ) {
         if let Some((name, model)) = self.do_build(map, context, palette) {
             let coords = self

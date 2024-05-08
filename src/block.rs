@@ -4,7 +4,7 @@ use dot_vox::Size;
 use crate::{
     context::DFContext,
     coords::DotVoxModelCoords,
-    dot_vox_builder::DotVoxBuilder,
+    dot_vox_builder::{DotVoxBuilder, LayerId, NodeId},
     export::{FIRE_LAYER, FLOWS_LAYER, LIQUID_LAYER, SPATTER_LAYER, TERRAIN_LAYER, VOID_LAYER},
     flow::FlowInfoExt,
     rfr, WithDFCoords, BASE, HEIGHT,
@@ -24,7 +24,7 @@ pub fn build(
     context: &DFContext,
     vox: &mut DotVoxBuilder,
     palette: &mut crate::palette::Palette,
-    layer_group_id: usize,
+    layer_group_id: NodeId,
 ) {
     // Create the parent group for all the objects of this block
     let x = block.map_x() * BASE as i32 - context.max_vox_x() + 24;
@@ -34,7 +34,7 @@ pub fn build(
         layer_group_id,
         format!("block {} {}", block.map_x(), block.map_y(),),
         Some(DotVoxModelCoords::new(x, y, 0)),
-        0,
+        LayerId(0),
     );
 
     let mut terrain_model = DotVoxBuilder::new_model(BLOCK_VOX_SIZE);

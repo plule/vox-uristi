@@ -1,13 +1,41 @@
+use derive_more::Deref;
 use dot_vox::{Dict, DotVoxData, Frame, Layer, Material, Model, SceneNode, ShapeModel, Size};
 use easy_ext::ext;
 
 use crate::coords::DotVoxModelCoords;
 
+#[derive(Debug, Clone, Copy, Deref)]
+pub struct LayerId(pub usize);
+
+impl From<LayerId> for u32 {
+    fn from(value: LayerId) -> Self {
+        *value as u32
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deref)]
+pub struct NodeId(pub usize);
+
+impl From<NodeId> for u32 {
+    fn from(value: NodeId) -> Self {
+        *value as u32
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deref)]
+pub struct ModelId(pub usize);
+
+impl From<ModelId> for u32 {
+    fn from(value: ModelId) -> Self {
+        *value as u32
+    }
+}
+
 pub struct DotVoxBuilder {
     // The .vox raw data
     pub data: DotVoxData,
 
-    pub root_group: usize,
+    pub root_group: NodeId,
 }
 
 impl Default for DotVoxBuilder {
@@ -60,7 +88,7 @@ impl Default for DotVoxBuilder {
                     32
                 ],
             },
-            root_group: 1,
+            root_group: NodeId(1),
         }
     }
 }
@@ -73,24 +101,25 @@ impl DotVoxBuilder {
         }
     }
 
-    fn insert_model(&mut self, model: Model) -> usize {
+    fn insert_model(&mut self, model: Model) -> ModelId {
         let index = self.data.models.len();
         self.data.models.push(model);
-        index
-    }
-    fn insert_node(&mut self, node: SceneNode) -> usize {
-        let index = self.data.scenes.len();
-        self.data.scenes.push(node);
-        index
+        ModelId(index)
     }
 
-    fn insert_child_to_group(&mut self, parent_group: usize, child: u32) {
-        let parent_group = &mut self.data.scenes[parent_group];
+    fn insert_node(&mut self, node: SceneNode) -> NodeId {
+        let index = self.data.scenes.len();
+        self.data.scenes.push(node);
+        NodeId(index)
+    }
+
+    fn insert_child_to_group(&mut self, parent_group: NodeId, child: NodeId) {
+        let parent_group = &mut self.data.scenes[*parent_group];
         match parent_group {
             SceneNode::Group {
                 attributes: _,
                 children,
-            } => children.push(child),
+            } => children.push(child.into()),
             _ => panic!("Parent node is not a group"),
         }
     }
@@ -98,36 +127,36 @@ impl DotVoxBuilder {
     // Insert the transform/group pair, return the group index
     pub fn insert_group_node(
         &mut self,
-        parent_group: usize,
+        parent_group: NodeId,
         transform_attributes: Dict,
         frames: Vec<Frame>,
-        layer_id: u32,
+        layer_id: LayerId,
         group_attributes: Dict,
-    ) -> usize {
+    ) -> NodeId {
         // Insert the transform and group pair
-        let group_index = self.insert_node(SceneNode::Group {
+        let group_id = self.insert_node(SceneNode::Group {
             attributes: group_attributes,
             children: vec![],
         });
         let transform_index = self.insert_node(SceneNode::Transform {
             attributes: transform_attributes,
             frames,
-            child: group_index as u32,
-            layer_id,
+            child: group_id.into(),
+            layer_id: layer_id.into(),
         });
 
         // Add to the transform node to the parent group
-        self.insert_child_to_group(parent_group, transform_index as u32);
-        group_index
+        self.insert_child_to_group(parent_group, transform_index);
+        group_id
     }
 
     pub fn insert_group_node_simple(
         &mut self,
-        parent_group: usize,
+        parent_group: NodeId,
         name: impl Into<String>,
         coordinates: Option<DotVoxModelCoords>,
-        layer_id: u32,
-    ) -> usize {
+        layer_id: LayerId,
+    ) -> NodeId {
         let transform_attributes = Dict::from([("_name".to_string(), name.into())]);
         let mut frames = Vec::new();
         if let Some(coordinates) = coordinates {
@@ -150,13 +179,13 @@ impl DotVoxBuilder {
     // Insert the transform/shape pair, return the shape index
     pub fn insert_shape_node(
         &mut self,
-        parent_group: usize,
+        parent_group: NodeId,
         transform_attributes: Dict,
         frames: Vec<Frame>,
-        layer_id: u32,
+        layer_id: LayerId,
         shape_attributes: Dict,
         models: Vec<ShapeModel>,
-    ) -> usize {
+    ) -> NodeId {
         // Insert the transform and shape pair
         let shape_index = self.insert_node(SceneNode::Shape {
             attributes: shape_attributes,
@@ -165,24 +194,24 @@ impl DotVoxBuilder {
         let transform_index = self.insert_node(SceneNode::Transform {
             attributes: transform_attributes,
             frames,
-            child: shape_index as u32,
-            layer_id,
+            child: shape_index.into(),
+            layer_id: layer_id.into(),
         });
 
         // Add to the transform node to the parent group
-        self.insert_child_to_group(parent_group, transform_index as u32);
+        self.insert_child_to_group(parent_group, transform_index);
         shape_index
     }
 
     /// Insert a model in the .vox data, return its index
     pub fn insert_model_shape(
         &mut self,
-        parent_group: usize,
+        parent_group: NodeId,
         coordinates: Option<DotVoxModelCoords>,
         model: Model,
-        layer_id: u32,
+        layer_id: LayerId,
         name: impl Into<String>,
-    ) -> usize {
+    ) -> ModelId {
         let index = self.insert_model(model);
 
         // Insert the transform and shape nodes for this model in the scene graph
@@ -203,7 +232,7 @@ impl DotVoxBuilder {
             layer_id,
             Default::default(),
             vec![ShapeModel {
-                model_id: index as u32,
+                model_id: index.into(),
                 attributes: Default::default(),
             }],
         );
@@ -212,10 +241,10 @@ impl DotVoxBuilder {
 
     pub fn insert_model_and_group(
         &mut self,
-        parent_group: usize,
+        parent_group: NodeId,
         name: impl Into<String>,
         model: Model,
-        layer_id: u32,
+        layer_id: LayerId,
     ) {
         let name: String = name.into();
         let group = self.insert_group_node_simple(parent_group, name.clone(), None, layer_id);
@@ -323,7 +352,7 @@ mod tests {
             children: vec![],
         });
         assert!(matches!(
-            builder.data.scenes[group],
+            builder.data.scenes[*group],
             SceneNode::Group { .. }
         ));
         let transform = builder.insert_node(SceneNode::Transform {
@@ -331,23 +360,23 @@ mod tests {
             frames: vec![Frame {
                 attributes: Default::default(),
             }],
-            child: group as u32,
+            child: group.into(),
             layer_id: 0,
         });
         assert!(matches!(
-            builder.data.scenes[transform],
+            builder.data.scenes[*transform],
             SceneNode::Transform { .. }
         ));
 
-        builder.insert_child_to_group(group, transform as u32);
+        builder.insert_child_to_group(group, transform);
         assert_eq!(
-            builder.data.scenes[transform],
+            builder.data.scenes[*transform],
             SceneNode::Transform {
                 attributes: Default::default(),
                 frames: vec![Frame {
                     attributes: Default::default(),
                 }],
-                child: group as u32,
+                child: group.into(),
                 layer_id: 0,
             }
         );
@@ -362,11 +391,11 @@ mod tests {
             vec![Frame {
                 attributes: Default::default(),
             }],
-            0,
+            LayerId(0),
             Default::default(),
         );
         assert!(matches!(
-            builder.data.scenes[group],
+            builder.data.scenes[*group],
             SceneNode::Group { .. }
         ));
     }
@@ -385,17 +414,17 @@ mod tests {
             vec![Frame {
                 attributes: Default::default(),
             }],
-            0,
+            LayerId(0),
             Default::default(),
             vec![ShapeModel {
-                model_id: index as u32,
+                model_id: index.into(),
                 attributes: Default::default(),
             }],
         );
-        match &builder.data.scenes[shape] {
+        match &builder.data.scenes[*shape] {
             SceneNode::Shape { models, .. } => {
                 assert_eq!(1, models.len());
-                assert_eq!(index as u32, models[0].model_id);
+                assert_eq!(u32::from(index), models[0].model_id);
             }
             _ => panic!("Expected a shape node"),
         }
@@ -410,7 +439,7 @@ mod tests {
         };
         let index = builder.insert_model(model);
         assert_eq!(
-            builder.data.models[index],
+            builder.data.models[*index],
             Model {
                 size: Size { x: 1, y: 1, z: 1 },
                 voxels: vec![],
@@ -425,14 +454,14 @@ mod tests {
             size: Size { x: 1, y: 1, z: 1 },
             voxels: vec![],
         };
-        let index = builder.insert_model_shape(builder.root_group, None, model, 0, "test");
-        match &builder.data.scenes[builder.root_group] {
+        let index = builder.insert_model_shape(builder.root_group, None, model, LayerId(0), "test");
+        match &builder.data.scenes[*builder.root_group] {
             SceneNode::Group { children, .. } => {
                 assert_eq!(1, children.len());
             }
             _ => panic!("Expected a group node"),
         }
-        let inserted_model = &builder.data.models[index];
+        let inserted_model = &builder.data.models[*index];
         assert_eq!(
             inserted_model,
             &Model {

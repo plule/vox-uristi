@@ -4833,6 +4833,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.5.0",
  "clap",
+ "derive_more",
  "dfhack-remote",
  "dot_vox",
  "easy-ext",
