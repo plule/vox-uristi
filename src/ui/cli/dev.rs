@@ -4,13 +4,14 @@ use anyhow::Result;
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
 use protobuf::{Message, MessageDyn, MessageField};
 
-use crate::{rfr, DFCoords, DevCommand};
+use crate::{rfr, rfr::DFHackExt, DFCoords, DevCommand};
 
 pub fn run(cmd: DevCommand) -> Result<(), anyhow::Error> {
     match cmd {
         DevCommand::DumpLists { destination } => dump_lists(destination),
         DevCommand::Probe { destination } => probe(destination),
         DevCommand::RegenTestData => regen_test_data(),
+        DevCommand::SetElevation { elevation } => set_elevation(elevation),
     }
 }
 
@@ -147,5 +148,11 @@ fn dump(message: &dyn MessageDyn, folder: &Path, filename: &str) -> Result<()> {
     dest.push(filename);
     println!("{}", &dest.display());
     std::fs::write(dest, json)?;
+    Ok(())
+}
+
+pub fn set_elevation(elevation: i32) -> Result<(), anyhow::Error> {
+    let mut client = dfhack_remote::connect()?;
+    client.set_elevation(elevation)?;
     Ok(())
 }

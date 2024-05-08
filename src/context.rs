@@ -7,7 +7,7 @@ use dfhack_remote::{
 };
 use protobuf::MessageField;
 
-use crate::{export::ExportSettings, rfr::create_building_def_map};
+use crate::{block::BLOCK_SIZE, export::ExportSettings, rfr::create_building_def_map, BASE};
 
 pub struct DFContext {
     pub settings: ExportSettings,
@@ -60,5 +60,13 @@ impl DFContext {
             building_type.building_subtype(),
             building_type.building_custom(),
         ))
+    }
+
+    pub fn max_vox_x(&self) -> i32 {
+        (self.map_info.block_size_x() * (BLOCK_SIZE * BASE) as i32) / 2
+    }
+
+    pub fn max_vox_y(&self) -> i32 {
+        (self.map_info.block_size_y() * (BLOCK_SIZE * BASE) as i32) / 2
     }
 }

@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+mod block;
 mod building;
 mod calendar;
 mod context;
@@ -27,9 +28,7 @@ use export::Elevation;
 pub use traits::*;
 
 use clap::{Parser, Subcommand};
-pub use coords::{
-    DFBoundingBox, DFCoords, VoxelCoords, WithDFCoords, WithVoxelCoords, BASE, HEIGHT,
-};
+pub use coords::{DFBoundingBox, DFMapCoords, VoxelCoords, WithDFCoords, BASE, HEIGHT};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -84,6 +83,7 @@ pub enum Command {
     Dev(DevCommand),
 }
 
+#[cfg(feature = "dev")]
 #[derive(Subcommand)]
 pub enum DevCommand {
     /// Regen test data from df
@@ -97,6 +97,12 @@ pub enum DevCommand {
     DumpLists {
         /// Destination folder
         destination: PathBuf,
+    },
+    /// Set the view elevation
+    SetElevation {
+        /// Elevation to set
+        #[arg(allow_hyphen_values = true)]
+        elevation: i32,
     },
 }
 

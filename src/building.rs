@@ -1,33 +1,14 @@
 use crate::{
-    context::DFContext,
-    coords::WithBoundingBox,
-    direction::DirectionFlat,
-    map::Map,
-    palette::Palette,
-    prefabs::{self, FromPrefab},
-    voxel::CollectObjectVoxels,
-    DFBoundingBox, DFCoords, WithDFCoords,
+    context::DFContext, coords::WithBoundingBox, direction::DirectionFlat,
+    dot_vox_builder::DotVoxBuilder, export::BUILDING_LAYER, map::Map, prefabs::FromPrefab,
+    DFBoundingBox, DFMapCoords, WithDFCoords,
 };
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
 
-impl CollectObjectVoxels for BuildingInstance {
-    fn build(
-        &self,
-        map: &Map,
-        context: &DFContext,
-        palette: &mut Palette,
-    ) -> Option<dot_vox::Model> {
-        let building_definition =
-            context.building_definition(self.building_type.get_or_default())?;
-        let prefab = crate::prefabs::MODELS.building(building_definition.id())?;
-        Some(self.apply_prefab(prefab, map, context, palette))
-    }
-}
-
 impl WithDFCoords for BuildingInstance {
-    fn coords(&self) -> DFCoords {
-        DFCoords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
+    fn coords(&self) -> DFMapCoords {
+        DFMapCoords::new(self.pos_x_min(), self.pos_y_min(), self.pos_z_min())
     }
 }
 
@@ -70,10 +51,10 @@ impl FromPrefab for BuildingInstance {
     ) -> crate::direction::NeighbouringFlat<bool> {
         let def = context.building_definition(&self.building_type);
         let coords = self.coords();
-        map.neighbouring_flat(coords, |tile| {
-            tile.buildings
+        map.neighbouring_flat(coords, |o| {
+            o.buildings
                 .iter()
-                .any(|building| def == context.building_definition(&building.building_type))
+                .any(|b| def == context.building_definition(&b.building_type))
         })
     }
 }
@@ -90,13 +71,36 @@ impl WithBoundingBox for BuildingInstance {
 
 #[ext(BuildingInstanceExt)]
 pub impl BuildingInstance {
-    fn is_floor(&self, context: &DFContext) -> bool {
-        if let Some(def) = context.building_definition(&self.building_type) {
-            if let Some(prefab) = prefabs::MODELS.building(def.id()) {
-                return prefab.is_floor;
-            }
+    fn build(
+        &self,
+        map: &Map,
+        context: &DFContext,
+        vox: &mut DotVoxBuilder,
+        palette: &mut crate::palette::Palette,
+        group: usize,
+    ) {
+        if let Some((name, model)) = self.do_build(map, context, palette) {
+            let coords = self
+                .bounding_box()
+                .layer_dot_vox_coords()
+                .into_layer_global_coords(context.max_vox_x(), context.max_vox_y());
+
+            vox.insert_model_shape(group, Some(coords), model, BUILDING_LAYER, name);
         }
-        false
+    }
+    fn do_build(
+        &self,
+        map: &crate::map::Map,
+        context: &DFContext,
+        palette: &mut crate::palette::Palette,
+    ) -> Option<(String, dot_vox::Model)> {
+        let building_definition =
+            context.building_definition(self.building_type.get_or_default())?;
+
+        let name = building_definition.name();
+        let prefab = crate::prefabs::MODELS.building(building_definition.id())?;
+        let model = prefab.build(self, map, context, palette);
+        Some((name.to_string(), model))
     }
 
     fn is_chair(&self, context: &DFContext) -> bool {

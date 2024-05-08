@@ -1,45 +1,24 @@
-use crate::{
-    context::DFContext,
-    direction::Rotating,
-    map::Map,
-    palette::{Material, Palette},
-    shape::Box3D,
-    DFCoords, VoxelCoords,
-};
-use dot_vox::Model;
+use crate::{block::BLOCK_SIZE, coords::DFLocalCoords, direction::Rotating, shape::Box3D, BASE};
 use itertools::Itertools;
 
-#[derive(Debug)]
-pub struct Voxel {
-    pub coord: VoxelCoords,
-    pub material: Material,
-}
-
-impl Voxel {
-    pub fn new(coord: VoxelCoords, material: Material) -> Self {
-        Self { coord, material }
-    }
-}
-
-pub trait CollectObjectVoxels {
-    fn build(&self, map: &Map, context: &DFContext, palette: &mut Palette) -> Option<Model>;
-}
-
-pub trait CollectTerrainVoxels {
-    fn collect_terrain_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel>;
-}
-
 pub fn voxels_from_shape<const B: usize, const H: usize>(
-    shape: Box3D<Option<Material>, B, H>,
-    origin: DFCoords,
-) -> Vec<Voxel> {
+    shape: Box3D<Option<u8>, B, H>,
+    origin: DFLocalCoords,
+) -> Vec<dot_vox::Voxel> {
     (0..B)
         .cartesian_product(0..B)
         .cartesian_product(0..H)
         .filter_map(|((x, y), z)| {
             shape[H - 1 - z][y][x].as_ref().map(|material| {
-                let coords = VoxelCoords::from_df(origin, x, y, z);
-                Voxel::new(coords, material.clone())
+                let x = origin.x * BASE as u8 + x as u8;
+                let y = (BLOCK_SIZE as u8 - origin.y - 1) * BASE as u8 + (B - y - 1) as u8;
+                let z = z as u8;
+                dot_vox::Voxel {
+                    x,
+                    y,
+                    z,
+                    i: *material,
+                }
             })
         })
         .collect()
@@ -47,19 +26,11 @@ pub fn voxels_from_shape<const B: usize, const H: usize>(
 
 pub fn voxels_from_uniform_shape<const B: usize, const H: usize>(
     shape: Box3D<bool, B, H>,
-    origin: DFCoords,
-    material: Material,
-) -> Vec<Voxel> {
+    origin: DFLocalCoords,
+    material: u8,
+) -> Vec<dot_vox::Voxel> {
     let shape = shape.map(|slice| {
-        slice.map(|col| {
-            col.map(|include| {
-                if include {
-                    Some(material.clone())
-                } else {
-                    None
-                }
-            })
-        })
+        slice.map(|col| col.map(|include| if include { Some(material) } else { None }))
     });
     voxels_from_shape(shape, origin)
 }

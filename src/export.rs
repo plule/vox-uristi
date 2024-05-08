@@ -1,16 +1,17 @@
 use crate::{
+    building::BuildingInstanceExt,
     calendar::TimeOfTheYear,
     context::DFContext,
-    coords::WithBoundingBox,
+    coords::DotVoxModelCoords,
     dot_vox_builder::DotVoxBuilder,
     map::Map,
     palette::Palette,
     rfr::{self, DFHackExt},
-    voxel::{CollectObjectVoxels, CollectTerrainVoxels},
-    FromDwarfFortress, BASE, HEIGHT,
+    FromDwarfFortress, HEIGHT,
 };
 use anyhow::Result;
 use dot_vox::DotVoxData;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
@@ -20,6 +21,14 @@ use std::{
     sync::mpsc::{Receiver, Sender},
     thread::JoinHandle,
 };
+
+pub const TERRAIN_LAYER: u32 = 1;
+pub const LIQUID_LAYER: u32 = 2;
+pub const SPATTER_LAYER: u32 = 3;
+pub const FIRE_LAYER: u32 = 4;
+pub const BUILDING_LAYER: u32 = 5;
+pub const FLOWS_LAYER: u32 = 6;
+pub const VOID_LAYER: u32 = 31;
 
 pub struct ExportParams {
     pub elevation_low: Elevation,
@@ -155,61 +164,75 @@ pub fn try_export_voxels(
     }
 
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
-    map.remove_overlapping_floors(&context);
 
     let mut vox = DotVoxBuilder::default();
+    vox.data.layers[TERRAIN_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "terrain".to_string());
+    vox.data.layers[LIQUID_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "liquids".to_string());
+    vox.data.layers[SPATTER_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "spatter".to_string());
+    vox.data.layers[FIRE_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "fire".to_string());
+    vox.data.layers[BUILDING_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "buildings".to_string());
+    vox.data.layers[FLOWS_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "flows".to_string());
+    vox.data.layers[VOID_LAYER as usize]
+        .attributes
+        .insert("_name".to_string(), "void".to_string());
+
     let mut palette = Palette::default();
 
-    let max_x = (context.map_info.block_size_x() * 16 * BASE as i32) / 2;
-    let max_y = (context.map_info.block_size_y() * 16 * BASE as i32) / 2;
     let min_z = z_range.start * HEIGHT as i32;
+    let block_count = map.layers.values().map(|l| l.blocks.len()).sum();
+    progress_tx.send(Progress::start("Building blocks...", block_count))?;
+    let mut progress = 0;
 
-    let total = map.tiles.len();
-    progress_tx.send(Progress::start("Building tiles...", total))?;
-    for (curr, tile) in map.tiles.values().enumerate() {
-        if cancel_rx.try_iter().next().is_some() {
-            return Ok(());
-        }
+    for (layer, layer_data) in map.layers.iter().sorted_by_key(|(l, _)| *l) {
+        // Create a group for the layer
+        let z = HEIGHT as i32 / 2 + layer * HEIGHT as i32 - min_z;
+        let layer_group_id = vox.insert_group_node_simple(
+            vox.root_group,
+            format!("elevation {}", layer + z_offset),
+            Some(DotVoxModelCoords::new(0, 0, z)),
+            0,
+        );
 
-        progress_tx.send(Progress::update("Building tiles...", curr, total))?;
+        for block in &layer_data.blocks {
+            progress += 1;
+            progress_tx.send(Progress::update(
+                "Building blocks...",
+                progress,
+                block_count,
+            ))?;
+            if cancel_rx.try_iter().next().is_some() {
+                return Ok(());
+            }
 
-        for building in &tile.buildings {
-            add_object_voxels(
-                *building,
+            // Create the terrain model
+            crate::block::build(
+                block,
                 &map,
                 &context,
-                &mut palette,
                 &mut vox,
-                max_x,
-                max_y,
-                min_z,
+                &mut palette,
+                layer_group_id,
             );
         }
 
-        if let Some(df_tile) = &tile.block_tile {
-            add_terrain_voxels(
-                df_tile,
-                &map,
-                &context,
-                &mut palette,
-                &mut vox,
-                max_x,
-                max_y,
-                min_z,
-            );
-        }
-
-        for flow in &tile.flows {
-            add_terrain_voxels(
-                flow,
-                &map,
-                &context,
-                &mut palette,
-                &mut vox,
-                max_x,
-                max_y,
-                min_z,
-            );
+        if !layer_data.buildings.is_empty() {
+            let building_group_id =
+                vox.insert_group_node_simple(layer_group_id, "buildings", None, BUILDING_LAYER);
+            for building in &layer_data.buildings {
+                building.build(&map, &context, &mut vox, &mut palette, building_group_id);
+            }
         }
     }
 
@@ -222,47 +245,6 @@ pub fn try_export_voxels(
     vox.write_vox(&mut f)?;
     progress_tx.send(Progress::done(path))?;
     Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-fn add_terrain_voxels<T>(
-    item: &T,
-    map: &Map,
-    context: &DFContext,
-    palette: &mut Palette,
-    vox: &mut DotVoxBuilder,
-    max_x: i32,
-    max_y: i32,
-    min_z: i32,
-) where
-    T: CollectTerrainVoxels,
-{
-    for voxel in item.collect_terrain_voxels(map, context) {
-        let color = palette.get_palette_color(&voxel.material, context);
-        vox.add_terrain_voxel(voxel.coord.into_global_coords(max_x, max_y, min_z), color);
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn add_object_voxels<T>(
-    item: &T,
-    map: &Map,
-    context: &DFContext,
-    palette: &mut Palette,
-    vox: &mut DotVoxBuilder,
-    max_x: i32,
-    max_y: i32,
-    min_z: i32,
-) where
-    T: CollectObjectVoxels + WithBoundingBox,
-{
-    if let Some(model) = item.build(map, context, palette) {
-        let coords = item
-            .bounding_box()
-            .dot_vox_coords()
-            .into_global_coords(max_x, max_y, min_z);
-        vox.insert_model(coords, model);
-    }
 }
 
 pub fn try_run_export(

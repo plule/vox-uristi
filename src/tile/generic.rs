@@ -3,21 +3,21 @@ use crate::{
     context::DFContext,
     direction::{Neighbouring8Flat, Rotating},
     map::Map,
-    palette::{DefaultMaterials, EffectiveMaterial, Material},
+    palette::{DefaultMaterials, EffectiveMaterial, Material, Palette},
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
-    voxel::{voxels_from_shape, voxels_from_uniform_shape, Voxel},
-    DFCoords, IsSomeAnd, StableRng,
+    voxel::{voxels_from_shape, voxels_from_uniform_shape},
+    DFMapCoords, IsSomeAnd, StableRng,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use easy_ext::ext;
 use rand::Rng;
 
-pub fn ramp_shape(map: &Map, coords: DFCoords) -> [[[bool; 3]; 3]; 5] {
-    let c = map.neighbouring_8flat(coords, |tile| {
-        tile.block_tile
+pub fn ramp_shape(map: &Map, coords: DFMapCoords) -> [[[bool; 3]; 3]; 5] {
+    let c = map.neighbouring_8flat(coords, |o| {
+        o.block_tile
             .as_ref()
-            .map(|tile| tile.ramp_contact_height())
+            .map(|t| t.ramp_contact_height())
             .unwrap_or(1)
     });
     let nw = c.nw.max(c.n).max(c.w);
@@ -60,9 +60,14 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn collect_structure_voxels(&self, map: &Map, context: &DFContext) -> Vec<Voxel> {
+    fn build_structure(
+        &self,
+        map: &Map,
+        context: &DFContext,
+        palette: &mut Palette,
+    ) -> Vec<dot_vox::Voxel> {
         let mut rng = self.stable_rng();
-        let coords = self.coords();
+        let coords = self.global_coords();
         let tile_type = self.tile_type();
         let material = match self.tile_type().material() {
             // Grass don't have proper materials in the raw
@@ -76,7 +81,10 @@ pub impl BlockTile<'_> {
         };
         let shape = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
-                let item_on_tile = map.with_building.contains(&coords);
+                let item_on_tile = map
+                    .occupancy
+                    .get(&coords)
+                    .is_some_and(|t| !t.buildings.is_empty());
                 let rough = !item_on_tile // no roughness if there is a rendered item
                     && tile_type.material() != TiletypeMaterial::FROZEN_LIQUID // no roughness for ice, it looks bad
                     && !matches!(
@@ -92,8 +100,7 @@ pub impl BlockTile<'_> {
                 ]
             }
             TiletypeShape::WALL => {
-                let c = map
-                    .neighbouring_8flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
+                let c = map.neighbouring_8flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
                 // Inside the wall is either the "hidden" material, or the material of the wall if
                 // it's transparent. It could be worth avoiding building the whole effective mat here...
                 let effective_material = EffectiveMaterial::from_material(&material, context);
@@ -107,19 +114,21 @@ pub impl BlockTile<'_> {
                     [c.w, true, c.e],
                     [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
                 ]
-                .map(|col| col.map(|b| Some(if b { inside.clone() } else { material.clone() })));
-                let shape = [
-                    slice.clone(),
-                    slice.clone(),
-                    slice.clone(),
-                    slice.clone(),
-                    slice,
-                ];
-                return voxels_from_shape(shape, self.coords());
+                .map(|col| {
+                    col.map(|b| {
+                        Some(if b {
+                            palette.get(&inside, context)
+                        } else {
+                            palette.get(&material, context)
+                        })
+                    })
+                });
+                let shape = [slice, slice, slice, slice, slice];
+                return voxels_from_shape(shape, self.local_coords());
             }
             TiletypeShape::FORTIFICATION => {
                 let conn =
-                    map.neighbouring_flat(coords, |tile| tile.block_tile.some_and(|t| t.is_wall()));
+                    map.neighbouring_flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
                 #[rustfmt::skip]
                 let shape = [
                     [
@@ -159,7 +168,7 @@ pub impl BlockTile<'_> {
             _ => box_empty(),
         };
 
-        voxels_from_uniform_shape(shape, self.coords(), material)
+        voxels_from_uniform_shape(shape, self.local_coords(), palette.get(&material, context))
     }
 
     fn plant_part(&self) -> PlantPart {

@@ -4,6 +4,11 @@ layout: single
 permalink: /changelog
 ---
 
+### Unreleased
+
+- The whole map is now divided by layer and blocks
+- The .vox layers can be used to hide liquids, spatter, buildings...
+
 ### v0.14
 
 ![v0.12](/vox-uristi/assets/changelog/v0.14.png)
