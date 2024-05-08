@@ -21,14 +21,25 @@ use std::{
     sync::mpsc::{Receiver, Sender},
     thread::JoinHandle,
 };
+use strum::{Display, EnumIter, IntoEnumIterator};
 
-pub const TERRAIN_LAYER: LayerId = LayerId(1);
-pub const LIQUID_LAYER: LayerId = LayerId(2);
-pub const SPATTER_LAYER: LayerId = LayerId(3);
-pub const FIRE_LAYER: LayerId = LayerId(4);
-pub const BUILDING_LAYER: LayerId = LayerId(5);
-pub const FLOWS_LAYER: LayerId = LayerId(6);
-pub const VOID_LAYER: LayerId = LayerId(31);
+#[derive(Debug, Clone, Copy, EnumIter, Display)]
+#[repr(usize)]
+pub enum Layers {
+    Terrain = 1,
+    Liquid,
+    Spatter,
+    Fire,
+    Building,
+    Flows,
+    Void,
+}
+
+impl Layers {
+    pub fn id(&self) -> LayerId {
+        LayerId(*self as usize)
+    }
+}
 
 pub struct ExportParams {
     pub elevation_low: Elevation,
@@ -168,27 +179,11 @@ pub fn try_export_voxels(
     let mut vox = DotVoxBuilder::default();
 
     // Setup the layers
-    vox.data.layers[*TERRAIN_LAYER]
-        .attributes
-        .insert("_name".to_string(), "terrain".to_string());
-    vox.data.layers[*LIQUID_LAYER]
-        .attributes
-        .insert("_name".to_string(), "liquids".to_string());
-    vox.data.layers[*SPATTER_LAYER]
-        .attributes
-        .insert("_name".to_string(), "spatter".to_string());
-    vox.data.layers[*FIRE_LAYER]
-        .attributes
-        .insert("_name".to_string(), "fire".to_string());
-    vox.data.layers[*BUILDING_LAYER]
-        .attributes
-        .insert("_name".to_string(), "buildings".to_string());
-    vox.data.layers[*FLOWS_LAYER]
-        .attributes
-        .insert("_name".to_string(), "flows".to_string());
-    vox.data.layers[*VOID_LAYER]
-        .attributes
-        .insert("_name".to_string(), "void".to_string());
+    for layer in Layers::iter() {
+        vox.data.layers[*layer.id()]
+            .attributes
+            .insert("_name".to_string(), format!("{}", layer).to_lowercase());
+    }
 
     // Setup the palette, with the default material pre-inserted
     // to be easily findable
@@ -233,8 +228,12 @@ pub fn try_export_voxels(
         }
 
         if !layer_data.buildings.is_empty() {
-            let building_group_id =
-                vox.insert_group_node_simple(layer_group_id, "buildings", None, BUILDING_LAYER);
+            let building_group_id = vox.insert_group_node_simple(
+                layer_group_id,
+                "buildings",
+                None,
+                Layers::Building.id(),
+            );
             for building in &layer_data.buildings {
                 building.build(&map, &context, &mut vox, &mut palette, building_group_id);
             }

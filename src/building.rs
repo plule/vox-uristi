@@ -3,7 +3,7 @@ use crate::{
     coords::WithBoundingBox,
     direction::DirectionFlat,
     dot_vox_builder::{DotVoxBuilder, NodeId},
-    export::BUILDING_LAYER,
+    export::Layers,
     map::Map,
     prefabs::FromPrefab,
     DFBoundingBox, DFMapCoords, WithDFCoords,
@@ -90,7 +90,7 @@ pub impl BuildingInstance {
                 .layer_dot_vox_coords()
                 .into_layer_global_coords(context.max_vox_x(), context.max_vox_y());
 
-            vox.insert_model_shape(group, Some(coords), model, BUILDING_LAYER, name);
+            vox.insert_model_shape(group, Some(coords), model, Layers::Building.id(), name);
         }
     }
     fn do_build(

@@ -5,7 +5,7 @@ use crate::{
     context::DFContext,
     coords::DotVoxModelCoords,
     dot_vox_builder::{DotVoxBuilder, LayerId, NodeId},
-    export::{FIRE_LAYER, FLOWS_LAYER, LIQUID_LAYER, SPATTER_LAYER, TERRAIN_LAYER, VOID_LAYER},
+    export::Layers,
     flow::FlowInfoExt,
     rfr, WithDFCoords, BASE, HEIGHT,
 };
@@ -65,25 +65,43 @@ pub fn build(
     // The order matters, the last added model will be on top of the others
 
     if !flows_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, flows_model, FLOWS_LAYER, "flows");
+        vox.insert_model_shape(block_group, None, flows_model, Layers::Flows.id(), "flows");
     }
 
     if !fire_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, fire_model, FIRE_LAYER, "fire");
+        vox.insert_model_shape(block_group, None, fire_model, Layers::Fire.id(), "fire");
     }
 
     if !liquid_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, liquid_model, LIQUID_LAYER, "liquid");
+        vox.insert_model_shape(
+            block_group,
+            None,
+            liquid_model,
+            Layers::Liquid.id(),
+            "liquid",
+        );
     }
 
     if !spatter_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, spatter_model, SPATTER_LAYER, "spatter");
+        vox.insert_model_shape(
+            block_group,
+            None,
+            spatter_model,
+            Layers::Spatter.id(),
+            "spatter",
+        );
     }
 
     if !void_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, void_model, VOID_LAYER, "void");
+        vox.insert_model_shape(block_group, None, void_model, Layers::Void.id(), "void");
     }
 
     // The terrain itself is always added, to avoid weird sizing in MagicaVoxel with empty groups
-    vox.insert_model_shape(block_group, None, terrain_model, TERRAIN_LAYER, "terrain");
+    vox.insert_model_shape(
+        block_group,
+        None,
+        terrain_model,
+        Layers::Terrain.id(),
+        "terrain",
+    );
 }
