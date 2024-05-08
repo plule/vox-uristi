@@ -8,7 +8,7 @@ use num_enum::IntoPrimitive;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
 use palette::{Darken, Srgb};
 use std::collections::HashMap;
-use strum::{EnumCount, EnumIter};
+use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
 /// A material to be exported as an entry in the palette
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -106,6 +106,13 @@ impl Palette {
         color
     }
 
+    pub fn cache_default_materials(&mut self, context: &DFContext) {
+        for default_material in DefaultMaterials::iter() {
+            let material = Material::Default(default_material);
+            self.get(&material, context);
+        }
+    }
+
     pub fn write_palette(&self, vox: &mut DotVoxData) {
         for (material, index) in &self.materials {
             material.apply_material(
@@ -166,8 +173,8 @@ impl EffectiveMaterial {
                     }
                     DefaultMaterials::Light => {
                         res.mat_type = Some("_emit");
-                        res.emit = Some(75);
-                        res.flux = Some(2);
+                        res.emit = Some(50);
+                        res.flux = Some(1);
                     }
                     _ => {
                         res.mat_type = Some("_diffuse");

@@ -166,6 +166,8 @@ pub fn try_export_voxels(
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
 
     let mut vox = DotVoxBuilder::default();
+
+    // Setup the layers
     vox.data.layers[TERRAIN_LAYER as usize]
         .attributes
         .insert("_name".to_string(), "terrain".to_string());
@@ -188,7 +190,10 @@ pub fn try_export_voxels(
         .attributes
         .insert("_name".to_string(), "void".to_string());
 
+    // Setup the palette, with the default material pre-inserted
+    // to be easily findable
     let mut palette = Palette::default();
+    palette.cache_default_materials(&context);
 
     let min_z = z_range.start * HEIGHT as i32;
     let block_count = map.layers.values().map(|l| l.blocks.len()).sum();

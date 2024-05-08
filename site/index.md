@@ -44,9 +44,9 @@ it.
 - ☑ Building content (books on bookcases, items in workshops, ...)
 - ☑ Spatters
 - ☑ Export the buildings as individual selectable objects
+- ☑ Split the export into useful layers
 - ☐ Item state (opened/closed)
 - ☐ Rails
-- ☐ Split the export into useful layers
 
 ### Maybe some day
 

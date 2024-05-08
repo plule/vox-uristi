@@ -8,6 +8,7 @@ permalink: /changelog
 
 - The whole map is now divided by layer and blocks
 - The .vox layers can be used to hide liquids, spatter, buildings...
+- The palette default materials (water, light, "hidden", ...) are always at the beginning
 
 ### v0.14
 
