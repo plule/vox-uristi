@@ -203,8 +203,39 @@ impl DotVoxBuilder {
         shape_index
     }
 
+    pub fn insert_shape_node_simple(
+        &mut self,
+        parent_group: NodeId,
+        name: impl Into<String>,
+        coordinates: Option<DotVoxModelCoords>,
+        layer_id: LayerId,
+        model: ModelId,
+    ) -> NodeId {
+        let transform_attributes = Dict::from([("_name".to_string(), name.into())]);
+        let mut frames = Vec::new();
+        if let Some(coordinates) = coordinates {
+            frames.push(Frame {
+                attributes: Dict::from([(
+                    "_t".to_string(),
+                    format!("{} {} {}", coordinates.x, coordinates.y, coordinates.z),
+                )]),
+            });
+        }
+        self.insert_shape_node(
+            parent_group,
+            transform_attributes,
+            frames,
+            layer_id,
+            Default::default(),
+            vec![ShapeModel {
+                model_id: model.into(),
+                attributes: Default::default(),
+            }],
+        )
+    }
+
     /// Insert a model in the .vox data, return its index
-    pub fn insert_model_shape(
+    pub fn insert_model_and_shape_node(
         &mut self,
         parent_group: NodeId,
         coordinates: Option<DotVoxModelCoords>,
@@ -248,7 +279,7 @@ impl DotVoxBuilder {
     ) {
         let name: String = name.into();
         let group = self.insert_group_node_simple(parent_group, name.clone(), None, layer_id);
-        self.insert_model_shape(group, None, model, layer_id, name);
+        self.insert_model_and_shape_node(group, None, model, layer_id, name);
     }
 }
 
@@ -454,7 +485,13 @@ mod tests {
             size: Size { x: 1, y: 1, z: 1 },
             voxels: vec![],
         };
-        let index = builder.insert_model_shape(builder.root_group, None, model, LayerId(0), "test");
+        let index = builder.insert_model_and_shape_node(
+            builder.root_group,
+            None,
+            model,
+            LayerId(0),
+            "test",
+        );
         match &builder.data.scenes[*builder.root_group] {
             SceneNode::Group { children, .. } => {
                 assert_eq!(1, children.len());

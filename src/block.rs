@@ -4,15 +4,15 @@ use dot_vox::Size;
 use crate::{
     context::DFContext,
     coords::DotVoxModelCoords,
-    dot_vox_builder::{DotVoxBuilder, LayerId, NodeId},
-    export::Layers,
+    dot_vox_builder::{DotVoxBuilder, NodeId},
+    export::{Layers, Models},
     flow::FlowInfoExt,
     rfr, WithDFCoords, BASE, HEIGHT,
 };
 
 pub const BLOCK_SIZE: usize = 16;
 
-const BLOCK_VOX_SIZE: Size = Size {
+pub const BLOCK_VOX_SIZE: Size = Size {
     x: (BLOCK_SIZE * BASE) as u32,
     y: (BLOCK_SIZE * BASE) as u32,
     z: HEIGHT as u32,
@@ -34,8 +34,22 @@ pub fn build(
         layer_group_id,
         format!("block {} {}", block.map_x(), block.map_y(),),
         Some(DotVoxModelCoords::new(x, y, 0)),
-        LayerId(0),
+        Layers::All.id(),
     );
+
+    let tiles: Vec<_> = rfr::TileIterator::new(block, &context.tile_types).collect();
+
+    if !tiles.is_empty() && tiles.iter().all(|t| t.hidden()) {
+        // The full block is hidden
+        vox.insert_shape_node_simple(
+            block_group,
+            "void",
+            None,
+            Layers::Void.id(),
+            Models::HiddenBlock.id(),
+        );
+        return;
+    }
 
     let mut terrain_model = DotVoxBuilder::new_model(BLOCK_VOX_SIZE);
     let mut liquid_model = DotVoxBuilder::new_model(BLOCK_VOX_SIZE);
@@ -44,7 +58,7 @@ pub fn build(
     let mut void_model = DotVoxBuilder::new_model(BLOCK_VOX_SIZE);
     let mut flows_model = DotVoxBuilder::new_model(BLOCK_VOX_SIZE);
 
-    for tile in rfr::TileIterator::new(block, &context.tile_types) {
+    for tile in tiles {
         let voxels = tile.build(map, context, palette);
         terrain_model.voxels.extend(voxels.terrain);
         liquid_model.voxels.extend(voxels.liquid);
@@ -65,15 +79,21 @@ pub fn build(
     // The order matters, the last added model will be on top of the others
 
     if !flows_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, flows_model, Layers::Flows.id(), "flows");
+        vox.insert_model_and_shape_node(
+            block_group,
+            None,
+            flows_model,
+            Layers::Flows.id(),
+            "flows",
+        );
     }
 
     if !fire_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, fire_model, Layers::Fire.id(), "fire");
+        vox.insert_model_and_shape_node(block_group, None, fire_model, Layers::Fire.id(), "fire");
     }
 
     if !liquid_model.voxels.is_empty() {
-        vox.insert_model_shape(
+        vox.insert_model_and_shape_node(
             block_group,
             None,
             liquid_model,
@@ -83,7 +103,7 @@ pub fn build(
     }
 
     if !spatter_model.voxels.is_empty() {
-        vox.insert_model_shape(
+        vox.insert_model_and_shape_node(
             block_group,
             None,
             spatter_model,
@@ -93,11 +113,11 @@ pub fn build(
     }
 
     if !void_model.voxels.is_empty() {
-        vox.insert_model_shape(block_group, None, void_model, Layers::Void.id(), "void");
+        vox.insert_model_and_shape_node(block_group, None, void_model, Layers::Void.id(), "void");
     }
 
     // The terrain itself is always added, to avoid weird sizing in MagicaVoxel with empty groups
-    vox.insert_model_shape(
+    vox.insert_model_and_shape_node(
         block_group,
         None,
         terrain_model,

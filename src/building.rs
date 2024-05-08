@@ -90,7 +90,7 @@ pub impl BuildingInstance {
                 .layer_dot_vox_coords()
                 .into_layer_global_coords(context.max_vox_x(), context.max_vox_y());
 
-            vox.insert_model_shape(group, Some(coords), model, Layers::Building.id(), name);
+            vox.insert_model_and_shape_node(group, Some(coords), model, Layers::Building.id(), name);
         }
     }
     fn do_build(

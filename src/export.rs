@@ -1,16 +1,17 @@
 use crate::{
+    block::BLOCK_VOX_SIZE,
     building::BuildingInstanceExt,
     calendar::TimeOfTheYear,
     context::DFContext,
     coords::DotVoxModelCoords,
-    dot_vox_builder::{DotVoxBuilder, LayerId},
+    dot_vox_builder::{DotVoxBuilder, LayerId, ModelId},
     map::Map,
-    palette::Palette,
+    palette::{DefaultMaterials, Material, Palette},
     rfr::{self, DFHackExt},
     FromDwarfFortress, HEIGHT,
 };
 use anyhow::Result;
-use dot_vox::DotVoxData;
+use dot_vox::{DotVoxData, Model, Size};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -26,7 +27,8 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 #[derive(Debug, Clone, Copy, EnumIter, Display)]
 #[repr(usize)]
 pub enum Layers {
-    Terrain = 1,
+    All,
+    Terrain,
     Liquid,
     Spatter,
     Fire,
@@ -35,9 +37,21 @@ pub enum Layers {
     Void,
 }
 
+#[derive(Debug, Clone, Copy, EnumIter, Display)]
+#[repr(usize)]
+pub enum Models {
+    HiddenBlock,
+}
+
 impl Layers {
     pub fn id(&self) -> LayerId {
         LayerId(*self as usize)
+    }
+}
+
+impl Models {
+    pub fn id(&self) -> ModelId {
+        ModelId(*self as usize)
     }
 }
 
@@ -176,7 +190,36 @@ pub fn try_export_voxels(
 
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
 
+    // Setup the palette, with the default material pre-inserted
+    // to be easily findable
+    let mut palette = Palette::default();
+    palette.cache_default_materials(&context);
+
     let mut vox = DotVoxBuilder::default();
+    vox.data
+        .models
+        .resize_with(Models::iter().count(), || Model {
+            size: Size { x: 0, y: 0, z: 0 },
+            voxels: vec![],
+        });
+    // Setup the default models
+    {
+        vox.data.models[*Models::HiddenBlock.id()].size = BLOCK_VOX_SIZE;
+        for x in 0..BLOCK_VOX_SIZE.x {
+            for y in 0..BLOCK_VOX_SIZE.y {
+                for z in 0..BLOCK_VOX_SIZE.z {
+                    vox.data.models[*Models::HiddenBlock.id()]
+                        .voxels
+                        .push(dot_vox::Voxel {
+                            x: x as u8,
+                            y: y as u8,
+                            z: z as u8,
+                            i: palette.get(&Material::Default(DefaultMaterials::Hidden), &context),
+                        });
+                }
+            }
+        }
+    }
 
     // Setup the layers
     for layer in Layers::iter() {
@@ -184,11 +227,6 @@ pub fn try_export_voxels(
             .attributes
             .insert("_name".to_string(), format!("{}", layer).to_lowercase());
     }
-
-    // Setup the palette, with the default material pre-inserted
-    // to be easily findable
-    let mut palette = Palette::default();
-    palette.cache_default_materials(&context);
 
     let min_z = z_range.start * HEIGHT as i32;
     let block_count = map.layers.values().map(|l| l.blocks.len()).sum();
@@ -202,7 +240,7 @@ pub fn try_export_voxels(
             vox.root_group,
             format!("elevation {}", layer + z_offset),
             Some(DotVoxModelCoords::new(0, 0, z)),
-            LayerId(0),
+            Layers::All.id(),
         );
 
         for block in &layer_data.blocks {

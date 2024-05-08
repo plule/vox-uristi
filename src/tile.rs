@@ -37,20 +37,13 @@ impl BlockTile<'_> {
         context: &DFContext,
         palette: &mut crate::palette::Palette,
     ) -> TileVoxels {
-        let global_coords = self.global_coords();
         let mut rng = self.stable_rng();
 
         let mut voxels = TileVoxels::default();
 
         if self.hidden() {
-            let c = map.neighbouring(global_coords, |o| o.block_tile.is_some());
-            if c.a && c.b && c.n && c.e && c.s && c.w {
-                // hidden block surrounded by hidden blocks, skip
-                return voxels;
-            }
             let shape: Box3D<bool> = box_full();
 
-            // Hidden block, visible by the render, render as "void"
             voxels.void.extend(voxels_from_uniform_shape(
                 shape,
                 self.local_coords(),
