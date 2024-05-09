@@ -35,6 +35,9 @@ You can see the whole process on this mod spotlight made by Blind.
 
 {% include video id="CDqMuBZsNH0" provider="youtube" %}
 
+To go further on tips and advanced rendering techniques, head over to
+the page ![tips](/tips).
+
 On Linux, Vox Uristi can also be used in command-line:
 
 `vox-uristi export --low -2 --high 17 fortress.vox`.
