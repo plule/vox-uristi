@@ -47,13 +47,13 @@ it.
 - ☑ Split the export into useful layers
 - ☐ Item state (opened/closed)
 - ☐ Rails
+- ☐ Easier/interactive export
 
 ### Maybe some day
 
 - ☐ Export some animations
 - ☐ Customizable models
 - ☐ Support different voxel resolutions
-- ☐ Minecraft map format
 
 ## Other Dwarf Fortress visualisation tools
 
