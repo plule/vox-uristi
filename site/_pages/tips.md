@@ -13,9 +13,11 @@ further customization when rendering pictures.
 
 Navigating to the "Layers" in MagicaVoxel, as seen on the left side, it's
 possible to hide and show various features of the export. For example, hiding
-the spatters and the roughness will lead to a less cluttered look. The "hidden"
-layer represent all the black tiles that are not discovered by the player.
-Hiding this layer can be useful to render a multi-level underground fortress.
+the spatters and the roughness will lead to a less cluttered look.
+
+The "hidden" layer represent all the black tiles that are not discovered by the
+player. Hiding this layer can be useful to render a multi-level underground
+fortress, while showing it gives a look closer to what's visible in game.
 
 On the right side, the "Outline" can be used to hide part of the export. Each
 individual Z-Level can be hidden there, to show the interior of buildings for

@@ -232,6 +232,9 @@ pub fn try_export_voxels(
             .attributes
             .insert("_name".to_string(), format!("{}", layer).to_lowercase());
     }
+    vox.data.layers[*Layers::Hidden.id()]
+        .attributes
+        .insert("_hidden".to_string(), "1".to_string());
 
     let min_z = z_range.start * HEIGHT as i32;
     let block_count = map.levels.values().map(|l| l.blocks.len()).sum();
