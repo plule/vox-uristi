@@ -10,9 +10,11 @@ permalink: /changelog
 - The .vox layers can be used to hide liquids, spatter, buildings, roughness...
 - The palette default materials (water, light, "hidden", ...) are always at the beginning
 
+![v0.15](/vox-uristi/assets/changelog/v0.15.gif)
+
 ### v0.14
 
-![v0.12](/vox-uristi/assets/changelog/v0.14.png)
+![v0.14](/vox-uristi/assets/changelog/v0.14.png)
 
 - The exported buildings are now individual objects that can be moved and rotated
 - Transparent walls don't have anymore an opaque black layer inside
