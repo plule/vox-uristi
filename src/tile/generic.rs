@@ -60,12 +60,13 @@ pub impl BlockTile<'_> {
         }
     }
 
-    fn build_structure(
+    // Returns a tuple with the terrain voxels and the "roughness" voxels
+    fn build_terrain(
         &self,
         map: &Map,
         context: &DFContext,
         palette: &mut Palette,
-    ) -> Vec<dot_vox::Voxel> {
+    ) -> (Vec<dot_vox::Voxel>, Vec<dot_vox::Voxel>) {
         let mut rng = self.stable_rng();
         let coords = self.global_coords();
         let tile_type = self.tile_type();
@@ -79,7 +80,7 @@ pub impl BlockTile<'_> {
             // Generic material from raw
             mat => Material::TileGeneric(self.material().clone(), mat),
         };
-        let shape = match tile_type.shape() {
+        let (shape_base, shape_rough): (Box3D<bool>, Box3D<bool>) = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let item_on_tile = map
                     .occupancy
@@ -91,13 +92,22 @@ pub impl BlockTile<'_> {
                         tile_type.special(),
                         TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD
                     );
-                [
-                    slice_empty(),
-                    slice_empty(),
-                    slice_empty(),
-                    slice_from_fn(|_, _| rough && rng.gen_bool(1.0 / 7.0)),
-                    slice_full(),
-                ]
+                (
+                    [
+                        slice_empty(),
+                        slice_empty(),
+                        slice_empty(),
+                        slice_empty(),
+                        slice_full(),
+                    ],
+                    [
+                        slice_empty(),
+                        slice_empty(),
+                        slice_empty(),
+                        slice_from_fn(|_, _| rough && rng.gen_bool(1.0 / 7.0)),
+                        slice_empty(),
+                    ],
+                )
             }
             TiletypeShape::WALL => {
                 let c = map.neighbouring_8flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
@@ -124,7 +134,7 @@ pub impl BlockTile<'_> {
                     })
                 });
                 let shape = [slice, slice, slice, slice, slice];
-                return voxels_from_shape(shape, self.local_coords());
+                return (voxels_from_shape(shape, self.local_coords()), vec![]);
             }
             TiletypeShape::FORTIFICATION => {
                 let conn =
@@ -153,22 +163,27 @@ pub impl BlockTile<'_> {
                     ],
                     slice_full()
                 ];
-                shape
+                (shape, box_empty())
             }
-            TiletypeShape::STAIR_UP => stairs(true, true, false, true, coords.z),
-            TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
-            TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
-            TiletypeShape::RAMP => ramp_shape(map, coords),
-            TiletypeShape::TREE_SHAPE => box_empty(), // TODO
-            TiletypeShape::SAPLING => box_empty(),    // TODO
-            TiletypeShape::SHRUB => box_empty(),      // TODO
-            TiletypeShape::BRANCH => box_empty(),     // TODO
-            TiletypeShape::TRUNK_BRANCH => box_empty(), // TODO
-            TiletypeShape::TWIG => box_empty(),       // TODO
-            _ => box_empty(),
+            TiletypeShape::STAIR_UP => (stairs(true, true, false, true, coords.z), box_empty()),
+            TiletypeShape::STAIR_DOWN => (stairs(false, false, true, false, coords.z), box_empty()),
+            TiletypeShape::STAIR_UPDOWN => (stairs(true, true, true, false, coords.z), box_empty()),
+            TiletypeShape::RAMP => (ramp_shape(map, coords), box_empty()),
+            _ => (box_empty(), box_empty()),
         };
 
-        voxels_from_uniform_shape(shape, self.local_coords(), palette.get(&material, context))
+        (
+            voxels_from_uniform_shape(
+                shape_base,
+                self.local_coords(),
+                palette.get(&material, context),
+            ),
+            voxels_from_uniform_shape(
+                shape_rough,
+                self.local_coords(),
+                palette.get(&material, context),
+            ),
+        )
     }
 
     fn plant_part(&self) -> PlantPart {

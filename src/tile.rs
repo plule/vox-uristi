@@ -10,7 +10,7 @@ use crate::{
     rfr::BlockTile,
     shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
     voxel::voxels_from_uniform_shape,
-    GenBoolSafe, StableRng, VoxelCoords, WithDFCoords,
+    GenBoolSafe, StableRng, WithDFCoords,
 };
 use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape};
 pub use generic::BlockTileExt;
@@ -68,13 +68,14 @@ impl BlockTile<'_> {
                 // plant, trees
                 let trees = self.build_trees(map, context, palette);
                 occupied_for_spatters.extend(trees.iter().map(|v| (v.x, v.y, v.z)));
-                models.extend(Layers::Terrain, trees);
+                models.extend(Layers::Vegetation, trees);
             }
             _ => {
                 // classic tile structure
-                let terrain = self.build_structure(map, context, palette);
+                let (terrain, roughness) = self.build_terrain(map, context, palette);
                 occupied_for_spatters.extend(terrain.iter().map(|v| (v.x, v.y, v.z)));
                 models.extend(Layers::Terrain, terrain);
+                models.extend(Layers::Roughness, roughness);
             }
         }
 

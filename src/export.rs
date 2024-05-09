@@ -33,6 +33,8 @@ pub enum Layers {
     All,
     Building,
     Terrain,
+    Vegetation,
+    Roughness,
     Liquid,
     Spatter,
     Fire,
