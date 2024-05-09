@@ -6,11 +6,11 @@ permalink: /changelog
 
 ### v0.15
 
+![v0.15](/vox-uristi/assets/changelog/v0.15.gif)
+
 - The whole map is now divided by level and blocks
 - The .vox layers can be used to hide liquids, spatter, buildings, roughness...
 - The palette default materials (water, light, "hidden", ...) are always at the beginning
-
-![v0.15](/vox-uristi/assets/changelog/v0.15.gif)
 
 ### v0.14
 
