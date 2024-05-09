@@ -103,7 +103,7 @@ impl App {
                 ui.group(|ui| {
                     ui.add(df_client_group(&mut self.df, |ui, df| {
                         ui.label("Pick the elevation range to export");
-                        ui.label("It works best by covering the surface layer.");
+                        ui.label("It works best by covering the surface level.");
                         ui.horizontal(|ui| {
                             ui.add_space(ui.available_width());
                         });

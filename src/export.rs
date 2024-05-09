@@ -234,21 +234,21 @@ pub fn try_export_voxels(
     }
 
     let min_z = z_range.start * HEIGHT as i32;
-    let block_count = map.layers.values().map(|l| l.blocks.len()).sum();
+    let block_count = map.levels.values().map(|l| l.blocks.len()).sum();
     progress_tx.send(Progress::start("Building blocks...", block_count))?;
     let mut progress = 0;
 
-    for (layer, layer_data) in map.layers.iter().sorted_by_key(|(l, _)| *l) {
+    for (level, level_data) in map.levels.iter().sorted_by_key(|(l, _)| *l) {
         // Create a group for the layer
-        let z = HEIGHT as i32 / 2 + layer * HEIGHT as i32 - min_z;
-        let layer_group_id = vox.insert_group_node_simple(
+        let z = HEIGHT as i32 / 2 + level * HEIGHT as i32 - min_z;
+        let level_group = vox.insert_group_node_simple(
             vox.root_group,
-            format!("elevation {}", layer + z_offset),
+            format!("level {}", level + z_offset),
             Some(DotVoxModelCoords::new(0, 0, z)),
             Layers::All.id(),
         );
 
-        for block in &layer_data.blocks {
+        for block in &level_data.blocks {
             progress += 1;
             progress_tx.send(Progress::update(
                 "Building blocks...",
@@ -260,24 +260,13 @@ pub fn try_export_voxels(
             }
 
             // Create the terrain model
-            crate::block::build(
-                block,
-                &map,
-                &context,
-                &mut vox,
-                &mut palette,
-                layer_group_id,
-            );
+            crate::block::build(block, &map, &context, &mut vox, &mut palette, level_group);
         }
 
-        if !layer_data.buildings.is_empty() {
-            let building_group_id = vox.insert_group_node_simple(
-                layer_group_id,
-                "buildings",
-                None,
-                Layers::Building.id(),
-            );
-            for building in &layer_data.buildings {
+        if !level_data.buildings.is_empty() {
+            let building_group_id =
+                vox.insert_group_node_simple(level_group, "buildings", None, Layers::Building.id());
+            for building in &level_data.buildings {
                 building.build(&map, &context, &mut vox, &mut palette, building_group_id);
             }
         }

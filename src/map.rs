@@ -11,7 +11,7 @@ use itertools::Itertools;
 use std::collections::HashMap;
 
 #[derive(Default)]
-pub struct LayerData<'a> {
+pub struct LevelData<'a> {
     pub blocks: Vec<&'a MapBlock>,
     pub buildings: Vec<&'a BuildingInstance>,
 }
@@ -20,7 +20,7 @@ pub struct LayerData<'a> {
 #[derive(Default)]
 pub struct Map<'a> {
     /// The map stored by layers
-    pub layers: HashMap<i32, LayerData<'a>>,
+    pub levels: HashMap<i32, LevelData<'a>>,
     /// Quick access to the occupancy data of each tile, for connectivity checks
     pub occupancy: HashMap<DFMapCoords, Occupancy<'a>>,
     /// True if the building where added already, they are streamed multiple times
@@ -38,8 +38,8 @@ impl<'a> Map<'a> {
         if !self.buildings_added {
             self.add_buildings(&block.buildings);
         }
-        let layer = block.block_coords().z;
-        self.layers.entry(layer).or_default().blocks.push(block);
+        let level = block.block_coords().z;
+        self.levels.entry(level).or_default().blocks.push(block);
 
         for tile in rfr::TileIterator::new(block, &context.tile_types) {
             let coords = tile.global_coords();
@@ -60,7 +60,7 @@ impl<'a> Map<'a> {
                 continue;
             }
 
-            self.layers
+            self.levels
                 .entry(building.bounding_box().origin().z)
                 .or_default()
                 .buildings

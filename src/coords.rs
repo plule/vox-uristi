@@ -145,7 +145,7 @@ impl VoxelCoords {
         }
     }
 
-    pub fn into_layer_global_coords(self, max_x: i32, max_y: i32) -> DotVoxModelCoords {
+    pub fn into_level_global_coords(self, max_x: i32, max_y: i32) -> DotVoxModelCoords {
         DotVoxModelCoords {
             x: self.x - max_x,
             y: max_y - self.y,
@@ -268,7 +268,7 @@ impl DFBoundingBox {
         )
     }
 
-    pub fn layer_dot_vox_coords(&self) -> VoxelCoords {
+    pub fn level_dot_vox_coords(&self) -> VoxelCoords {
         let size = dot_vox::Size::from(self.dimension());
         VoxelCoords::from_df(
             self.origin(),

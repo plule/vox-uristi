@@ -33,7 +33,7 @@ pub fn build(
     context: &DFContext,
     vox: &mut DotVoxBuilder,
     palette: &mut crate::palette::Palette,
-    layer_group_id: NodeId,
+    level_group_id: NodeId,
 ) {
     // Collect all the tiles of the block
     let tiles: Vec<_> = rfr::TileIterator::new(block, &context.tile_types).collect();
@@ -51,7 +51,7 @@ pub fn build(
         // The full block is hidden, skip the construction and add the
         // hidden model to save space
         let block_group = vox.insert_group_node_simple(
-            layer_group_id,
+            level_group_id,
             format!("block {} {}", block.map_x(), block.map_y(),),
             Some(DotVoxModelCoords::new(x, y, 0)),
             Layers::All.id(),
@@ -86,7 +86,7 @@ pub fn build(
     }
 
     let block_group = vox.insert_group_node_simple(
-        layer_group_id,
+        level_group_id,
         format!("block {} {}", block.map_x(), block.map_y(),),
         Some(DotVoxModelCoords::new(x, y, 0)),
         Layers::All.id(),

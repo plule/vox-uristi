@@ -87,10 +87,16 @@ pub impl BuildingInstance {
         if let Some((name, model)) = self.do_build(map, context, palette) {
             let coords = self
                 .bounding_box()
-                .layer_dot_vox_coords()
-                .into_layer_global_coords(context.max_vox_x(), context.max_vox_y());
+                .level_dot_vox_coords()
+                .into_level_global_coords(context.max_vox_x(), context.max_vox_y());
 
-            vox.insert_model_and_shape_node(group, Some(coords), model, Layers::Building.id(), name);
+            vox.insert_model_and_shape_node(
+                group,
+                Some(coords),
+                model,
+                Layers::Building.id(),
+                name,
+            );
         }
     }
     fn do_build(
