@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use dfhack_remote::MapBlock;
 use dot_vox::{Model, Size};
+use itertools::Itertools;
 
 use crate::{
     context::DFContext,
@@ -19,13 +22,9 @@ pub const BLOCK_VOX_SIZE: Size = Size {
 };
 
 /// All the voxel models constituing a block
+#[derive(Default)]
 pub struct BlockModels {
-    pub terrain: Model,
-    pub liquid: Model,
-    pub spatter: Model,
-    pub fire: Model,
-    pub flows: Model,
-    pub hidden: Model,
+    pub models: HashMap<Layers, Model>,
 }
 
 pub fn build(
@@ -77,7 +76,7 @@ pub fn build(
             .iter()
             .filter(|flow| flow.coords() == tile.global_coords())
         {
-            models.flows.voxels.extend(flow.build(context, palette));
+            models.extend(Layers::Flows, flow.build(context, palette));
         }
     }
 
@@ -93,84 +92,30 @@ pub fn build(
         Layers::All.id(),
     );
 
-    // Add the non empty models to the .vox
-    // The order matters, the last added model will be on top of the others
-
-    if !models.flows.voxels.is_empty() {
-        vox.insert_model_and_shape_node(
-            block_group,
-            None,
-            models.flows,
-            Layers::Flows.id(),
-            "flows",
-        );
-    }
-
-    if !models.fire.voxels.is_empty() {
-        vox.insert_model_and_shape_node(block_group, None, models.fire, Layers::Fire.id(), "fire");
-    }
-
-    if !models.liquid.voxels.is_empty() {
-        vox.insert_model_and_shape_node(
-            block_group,
-            None,
-            models.liquid,
-            Layers::Liquid.id(),
-            "liquid",
-        );
-    }
-
-    if !models.spatter.voxels.is_empty() {
-        vox.insert_model_and_shape_node(
-            block_group,
-            None,
-            models.spatter,
-            Layers::Spatter.id(),
-            "spatter",
-        );
-    }
-
-    if !models.hidden.voxels.is_empty() {
-        vox.insert_model_and_shape_node(
-            block_group,
-            None,
-            models.hidden,
-            Layers::Hidden.id(),
-            "hidden",
-        );
-    }
-
-    if !models.terrain.voxels.is_empty() {
-        vox.insert_model_and_shape_node(
-            block_group,
-            None,
-            models.terrain,
-            Layers::Terrain.id(),
-            "terrain",
-        );
-    }
-}
-
-impl Default for BlockModels {
-    fn default() -> Self {
-        Self {
-            terrain: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-            liquid: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-            spatter: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-            fire: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-            flows: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-            hidden: DotVoxBuilder::new_model(BLOCK_VOX_SIZE),
-        }
-    }
+    models.build(vox, block_group);
 }
 
 impl BlockModels {
     pub fn is_empty(&self) -> bool {
-        self.terrain.voxels.is_empty()
-            && self.liquid.voxels.is_empty()
-            && self.spatter.voxels.is_empty()
-            && self.fire.voxels.is_empty()
-            && self.flows.voxels.is_empty()
-            && self.hidden.voxels.is_empty()
+        self.models.values().all(|m| m.voxels.is_empty())
+    }
+
+    pub fn get(&mut self, layer: Layers) -> &mut Model {
+        self.models
+            .entry(layer)
+            .or_insert_with(|| DotVoxBuilder::new_model(BLOCK_VOX_SIZE))
+    }
+
+    pub fn extend(&mut self, layer: Layers, voxels: impl IntoIterator<Item = dot_vox::Voxel>) {
+        self.get(layer).voxels.extend(voxels);
+    }
+
+    pub fn build(self, vox: &mut DotVoxBuilder, group_id: NodeId) {
+        for (layer, model) in self.models.into_iter().sorted_by_key(|(l, _)| *l).rev() {
+            if model.voxels.is_empty() {
+                continue;
+            }
+            vox.insert_model_and_shape_node(group_id, None, model, layer.id(), layer.to_string());
+        }
     }
 }

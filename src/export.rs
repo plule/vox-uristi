@@ -24,15 +24,18 @@ use std::{
 };
 use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, EnumIter, Display)]
+/// List of displayed layers
+/// The order is important, when building objects they are created in reverse order
+/// As a result, each layer is rendered on top of the next one
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
 #[repr(usize)]
 pub enum Layers {
     All,
+    Building,
     Terrain,
     Liquid,
     Spatter,
     Fire,
-    Building,
     Flows,
     Hidden,
 }
