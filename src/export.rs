@@ -34,7 +34,7 @@ pub enum Layers {
     Fire,
     Building,
     Flows,
-    Void,
+    Hidden,
 }
 
 #[derive(Debug, Clone, Copy, EnumIter, Display)]

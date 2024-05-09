@@ -3,6 +3,7 @@ mod tree;
 use std::collections::HashSet;
 
 use crate::{
+    block::BlockModels,
     context::DFContext,
     palette::{DefaultMaterials, Material},
     rfr::BlockTile,
@@ -15,15 +16,6 @@ pub use generic::BlockTileExt;
 use rand::Rng;
 pub use tree::BlockTilePlantExt;
 
-#[derive(Debug, Clone, Default)]
-pub struct TileVoxels {
-    pub terrain: Vec<dot_vox::Voxel>,
-    pub liquid: Vec<dot_vox::Voxel>,
-    pub spatter: Vec<dot_vox::Voxel>,
-    pub fire: Vec<dot_vox::Voxel>,
-    pub void: Vec<dot_vox::Voxel>,
-}
-
 impl WithDFCoords for BlockTile<'_> {
     fn coords(&self) -> crate::DFMapCoords {
         self.global_coords()
@@ -33,23 +25,22 @@ impl WithDFCoords for BlockTile<'_> {
 impl BlockTile<'_> {
     pub fn build(
         &self,
+        models: &mut BlockModels,
         map: &crate::map::Map,
         context: &DFContext,
         palette: &mut crate::palette::Palette,
-    ) -> TileVoxels {
+    ) {
         let mut rng = self.stable_rng();
-
-        let mut voxels = TileVoxels::default();
 
         if self.hidden() {
             let shape: Box3D<bool> = box_full();
 
-            voxels.void.extend(voxels_from_uniform_shape(
+            models.hidden.voxels.extend(voxels_from_uniform_shape(
                 shape,
                 self.local_coords(),
                 palette.get(&Material::Default(DefaultMaterials::Hidden), context),
             ));
-            return voxels;
+            return;
         }
 
         match (self.tile_type().material(), self.tile_type().shape()) {
@@ -68,14 +59,16 @@ impl BlockTile<'_> {
                 | TiletypeShape::BRANCH,
             ) => {
                 // plant, trees
-                voxels
+                models
                     .terrain
+                    .voxels
                     .extend(self.build_trees(map, context, palette));
             }
             _ => {
                 // classic tile structure
-                voxels
+                models
                     .terrain
+                    .voxels
                     .extend(self.build_structure(map, context, palette));
             }
         }
@@ -84,7 +77,7 @@ impl BlockTile<'_> {
         if self.water() > 0 {
             let water_shape: Box3D<bool> =
                 box_from_levels(slice_const(self.water().min(7).max(2) as usize));
-            voxels.liquid.extend(voxels_from_uniform_shape(
+            models.liquid.voxels.extend(voxels_from_uniform_shape(
                 water_shape,
                 self.local_coords(),
                 palette.get(&Material::Default(DefaultMaterials::Water), context),
@@ -94,7 +87,7 @@ impl BlockTile<'_> {
         if self.magma() > 0 {
             let magma_shape: Box3D<bool> =
                 box_from_levels(slice_const(self.magma().min(7).max(2) as usize));
-            voxels.liquid.extend(voxels_from_uniform_shape(
+            models.liquid.voxels.extend(voxels_from_uniform_shape(
                 magma_shape,
                 self.local_coords(),
                 palette.get(&Material::Default(DefaultMaterials::Magma), context),
@@ -102,8 +95,9 @@ impl BlockTile<'_> {
         }
 
         // spatters
-        let occupied: HashSet<VoxelCoords> = voxels
+        let occupied: HashSet<VoxelCoords> = models
             .terrain
+            .voxels
             .iter()
             .map(|v| VoxelCoords::new(v.x as i32, v.y as i32, v.z as i32))
             .collect();
@@ -111,7 +105,7 @@ impl BlockTile<'_> {
         for spatter in self.spatters() {
             // spatters sit on top of existing voxels, when there is some space
             let material = Material::Generic(spatter.material.get_or_default().clone());
-            for voxel in &voxels.terrain {
+            for voxel in &models.terrain.voxels {
                 let coords = VoxelCoords::new(voxel.x as i32, voxel.y as i32, voxel.z as i32)
                     + VoxelCoords::new(0, 0, 1);
                 if !occupied.contains(&coords) {
@@ -128,7 +122,7 @@ impl BlockTile<'_> {
                         _ => false,
                     };
                     if gen {
-                        voxels.spatter.push(dot_vox::Voxel {
+                        models.spatter.voxels.push(dot_vox::Voxel {
                             x: coords.x as u8,
                             y: coords.y as u8,
                             z: coords.z as u8,
@@ -143,12 +137,11 @@ impl BlockTile<'_> {
         if self.tile_type().material() == TiletypeMaterial::FIRE {
             let shape: Box3D<bool> = box_from_fn(|_, _, _| rng.gen_bool(0.1));
             let material = palette.get(&Material::Default(DefaultMaterials::Fire), context);
-            voxels.fire.extend(voxels_from_uniform_shape(
+            models.fire.voxels.extend(voxels_from_uniform_shape(
                 shape,
                 self.local_coords(),
                 material,
             ));
         }
-        voxels
     }
 }
