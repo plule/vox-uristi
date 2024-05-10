@@ -22,6 +22,10 @@ it.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | *Heavenfall, a fortress by Horrigant*                                                                                                                    |
 
+| <video autoplay="autoplay" loop="loop" width="500" height="500"><source src="/vox-uristi/assets/gallery/shammanor/spin.webm" type="video/webm"></video> |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| *Shàmmanór, a fortress by rockjitsu*                                                                                                                    |
+
 [<i class="fas fa-info"></i> Usage](/vox-uristi/usage){: .btn .btn--primary}
 [<i class="fas fa-images"></i> Gallery](/vox-uristi/gallery){: .btn .btn--primary}
 [<i class="fas fa-exclamation"></i> Tips](/vox-uristi/tips){: .btn .btn--primary}
