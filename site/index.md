@@ -18,13 +18,9 @@ It uses DFHack to read the fortress data and export it in the `.vox` format. The
 resulting file can then be opened in a software such as MagicaVoxel to render
 it.
 
-| <video autoplay="autoplay" loop="loop" width="500" height="500"><source src="/vox-uristi/assets/gallery/heavenfall/spin.webm" type="video/webm"></video> |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| *Heavenfall, a fortress by Horrigant*                                                                                                                    |
-
-| <video autoplay="autoplay" loop="loop" width="500" height="500"><source src="/vox-uristi/assets/gallery/shammanor/spin.webm" type="video/webm"></video> |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| *Shàmmanór, a fortress by rockjitsu*                                                                                                                    |
+| <video autoplay="autoplay" loop="loop" width="500" height="500"><source src="/vox-uristi/assets/gallery/shammanor/spin.webm" type="video/webm"></video>  | <video autoplay="autoplay" loop="loop" width="500" height="500"><source src="/vox-uristi/assets/gallery/heavenfall/spin.webm" type="video/webm"></video> |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| *Shàmmanór, a fortress by rockjitsu*                                                                                                                     | *Heavenfall, a fortress by Horrigant*                                                                                                                    |
 
 [<i class="fas fa-info"></i> Usage](/vox-uristi/usage){: .btn .btn--primary}
 [<i class="fas fa-images"></i> Gallery](/vox-uristi/gallery){: .btn .btn--primary}
