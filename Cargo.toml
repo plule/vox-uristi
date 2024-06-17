@@ -20,7 +20,7 @@ dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master
 easy-ext = "1.0.2"
 eframe = { version = "0.27.1", features = ["persistence"], optional = true }
 glob-match = "0.2.1"
-include_dir = { version = "0.7.3", features = ["glob"] }
+include_dir = { version = "0.7.4", features = ["glob"] }
 indicatif = "0.17.8"
 itertools = "0.12.1"
 lazy_static = "1.4.0"
