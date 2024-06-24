@@ -23,7 +23,7 @@ glob-match = "0.2.1"
 include_dir = { version = "0.7.4", features = ["glob"] }
 indicatif = "0.17.8"
 itertools = "0.12.1"
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 num-integer = "0.1.46"
 num_enum = "0.7.2"
 opener = { version = "0.7.1", features = ["reveal"], optional = true }
