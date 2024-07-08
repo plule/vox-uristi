@@ -3898,9 +3898,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.40"
+version = "0.8.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7439be6844e40133eda024efd85bf07f59d0dd2f59b10c00dd6cfb92cc5c741"
+checksum = "1aee83dc281d5a3200d37b299acd13b81066ea126a7f16f0eae70fc9aed241d9"
 dependencies = [
  "bytemuck",
 ]
