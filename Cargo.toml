@@ -11,7 +11,7 @@ self-update = ["reqwest"]
 
 
 [dependencies]
-anyhow = "1.0.90"
+anyhow = "1.0.91"
 bitflags = "2.6.0"
 clap = { version = "4.5.20", features = ["derive"] }
 derive_more = "0.99.18"
