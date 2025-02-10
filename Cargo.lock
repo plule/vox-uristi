@@ -1303,14 +1303,34 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.18"
+version = "0.99.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
+checksum = "3da29a38df43d6f156149c9b43ded5e018ddff2a855cf2cfd62e8cd7d079c69f"
 dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
  "rustc_version",
+ "syn 2.0.85",
+]
+
+[[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+dependencies = [
+ "proc-macro2",
+ "quote",
  "syn 2.0.85",
 ]
 
@@ -1349,7 +1369,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f0bf7788093c79b5398a984499d64d8f62f6d7534cb1f6f445836ef9694b947"
 dependencies = [
  "byteorder",
- "derive_more",
+ "derive_more 0.99.19",
  "dfhack-proto",
  "log",
  "num_enum",
@@ -4899,7 +4919,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.8.0",
  "clap",
- "derive_more",
+ "derive_more 2.0.1",
  "dfhack-remote",
  "dot_vox",
  "easy-ext",
