@@ -28,14 +28,14 @@ impl FlowInfo {
                 slice_empty(),
                 slice_empty(),
                 shape::slice_from_fn(|_, _| {
-                    rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                    rng.random_ratio(self.density().abs().min(100).max(0) as u32, 400)
                 }),
                 shape::slice_from_fn(|_, _| {
-                    rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                    rng.random_ratio(self.density().abs().min(100).max(0) as u32, 400)
                 }),
             ],
             _ => shape::box_from_fn(|_, _, _| {
-                rng.gen_ratio(self.density().abs().min(100).max(0) as u32, 400)
+                rng.random_ratio(self.density().abs().min(100).max(0) as u32, 400)
             }),
         };
         let material = match self.type_() {

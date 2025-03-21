@@ -104,7 +104,7 @@ pub impl BlockTile<'_> {
                         slice_empty(),
                         slice_empty(),
                         slice_empty(),
-                        slice_from_fn(|_, _| rough && rng.gen_bool(1.0 / 7.0)),
+                        slice_from_fn(|_, _| rough && rng.random_bool(1.0 / 7.0)),
                         slice_empty(),
                     ],
                 )

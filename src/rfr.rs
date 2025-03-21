@@ -167,7 +167,7 @@ impl<'a> Iterator for BlockListIterator<'a> {
                     return None;
                 }
                 self.remaining = self.remaining.saturating_sub(1);
-                Some(Ok(blocks))
+                Some(Ok(blocks.reply))
             }
             Err(err) => Some(Err(err.into())),
         }
