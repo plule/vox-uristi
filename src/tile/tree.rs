@@ -12,7 +12,7 @@ use crate::{
 use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
 use itertools::Itertools;
-use rand::{rngs::StdRng, seq::SliceRandom, Rng};
+use rand::{rngs::StdRng, seq::IndexedRandom, Rng};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
@@ -117,9 +117,21 @@ pub impl BlockTile<'_> {
                 shape::slice_empty(),
                 shape::slice_empty(),
                 [
-                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
-                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
-                    [r.gen_ratio(1, 7), r.gen_ratio(1, 7), r.gen_ratio(1, 7)],
+                    [
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                    ],
+                    [
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                    ],
+                    [
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                        r.random_ratio(1, 7),
+                    ],
                 ],
                 shape::slice_full(),
             ],
@@ -233,19 +245,19 @@ pub impl BlockTile<'_> {
                 [
                     shape::slice_empty(),
                     [
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                         [false, false, false],
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                     ],
                     [
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                         [false, false, false],
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                     ],
                     [
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                         [false, false, false],
-                        [r.gen_ratio(1, 5), false, r.gen_ratio(1, 5)],
+                        [r.random_ratio(1, 5), false, r.random_ratio(1, 5)],
                     ],
                     shape::slice_empty(),
                 ]
@@ -253,19 +265,51 @@ pub impl BlockTile<'_> {
             PlantPart::Twig | PlantPart::LightBranch => [
                 shape::slice_empty(),
                 [
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
                 ],
                 [
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), true, r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [r.random_ratio(1, 5), true, r.random_ratio(1, 5)],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
                 ],
                 [
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
                 ],
                 shape::slice_empty(),
             ],
@@ -274,9 +318,21 @@ pub impl BlockTile<'_> {
                 shape::slice_empty(),
                 shape::slice_empty(),
                 [
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
-                    [r.gen_ratio(1, 5), r.gen_ratio(1, 5), r.gen_ratio(1, 5)],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
+                    [
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                        r.random_ratio(1, 5),
+                    ],
                 ],
                 shape::slice_empty(),
             ],

@@ -33,19 +33,23 @@ impl DFContext {
             ..Default::default()
         })?;
         let inorganic_materials_map: HashMap<(i32, i32), BasicMaterialInfo> = inorganics_materials
+            .reply
             .value
             .into_iter()
             .map(|mat| ((mat.type_(), mat.index()), mat))
             .collect();
         Ok(Self {
             settings,
-            tile_types: client.remote_fortress_reader().get_tiletype_list()?,
-            materials: client.remote_fortress_reader().get_material_list()?,
-            map_info: client.remote_fortress_reader().get_map_info()?,
-            plant_raws: client.remote_fortress_reader().get_plant_raws()?,
-            enums: client.core().list_enums()?,
+            tile_types: client.remote_fortress_reader().get_tiletype_list()?.reply,
+            materials: client.remote_fortress_reader().get_material_list()?.reply,
+            map_info: client.remote_fortress_reader().get_map_info()?.reply,
+            plant_raws: client.remote_fortress_reader().get_plant_raws()?.reply,
+            enums: client.core().list_enums()?.reply,
             building_map: create_building_def_map(
-                client.remote_fortress_reader().get_building_def_list()?,
+                client
+                    .remote_fortress_reader()
+                    .get_building_def_list()?
+                    .reply,
             ),
             inorganic_materials_map,
         })

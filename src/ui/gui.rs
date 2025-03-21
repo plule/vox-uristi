@@ -32,7 +32,7 @@ pub fn run() -> anyhow::Result<()> {
     match eframe::run_native(
         format!("Vox Uristi v{VERSION}").as_str(),
         options,
-        Box::new(|cc| Box::<App>::new(App::new(cc))),
+        Box::new(|cc| Ok(Box::<App>::new(App::new(cc)))),
     ) {
         Ok(_) => Ok(()),
         Err(e) => Err(anyhow::format_err!("{}", e.to_string())),
@@ -288,7 +288,7 @@ fn elevation_picker(
             elevation.read_from_df(df)?;
         }
         let mut resp = ui
-            .add(DragValue::new(&mut elevation.0).clamp_range(-200..=200))
+            .add(DragValue::new(&mut elevation.0).range(-200..=200))
             .on_hover_text("Defines the elevation range that will be exported.");
         if button.clicked() {
             resp.mark_changed();
