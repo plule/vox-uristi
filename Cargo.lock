@@ -1288,7 +1288,7 @@ dependencies = [
 [[package]]
 name = "dot_vox"
 version = "5.1.1"
-source = "git+https://github.com/dust-engine/dot_vox.git?branch=master#abdc0d42c9cbd6c304a70b7c930e5e27d7cf04d2"
+source = "git+https://github.com/dust-engine/dot_vox.git?branch=master#d8a7539b20cbd4bb8c4d5c9dadce55c09686d641"
 dependencies = [
  "ahash",
  "lazy_static",
