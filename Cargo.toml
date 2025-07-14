@@ -36,7 +36,7 @@ reqwest = { version = "0.12.22", features = [
     "json",
 ], optional = true }
 rfd = { version = "0.15.3", optional = true }
-rgb = "0.8.51"
+rgb = "0.8.52"
 semver = "1.0.26"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
