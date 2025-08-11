@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: Swatinem/rust-cache@v2
     - name: Install packages (Linux)
       if: runner.os == 'Linux'
@@ -55,7 +55,7 @@ jobs:
       packages: write
       deployments: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: Swatinem/rust-cache@v2
     - name: Install packages (Linux)
       if: runner.os == 'Linux'
