@@ -1326,7 +1326,7 @@ dependencies = [
  "glutin",
  "glutin-winit",
  "home",
- "image 0.25.7",
+ "image 0.25.8",
  "js-sys",
  "log",
  "objc2 0.5.2",
@@ -2393,9 +2393,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.25.7"
+version = "0.25.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c6a3ce16143778e24df6f95365f12ed105425b22abefd289dd88a64bab59605"
+checksum = "529feb3e6769d234375c4cf1ee2ce713682b8e76538cb13f9fc23e1400a591e7"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -5264,7 +5264,7 @@ dependencies = [
  "easy-ext",
  "eframe",
  "glob-match",
- "image 0.25.7",
+ "image 0.25.8",
  "include_dir",
  "indicatif",
  "itertools 0.14.0",
