@@ -1,7 +1,9 @@
+//! General direction and neighbours management
 use crate::{DFMapCoords, WithDFCoords};
 use dfhack_remote::BuildingDirection;
 use std::ops::BitOr;
 
+/// 3D direction, on the map or below and above
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     Above,
@@ -12,6 +14,7 @@ pub enum Direction {
     West,
 }
 
+/// 2D direction, cardinal points only
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DirectionFlat {
     North,
@@ -20,6 +23,7 @@ pub enum DirectionFlat {
     West,
 }
 
+/// 2D direction, cardinal points, including intermediate directions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction8Flat {
     North,
@@ -32,6 +36,7 @@ pub enum Direction8Flat {
     NorthWest,
 }
 
+/// 2D neighbours connectivity
 #[derive(Debug, PartialEq)]
 pub struct NeighbouringFlat<T> {
     pub n: T,
@@ -40,6 +45,7 @@ pub struct NeighbouringFlat<T> {
     pub w: T,
 }
 
+/// 2D neighbours connectivity, including intermediate directions
 #[derive(Debug, PartialEq)]
 pub struct Neighbouring8Flat<T> {
     pub n: T,
@@ -52,6 +58,7 @@ pub struct Neighbouring8Flat<T> {
     pub nw: T,
 }
 
+/// 3D neighbours connectivity
 pub struct Neighbouring<T> {
     pub a: T,
     pub b: T,
@@ -61,6 +68,7 @@ pub struct Neighbouring<T> {
     pub w: T,
 }
 
+/// Direction conversion functions
 pub trait Rotating {
     /// Return a copy facing away from a given direction, assuming
     /// the input was looking at south

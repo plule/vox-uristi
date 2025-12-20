@@ -1,10 +1,12 @@
+//! Global dwarf fortress map intermediate storage between Dwarf Fortress and voxels
+
 use crate::{
-    context::DFContext,
     coords::{WithBlockCoords, WithBoundingBox},
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
+    export::BlockTileExt,
+    export::DFContext,
     rfr::{self, BlockTile, BuildingExt, BuildingFlags},
-    tile::BlockTileExt,
-    DFMapCoords, IsSomeAnd,
+    DFMapCoords,
 };
 use dfhack_remote::{BuildingInstance, MapBlock};
 use itertools::Itertools;
@@ -134,7 +136,9 @@ impl<'a> Map<'a> {
                 let wally = self
                     .occupancy
                     .get(&DFMapCoords::new(coords.x + x, coords.y + y, z))
-                    .some_and(|tile| tile.block_tile.some_and(|tile| tile.is_wall()));
+                    .is_some_and(|tile| {
+                        tile.block_tile.as_ref().is_some_and(|tile| tile.is_wall())
+                    });
                 if wally {
                     if x == -1 {
                         wallyness[W] += 1;

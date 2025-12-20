@@ -1,3 +1,4 @@
+//! Dwarf Fortress calendar
 use clap::ValueEnum;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
@@ -60,8 +61,9 @@ impl Sub<i32> for Month {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TimeOfTheYear {
+    #[default]
     Current,
     Month(Month),
 }
@@ -76,12 +78,6 @@ impl TimeOfTheYear {
                 .unwrap_or_default(),
             TimeOfTheYear::Month(month) => month.year_tick(),
         }
-    }
-}
-
-impl Default for TimeOfTheYear {
-    fn default() -> Self {
-        Self::Current
     }
 }
 

@@ -1,3 +1,4 @@
+//! Remote fortress reader API helpers
 use crate::{
     coords::{DFBlockCoords, DFLocalCoords, WithBlockCoords},
     DFMapCoords,
@@ -33,6 +34,7 @@ pub impl dfhack_remote::Client {
         Ok(view_info.view_pos_z() + offset)
     }
 
+    #[cfg(feature = "dev")]
     fn set_elevation(&mut self, elevation: i32) -> dfhack_remote::Result<()> {
         let offset = self.elevation_offset()?;
         let scriptlet = format!(
@@ -401,8 +403,7 @@ pub impl Spatter {
             dfhack_remote::MatterState::Paste => 0.0,
             dfhack_remote::MatterState::Pressed => 0.0,
         }
-        .min(1.0)
-        .max(0.0)
+        .clamp(0.0, 1.0)
     }
 }
 

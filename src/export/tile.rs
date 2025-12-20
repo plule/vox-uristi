@@ -1,12 +1,12 @@
-mod generic;
-mod tree;
+//! Tile export functions (smallest dwarf fortress map unit)
+pub mod generic;
+pub mod tree;
+
 use std::collections::HashSet;
 
+use super::{DFContext, DefaultMaterials, Layers, Map, Material, Palette};
 use crate::{
-    block::BlockModels,
-    context::DFContext,
-    export::Layers,
-    palette::{DefaultMaterials, Material},
+    export::block::BlockModels,
     rfr::BlockTile,
     shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
     voxel::voxels_from_uniform_shape,
@@ -27,9 +27,9 @@ impl BlockTile<'_> {
     pub fn build(
         &self,
         models: &mut BlockModels,
-        map: &crate::map::Map,
+        map: &Map,
         context: &DFContext,
-        palette: &mut crate::palette::Palette,
+        palette: &mut Palette,
     ) {
         let mut rng = self.stable_rng();
 
@@ -82,7 +82,7 @@ impl BlockTile<'_> {
         // liquids
         if self.water() > 0 {
             let water_shape: Box3D<bool> =
-                box_from_levels(slice_const(self.water().min(7).max(2) as usize));
+                box_from_levels(slice_const(self.water().clamp(2, 7) as usize));
             models.extend(
                 Layers::Liquid,
                 voxels_from_uniform_shape(
@@ -95,7 +95,7 @@ impl BlockTile<'_> {
 
         if self.magma() > 0 {
             let magma_shape: Box3D<bool> =
-                box_from_levels(slice_const(self.magma().min(7).max(2) as usize));
+                box_from_levels(slice_const(self.magma().clamp(2, 7) as usize));
             models.extend(
                 Layers::Liquid,
                 voxels_from_uniform_shape(
@@ -143,7 +143,7 @@ impl BlockTile<'_> {
 
         // Fire is identified as a special tiletype material
         if self.tile_type().material() == TiletypeMaterial::FIRE {
-            let shape: Box3D<bool> = box_from_fn(|_, _, _| rng.gen_bool(0.1));
+            let shape: Box3D<bool> = box_from_fn(|_, _, _| rng.random_bool(0.1));
             let material = palette.get(&Material::Default(DefaultMaterials::Fire), context);
             models.extend(
                 Layers::Fire,

@@ -1,3 +1,4 @@
+//! User interfaces, text and graphical
 use std::{
     path::PathBuf,
     sync::mpsc::{Receiver, Sender},
@@ -38,7 +39,9 @@ pub struct State {
 }
 
 #[cfg(feature = "self-update")]
+#[derive(Default)]
 enum CheckUpdateStatus {
+    #[default]
     NotDone,
     Doing(Receiver<Result<crate::update::UpdateStatus>>),
     Done(crate::update::UpdateStatus),
@@ -67,13 +70,6 @@ impl State {
             time: self.time,
             path,
         }
-    }
-}
-
-#[cfg(feature = "self-update")]
-impl Default for CheckUpdateStatus {
-    fn default() -> Self {
-        Self::NotDone
     }
 }
 

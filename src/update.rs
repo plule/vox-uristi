@@ -1,3 +1,4 @@
+//! Self update management
 use anyhow::Result;
 use reqwest::header::HeaderValue;
 use semver::Version;

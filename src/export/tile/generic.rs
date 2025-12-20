@@ -1,13 +1,11 @@
 use super::tree::{connectivity_from_direction_string, PlantPart};
 use crate::{
-    context::DFContext,
     direction::{Neighbouring8Flat, Rotating},
-    map::Map,
-    palette::{DefaultMaterials, EffectiveMaterial, Material, Palette},
+    export::{DFContext, DefaultMaterials, EffectiveMaterial, Map, Material, Palette},
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape},
-    DFMapCoords, IsSomeAnd, StableRng,
+    DFMapCoords, StableRng,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use easy_ext::ext;
@@ -110,7 +108,9 @@ pub impl BlockTile<'_> {
                 )
             }
             TiletypeShape::WALL => {
-                let c = map.neighbouring_8flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
+                let c = map.neighbouring_8flat(coords, |o| {
+                    o.block_tile.as_ref().is_some_and(|t| t.is_wall())
+                });
                 // Inside the wall is either the "hidden" material, or the material of the wall if
                 // it's transparent. It could be worth avoiding building the whole effective mat here...
                 let effective_material = EffectiveMaterial::from_material(&material, context);
@@ -137,8 +137,9 @@ pub impl BlockTile<'_> {
                 return (voxels_from_shape(shape, self.local_coords()), vec![]);
             }
             TiletypeShape::FORTIFICATION => {
-                let conn =
-                    map.neighbouring_flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
+                let conn = map.neighbouring_flat(coords, |o| {
+                    o.block_tile.as_ref().is_some_and(|t| t.is_wall())
+                });
                 #[rustfmt::skip]
                 let shape = [
                     [

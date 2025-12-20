@@ -1,4 +1,5 @@
-use crate::{block::BLOCK_SIZE, coords::DFLocalCoords, direction::Rotating, shape::Box3D, BASE};
+//! Voxel generation tooling
+use crate::{coords::DFLocalCoords, direction::Rotating, export::BLOCK_SIZE, shape::Box3D, BASE};
 use itertools::Itertools;
 
 pub fn voxels_from_shape<const B: usize, const H: usize>(

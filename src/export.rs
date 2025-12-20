@@ -1,16 +1,30 @@
+//! Entrypoint function for the voxel export
+
+mod block;
+mod building;
+mod context;
+mod flow;
+mod map;
+mod palette;
+mod prefabs;
+mod tile;
+
+pub use context::DFContext;
+pub use flow::FlowInfoExt;
+pub use map::Map;
+pub use palette::{DefaultMaterials, EffectiveMaterial, Material, Palette};
+pub use prefabs::{FromPrefab, MODELS};
+pub use tile::BlockTileExt;
+
 use crate::{
-    block::BLOCK_VOX_SIZE,
-    building::BuildingInstanceExt,
     calendar::TimeOfTheYear,
-    context::DFContext,
     coords::DotVoxModelCoords,
     dot_vox_builder::{DotVoxBuilder, LayerId, ModelId},
-    map::Map,
-    palette::{DefaultMaterials, Material, Palette},
     rfr::{self, DFHackExt},
-    FromDwarfFortress, HEIGHT,
+    FromDwarfFortress, BASE, HEIGHT,
 };
 use anyhow::Result;
+use building::BuildingInstanceExt;
 use dot_vox::{DotVoxData, Model, Size};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -23,6 +37,16 @@ use std::{
     thread::JoinHandle,
 };
 use strum::{Display, EnumIter, IntoEnumIterator};
+
+/// Width and height of a Dwarf Fortress block
+pub const BLOCK_SIZE: usize = 16;
+
+/// Dimension in voxels of a Dwarf Fortress block
+pub const BLOCK_VOX_SIZE: Size = Size {
+    x: (BLOCK_SIZE * BASE) as u32,
+    y: (BLOCK_SIZE * BASE) as u32,
+    z: HEIGHT as u32,
+};
 
 /// List of displayed layers
 /// The order is important, when building objects they are created in reverse order
@@ -60,33 +84,39 @@ impl Models {
     }
 }
 
+/// Parameters for the export
 pub struct ExportParams {
+    /// Lower elevation limit
     pub elevation_low: Elevation,
+    /// Upper elevation limit
     pub elevation_high: Elevation,
+    /// Time of the year for tree growth
     pub time: TimeOfTheYear,
+    /// Destination file
     pub path: PathBuf,
 }
 
+/// Settings influencing the export data
 pub struct ExportSettings {
+    /// Year tick, based on the selected time of the year, for tree growth
     pub year_tick: i32,
 }
 
+/// Progress status for UIs
 pub enum Progress {
-    Undetermined {
-        message: &'static str,
-    },
-    Start {
-        message: &'static str,
-        total: usize,
-    },
+    /// Start a step without progress
+    Undetermined { message: &'static str },
+    /// Start a step with progress
+    Start { message: &'static str, total: usize },
+    /// Update a started step
     Update {
         message: &'static str,
         curr: usize,
         total: usize,
     },
-    Done {
-        path: PathBuf,
-    },
+    /// Finished
+    Done { path: PathBuf },
+    /// Failed
     Error(anyhow::Error),
 }
 
@@ -263,7 +293,7 @@ pub fn try_export_voxels(
             }
 
             // Create the terrain model
-            crate::block::build(block, &map, &context, &mut vox, &mut palette, level_group);
+            block::build(block, &map, &context, &mut vox, &mut palette, level_group);
         }
 
         if !level_data.buildings.is_empty() {

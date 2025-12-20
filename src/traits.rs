@@ -1,21 +1,10 @@
+//! Trait used across vox uristi
 use rand::{rngs::StdRng, Rng};
 
-pub trait IsSomeAnd<T> {
-    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool;
-}
-
-impl<T> IsSomeAnd<T> for Option<T> {
-    fn some_and(&self, f: impl FnOnce(&T) -> bool) -> bool {
-        match self {
-            None => false,
-            Some(x) => f(x),
-        }
-    }
-}
-
+/// Generate a boolean, with clamped probability
 pub trait GenBoolSafe: Rng {
     fn gen_bool_safe(&mut self, probability: f64) -> bool {
-        self.gen_bool(probability.clamp(0.0, 1.0))
+        self.random_bool(probability.clamp(0.0, 1.0))
     }
 }
 
