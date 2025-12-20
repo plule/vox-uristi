@@ -1,4 +1,6 @@
-use crate::context::DFContext;
+//! Material and palette management
+
+use crate::export::context::DFContext;
 use crate::rfr::RGBColor;
 use crate::{dot_vox_builder::MaterialExt, rfr::BasicMaterialInfoExt};
 use dfhack_remote::TiletypeMaterial;
@@ -98,7 +100,7 @@ impl Palette {
         let color = *self.materials.entry(effective_material).or_insert_with(|| {
             // would be nice to warn in case of palette overflow
             palette_size
-                .min(std::u8::MAX as usize - 1)
+                .min(u8::MAX as usize - 1)
                 .try_into()
                 .unwrap_or_default()
         });

@@ -1,3 +1,4 @@
+//! Shared context between the export methods
 use std::collections::HashMap;
 
 use anyhow::Result;
@@ -7,8 +8,9 @@ use dfhack_remote::{
 };
 use protobuf::MessageField;
 
-use crate::{block::BLOCK_SIZE, export::ExportSettings, rfr::create_building_def_map, BASE};
+use crate::{export::ExportSettings, export::BLOCK_SIZE, rfr::create_building_def_map, BASE};
 
+/// Shared context between the export methods
 pub struct DFContext {
     pub settings: ExportSettings,
     pub tile_types: TiletypeList,

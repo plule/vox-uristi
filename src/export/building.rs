@@ -1,13 +1,12 @@
+//! Functions to export all the player constructions
 use crate::{
-    context::DFContext,
     coords::WithBoundingBox,
     direction::DirectionFlat,
     dot_vox_builder::{DotVoxBuilder, NodeId},
-    export::Layers,
-    map::Map,
-    prefabs::FromPrefab,
     DFBoundingBox, DFMapCoords, WithDFCoords,
 };
+
+use super::{DFContext, FromPrefab, Layers, Map, Palette, MODELS};
 use dfhack_remote::{BuildingInstance, MatPair};
 use easy_ext::ext;
 
@@ -81,7 +80,7 @@ pub impl BuildingInstance {
         map: &Map,
         context: &DFContext,
         vox: &mut DotVoxBuilder,
-        palette: &mut crate::palette::Palette,
+        palette: &mut Palette,
         group: NodeId,
     ) {
         if let Some((name, model)) = self.do_build(map, context, palette) {
@@ -101,15 +100,15 @@ pub impl BuildingInstance {
     }
     fn do_build(
         &self,
-        map: &crate::map::Map,
+        map: &Map,
         context: &DFContext,
-        palette: &mut crate::palette::Palette,
+        palette: &mut Palette,
     ) -> Option<(String, dot_vox::Model)> {
         let building_definition =
             context.building_definition(self.building_type.get_or_default())?;
 
         let name = building_definition.name();
-        let prefab = crate::prefabs::MODELS.building(building_definition.id())?;
+        let prefab = MODELS.building(building_definition.id())?;
         let model = prefab.build(self, map, context, palette);
         Some((name.to_string(), model))
     }

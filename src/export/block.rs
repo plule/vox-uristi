@@ -1,25 +1,18 @@
+//! Functions to export voxels of a block (16x16x1 tiles chunk of the map)
+
 use std::collections::HashMap;
 
 use dfhack_remote::MapBlock;
-use dot_vox::{Model, Size};
+use dot_vox::Model;
 use itertools::Itertools;
 
 use crate::{
-    context::DFContext,
     coords::DotVoxModelCoords,
     dot_vox_builder::{DotVoxBuilder, NodeId},
-    export::{Layers, Models},
-    flow::FlowInfoExt,
-    rfr, WithDFCoords, BASE, HEIGHT,
+    rfr, WithDFCoords, BASE,
 };
 
-pub const BLOCK_SIZE: usize = 16;
-
-pub const BLOCK_VOX_SIZE: Size = Size {
-    x: (BLOCK_SIZE * BASE) as u32,
-    y: (BLOCK_SIZE * BASE) as u32,
-    z: HEIGHT as u32,
-};
+use super::{DFContext, FlowInfoExt, Layers, Map, Models, Palette, BLOCK_VOX_SIZE};
 
 /// All the voxel models constituing a block
 #[derive(Default)]
@@ -29,10 +22,10 @@ pub struct BlockModels {
 
 pub fn build(
     block: &MapBlock,
-    map: &crate::map::Map,
+    map: &Map,
     context: &DFContext,
     vox: &mut DotVoxBuilder,
-    palette: &mut crate::palette::Palette,
+    palette: &mut Palette,
     level_group_id: NodeId,
 ) {
     // Collect all the tiles of the block

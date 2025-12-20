@@ -1,3 +1,4 @@
+//! Dwarf Fortress and Voxels coordinate management
 use std::{
     collections::hash_map::DefaultHasher,
     fmt::Display,
@@ -7,9 +8,11 @@ use std::{
 
 use rand::{rngs::StdRng, SeedableRng};
 
-use crate::{block::BLOCK_SIZE, StableRng};
+use crate::{export::BLOCK_SIZE, StableRng};
 
+/// Width and height in voxels of a Dwarf Fortress tile
 pub const BASE: usize = 3;
+/// Height in voxels of a Dwarf Fortress tile
 pub const HEIGHT: usize = 5;
 
 /// Global voxel coordinates
@@ -103,6 +106,7 @@ pub trait WithBlockCoords {
     fn block_coords(&self) -> DFBlockCoords;
 }
 
+/// A bounding box in dwarf fortress coordinate system
 #[derive(Debug, Clone)]
 pub struct DFBoundingBox {
     pub x: RangeInclusive<i32>,
@@ -201,7 +205,7 @@ impl Add<VoxelCoords> for VoxelCoords {
     }
 }
 
-impl<'a> Add<VoxelCoords> for &'a VoxelCoords {
+impl Add<VoxelCoords> for &VoxelCoords {
     type Output = VoxelCoords;
 
     fn add(self, rhs: VoxelCoords) -> Self::Output {
@@ -217,7 +221,7 @@ impl Add<DFMapCoords> for DFMapCoords {
     }
 }
 
-impl<'a> Add<DFMapCoords> for &'a DFMapCoords {
+impl Add<DFMapCoords> for &DFMapCoords {
     type Output = DFMapCoords;
 
     fn add(self, rhs: DFMapCoords) -> Self::Output {

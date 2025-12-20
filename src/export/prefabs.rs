@@ -1,3 +1,5 @@
+//! Template .vox file management
+
 use anyhow::Context;
 use dfhack_remote::MatPair;
 use dot_vox::{Model, Voxel};
@@ -9,17 +11,17 @@ use serde::Deserialize;
 use std::{collections::HashMap, iter::repeat};
 
 use crate::{
-    building::BuildingInstanceExt,
-    context::DFContext,
     coords::WithBoundingBox,
     direction::{DirectionFlat, NeighbouringFlat, Rotating},
-    map::Map,
-    palette::{DefaultMaterials, Material, Palette},
-    tile::BlockTileExt,
-    IsSomeAnd, BASE,
+    export::building::BuildingInstanceExt,
+    export::context::DFContext,
+    export::tile::BlockTileExt,
+    BASE,
 };
 
-static META_BYTES: &[u8] = include_bytes!("../assets/prefabs.yaml");
+use super::{DefaultMaterials, Map, Material, Palette};
+
+static META_BYTES: &[u8] = include_bytes!("../../assets/prefabs.yaml");
 static BUILDING_BYTES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/assets/buildings");
 
 #[derive(Deserialize)]
@@ -44,13 +46,12 @@ pub struct Prefabs {
 
 impl Prefabs {
     pub fn building<'a>(&'a self, id: &str) -> Option<&'a Prefab> {
-        self.buildings.get(&id.to_string())
+        self.buildings.get(id)
     }
 }
 
 #[derive(Debug)]
 pub struct Prefab {
-    pub name: String,
     pub model: Model,
     pub orientation: OrientationMode,
     pub content: ContentMode,
@@ -140,7 +141,6 @@ pub fn load_models() -> Prefabs {
         prefabs.buildings.insert(
             id.clone(),
             Prefab {
-                name: model_path.clone(),
                 model: load_model(
                     BUILDING_BYTES
                         .get_file(&model_path)
@@ -320,8 +320,9 @@ impl Prefab {
         match self.connectivity {
             Connectivity::None => {}
             Connectivity::SelfOrWall => {
-                let wall_connectivity =
-                    map.neighbouring_flat(coords, |o| o.block_tile.some_and(|t| t.is_wall()));
+                let wall_connectivity = map.neighbouring_flat(coords, |o| {
+                    o.block_tile.as_ref().is_some_and(|t| t.is_wall())
+                });
                 let neighbour_connectivity = obj.self_connectivity(map, context);
                 let c = wall_connectivity | neighbour_connectivity;
                 let cx = (model.size.x / 2) as i32;

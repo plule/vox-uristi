@@ -1,3 +1,5 @@
+//! General helper to build dot_vox structures
+
 use derive_more::Deref;
 use dot_vox::{Dict, DotVoxData, Frame, Layer, Material, Model, SceneNode, ShapeModel, Size};
 use easy_ext::ext;
@@ -87,6 +89,7 @@ impl Default for DotVoxBuilder {
                     };
                     32
                 ],
+                index_map: vec![],
             },
             root_group: NodeId(1),
         }
@@ -290,6 +293,7 @@ impl From<DotVoxBuilder> for DotVoxData {
 }
 
 #[ext(MaterialExt)]
+#[allow(dead_code)]
 pub impl Material {
     fn with_id(mut self, id: u32) -> Self {
         self.id = id;

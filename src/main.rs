@@ -1,20 +1,13 @@
+#![doc = include_str!("../README.md")]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod block;
-mod building;
 mod calendar;
-mod context;
 mod coords;
 mod direction;
 mod dot_vox_builder;
 mod export;
-mod flow;
-mod map;
-mod palette;
-mod prefabs;
 mod rfr;
 mod shape;
-mod tile;
 mod traits;
 mod ui;
 #[cfg(feature = "self-update")]
@@ -30,8 +23,10 @@ pub use traits::*;
 use clap::{Parser, Subcommand};
 pub use coords::{DFBoundingBox, DFMapCoords, VoxelCoords, WithDFCoords, BASE, HEIGHT};
 
+/// Version of Vox Uristi
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Command line options
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {

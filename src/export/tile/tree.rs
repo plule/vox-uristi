@@ -1,13 +1,11 @@
 use super::BlockTileExt;
 use crate::{
-    context::DFContext,
     direction::{DirectionFlat, NeighbouringFlat},
-    map::Map,
-    palette::{DefaultMaterials, Material, Palette},
+    export::{DFContext, DefaultMaterials, Map, Material, Palette},
     rfr::{BlockTile, ConsoleColor, GetTiming},
     shape::{self, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape},
-    IsSomeAnd, StableRng,
+    StableRng,
 };
 use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
@@ -138,7 +136,7 @@ pub impl BlockTile<'_> {
             PlantPart::HeavyBranch { connectivity: from } => {
                 // light branch connections
                 let to = map.neighbouring(coords, |o| {
-                    o.block_tile.some_and(|t| {
+                    o.block_tile.as_ref().is_some_and(|t| {
                         t.tree_origin() == origin && t.plant_part() == PlantPart::LightBranch
                     })
                 });
@@ -172,7 +170,7 @@ pub impl BlockTile<'_> {
             }
             PlantPart::LightBranch => {
                 let c = map.neighbouring(coords, |o| {
-                    o.block_tile.some_and(|t| {
+                    o.block_tile.as_ref().is_some_and(|t| {
                         t.tree_origin() == origin
                             && matches!(
                                 t.plant_part(),
@@ -213,7 +211,7 @@ pub impl BlockTile<'_> {
             }
             PlantPart::Twig => {
                 let c = map.neighbouring(coords, |o| {
-                    o.block_tile.some_and(|t| {
+                    o.block_tile.as_ref().is_some_and(|t| {
                         t.tree_origin() == origin && t.plant_part() == PlantPart::LightBranch
                     })
                 });
