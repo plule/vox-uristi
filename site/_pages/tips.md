@@ -36,9 +36,9 @@ the sampling settings of the rendering left panel.
 Even though it is possible to add light sources in MagicaVoxel, the best way to
 light a scene is always from the sun and sky, making interior rendering tricky.
 
-The best approach is almost always to export with the ceiling cut to expose the
-scene to direct light. In Vox Uristi, select a lower upper bound elevation to
-remove the ceiling, and export the scene again.
+The best approach is almost always to hide some upper Z-level to open the roof
+and let the sunlight in. In Magica Voxel, use the "Outline" panel on the right
+to control which Z-level is visible.
 
 ## Vertical Stretching
 

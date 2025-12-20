@@ -45,8 +45,8 @@ it.
 - ☑ Spatters
 - ☑ Export the buildings as individual selectable objects
 - ☑ Split the export into useful layers
+- ☑ Rails
 - ☐ Item state (opened/closed)
-- ☐ Rails
 - ☐ Easier/interactive export
 
 ### Maybe some day
