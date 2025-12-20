@@ -2,9 +2,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
-use protobuf::{Message, MessageDyn, MessageField};
+use protobuf::{Message, MessageField, MessageFull};
 
-use crate::{rfr, rfr::DFHackExt, DFCoords, DevCommand};
+use crate::{rfr, rfr::DFHackExt, DFMapCoords, DevCommand, WithDFCoords};
 
 pub fn run(cmd: DevCommand) -> Result<(), anyhow::Error> {
     match cmd {
@@ -22,7 +22,7 @@ pub fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
     let y = view_info.cursor_pos_y();
     let z = view_info.cursor_pos_z();
     let tile_type_list = client.remote_fortress_reader().get_tiletype_list()?;
-    let probe = DFCoords::new(x, y, z);
+    let probe = DFMapCoords::new(x, y, z);
     for block_list in rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?
     {
         for block in block_list?.map_blocks {
@@ -46,7 +46,7 @@ pub fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
                 }
             }
             for (i, flow) in block.flows.iter().enumerate() {
-                if DFCoords::from(flow.pos.get_or_default()) == probe {
+                if DFMapCoords::from(flow.pos.get_or_default()) == probe {
                     dump(flow, &destination, format!("flow_{i}.json").as_str())?;
                 }
             }
@@ -96,28 +96,31 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
         ..Default::default()
     };
 
-    let basic_materials = client.core().list_materials(req)?;
+    let basic_materials = client.core().list_materials(req)?.reply;
     dump(&basic_materials, &destination, "basic_materials.json")?;
 
-    let materials = client.remote_fortress_reader().get_material_list()?;
+    let materials = client.remote_fortress_reader().get_material_list()?.reply;
     dump(&materials, &destination, "materials.json")?;
 
-    let plants = client.remote_fortress_reader().get_plant_raws()?;
+    let plants = client.remote_fortress_reader().get_plant_raws()?.reply;
     dump(&plants, &destination, "plant_raws.json")?;
 
-    let ttypes = client.remote_fortress_reader().get_tiletype_list()?;
+    let ttypes = client.remote_fortress_reader().get_tiletype_list()?.reply;
     dump(&ttypes, &destination, "tiletypes.json")?;
 
-    let building_defs = client.remote_fortress_reader().get_building_def_list()?;
+    let building_defs = client
+        .remote_fortress_reader()
+        .get_building_def_list()?
+        .reply;
     dump(&building_defs, &destination, "building_defs.json")?;
 
-    let growth_list = client.remote_fortress_reader().get_growth_list()?;
+    let growth_list = client.remote_fortress_reader().get_growth_list()?.reply;
     dump(&growth_list, &destination, "growths.json")?;
 
-    let item_list = client.remote_fortress_reader().get_item_list()?;
+    let item_list = client.remote_fortress_reader().get_item_list()?.reply;
     dump(&item_list, &destination, "items.json")?;
 
-    let language = client.remote_fortress_reader().get_language()?;
+    let language = client.remote_fortress_reader().get_language()?.reply;
     dump(&language, &destination, "language.json")?;
 
     let view_info = client.remote_fortress_reader().get_view_info()?;
@@ -133,16 +136,16 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
         max_z: Some(z + 1),
         ..Default::default()
     };
-    let blocks = client.remote_fortress_reader().get_block_list(req)?;
+    let blocks = client.remote_fortress_reader().get_block_list(req)?.reply;
     dump(&blocks, &destination, "blocks.json")?;
 
-    let enums = client.core().list_enums()?;
+    let enums = client.core().list_enums()?.reply;
     dump(&enums, &destination, "enums.json")?;
 
     Ok(())
 }
 
-fn dump(message: &dyn MessageDyn, folder: &Path, filename: &str) -> Result<()> {
+fn dump(message: &impl MessageFull, folder: &Path, filename: &str) -> Result<()> {
     let json = protobuf_json_mapping::print_to_string(message)?;
     let mut dest = folder.to_path_buf();
     dest.push(filename);
