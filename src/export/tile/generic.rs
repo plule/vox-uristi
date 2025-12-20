@@ -1,7 +1,9 @@
 use super::tree::{connectivity_from_direction_string, PlantPart};
 use crate::{
-    direction::{Neighbouring8Flat, Rotating},
-    export::{DFContext, DefaultMaterials, EffectiveMaterial, Map, Material, Palette},
+    direction::Rotating,
+    export::{
+        tile::ramp_levels, DFContext, DefaultMaterials, EffectiveMaterial, Map, Material, Palette,
+    },
     rfr::BlockTile,
     shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
     voxel::{voxels_from_shape, voxels_from_uniform_shape},
@@ -12,31 +14,7 @@ use easy_ext::ext;
 use rand::Rng;
 
 pub fn ramp_shape(map: &Map, coords: DFMapCoords) -> [[[bool; 3]; 3]; 5] {
-    let c = map.neighbouring_8flat(coords, |o| {
-        o.block_tile
-            .as_ref()
-            .map(|t| t.ramp_contact_height())
-            .unwrap_or(1)
-    });
-    let nw = c.nw.max(c.n).max(c.w);
-    let ne = c.ne.max(c.n).max(c.e);
-    let sw = c.sw.max(c.s).max(c.w);
-    let se = c.se.max(c.s).max(c.e);
-
-    let c = Neighbouring8Flat {
-        n: (nw + ne) / 2,
-        ne,
-        e: (ne + se) / 2,
-        se,
-        s: (sw + se) / 2,
-        sw,
-        w: (nw + sw) / 2,
-        nw,
-    };
-
-    let max = nw.max(ne).max(sw).max(se);
-
-    let levels = [[c.nw, c.n, c.ne], [c.w, max / 2, c.e], [c.sw, c.s, c.se]];
+    let levels = ramp_levels(map, coords);
 
     box_from_levels(levels)
 }
@@ -78,6 +56,7 @@ pub impl BlockTile<'_> {
             // Generic material from raw
             mat => Material::TileGeneric(self.material().clone(), mat),
         };
+
         let (shape_base, shape_rough): (Box3D<bool>, Box3D<bool>) = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
                 let item_on_tile = map

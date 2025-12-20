@@ -117,6 +117,17 @@ impl BitOr for NeighbouringFlat<bool> {
     }
 }
 
+impl NeighbouringFlat<bool> {
+    pub fn from_direction(direction: &str) -> Self {
+        NeighbouringFlat::<bool> {
+            n: direction.contains('N'),
+            e: direction.contains('E'),
+            s: direction.contains('S'),
+            w: direction.contains('W'),
+        }
+    }
+}
+
 impl WithDFCoords for Direction8Flat {
     fn coords(&self) -> DFMapCoords {
         match self {

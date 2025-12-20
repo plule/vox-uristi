@@ -1,21 +1,51 @@
 //! Tile export functions (smallest dwarf fortress map unit)
-pub mod generic;
-pub mod tree;
+mod generic;
+mod track;
+mod tree;
 
 use std::collections::HashSet;
 
 use super::{DFContext, DefaultMaterials, Layers, Map, Material, Palette};
 use crate::{
-    export::block::BlockModels,
+    direction::Neighbouring8Flat,
+    export::{block::BlockModels, tile::track::BlockTileTrackExt},
     rfr::BlockTile,
     shape::{box_from_fn, box_from_levels, box_full, slice_const, Box3D},
     voxel::voxels_from_uniform_shape,
-    GenBoolSafe, StableRng, WithDFCoords,
+    DFMapCoords, GenBoolSafe, StableRng, WithDFCoords,
 };
-use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape};
+use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 pub use generic::BlockTileExt;
 use rand::Rng;
 pub use tree::BlockTilePlantExt;
+
+pub fn ramp_levels(map: &Map<'_>, coords: DFMapCoords) -> [[usize; 3]; 3] {
+    let c = map.neighbouring_8flat(coords, |o| {
+        o.block_tile
+            .as_ref()
+            .map(|t| t.ramp_contact_height())
+            .unwrap_or(1)
+    });
+    let nw = c.nw.max(c.n).max(c.w);
+    let ne = c.ne.max(c.n).max(c.e);
+    let sw = c.sw.max(c.s).max(c.w);
+    let se = c.se.max(c.s).max(c.e);
+
+    let c = Neighbouring8Flat {
+        n: (nw + ne) / 2,
+        ne,
+        e: (ne + se) / 2,
+        se,
+        s: (sw + se) / 2,
+        sw,
+        w: (nw + sw) / 2,
+        nw,
+    };
+
+    let max = nw.max(ne).max(sw).max(se);
+
+    [[c.nw, c.n, c.ne], [c.w, max / 2, c.e], [c.sw, c.s, c.se]]
+}
 
 impl WithDFCoords for BlockTile<'_> {
     fn coords(&self) -> crate::DFMapCoords {
@@ -50,12 +80,17 @@ impl BlockTile<'_> {
             return;
         }
 
-        match (self.tile_type().material(), self.tile_type().shape()) {
+        match (
+            self.tile_type().material(),
+            self.tile_type().shape(),
+            self.tile_type().special(),
+        ) {
             (
                 TiletypeMaterial::ROOT
                 | TiletypeMaterial::MUSHROOM
                 | TiletypeMaterial::PLANT
                 | TiletypeMaterial::TREE_MATERIAL,
+                _,
                 _,
             )
             | (
@@ -64,11 +99,17 @@ impl BlockTile<'_> {
                 | TiletypeShape::TWIG
                 | TiletypeShape::SHRUB
                 | TiletypeShape::BRANCH,
+                _,
             ) => {
                 // plant, trees
                 let trees = self.build_trees(map, context, palette);
                 occupied_for_spatters.extend(trees.iter().map(|v| (v.x, v.y, v.z)));
                 models.extend(Layers::Vegetation, trees);
+            }
+            (_, _, TiletypeSpecial::TRACK) => {
+                // tracks or frozen tracks
+                let track = self.build_track(map, context, palette);
+                models.extend(Layers::Terrain, track);
             }
             _ => {
                 // classic tile structure
