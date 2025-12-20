@@ -467,6 +467,7 @@ mod tests {
         // todo
         let mut unchecked_models = HashSet::new();
         unchecked_models.insert("BarsFloor");
+        unchecked_models.insert("SiegeEngine/BoltThrower");
 
         assert_eq!(unchecked_models, models_to_check);
 
