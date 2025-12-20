@@ -53,6 +53,19 @@ pub fn box_from_levels<const B: usize, const H: usize>(
     box_from_fn(|x, y, z| levels[y][x] > z)
 }
 
+pub fn box_from_levels_with_content<const B: usize, const H: usize, T: Copy>(
+    levels: Slice2D<usize, B>,
+    content: Slice2D<T, B>,
+) -> Box3D<Option<T>, B, H> {
+    box_from_fn(|x, y, z| {
+        if levels[y][x] > z {
+            Some(content[y][x])
+        } else {
+            None
+        }
+    })
+}
+
 /// Build a constant 2D slice
 pub const fn slice_const<const B: usize, T: Copy>(value: T) -> Slice2D<T, B> {
     [[value; B]; B]

@@ -48,6 +48,7 @@ pub enum DefaultMaterials {
     DeadGrass,
     Wood,
     Light,
+    Rock,
 }
 
 pub trait RGBAColor {
@@ -76,6 +77,7 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::DeadGrass => (102, 102, 0, 255),
             DefaultMaterials::Wood => (75, 21, 0, 255),
             DefaultMaterials::Light => (255, 255, 255, 255),
+            DefaultMaterials::Rock => (100, 98, 122, 255),
         }
     }
 }
