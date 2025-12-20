@@ -4,6 +4,13 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.16
+
+![v0.15](/vox-uristi/assets/changelog/v0.16.png)
+
+- Rail tracks are now exported
+- Bolt throwers are now exported
+
 ### v0.15
 
 ![v0.15](/vox-uristi/assets/changelog/v0.15.gif)
