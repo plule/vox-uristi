@@ -45,6 +45,7 @@ enum CheckUpdateStatus {
     NotDone,
     Doing(Receiver<Result<crate::update::UpdateStatus>>),
     Done(crate::update::UpdateStatus),
+    Failed(String),
 }
 
 impl Default for State {

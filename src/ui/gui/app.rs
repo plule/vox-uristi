@@ -1,3 +1,5 @@
+#[cfg(feature = "self-update")]
+use crate::update;
 use crate::{
     calendar::{Month, TimeOfTheYear},
     export::{run_export_thread, Cancel, Elevation, Progress},
@@ -172,15 +174,13 @@ impl App {
         #[cfg(feature = "self-update")]
         ui.horizontal(|ui| match &self.state.update_status {
             ui::CheckUpdateStatus::NotDone => {
-                if ui.button("🔃 Check for updates").clicked() {
-                    let (sender, receiver) = std::sync::mpsc::channel();
-                    self.state.update_status = ui::CheckUpdateStatus::Doing(receiver);
-                    let ctx = ui.ctx().clone();
-                    std::thread::spawn(move || {
-                        sender.send(crate::update::check_update()).unwrap();
-                        ctx.request_repaint();
-                    });
-                }
+                let (sender, receiver) = std::sync::mpsc::channel();
+                self.state.update_status = ui::CheckUpdateStatus::Doing(receiver);
+                let ctx = ui.ctx().clone();
+                std::thread::spawn(move || {
+                    sender.send(crate::update::check_update()).unwrap();
+                    ctx.request_repaint();
+                });
             }
             ui::CheckUpdateStatus::Doing(_) => {
                 ui.spinner();
@@ -200,6 +200,9 @@ impl App {
                         ui.hyperlink_to("⬇ Download", asset_url);
                     }
                 });
+            }
+            ui::CheckUpdateStatus::Failed(err) => {
+                ui.label(format!("Could not check update: {err}"));
             }
         });
     }
@@ -232,8 +235,7 @@ impl eframe::App for App {
                         self.state.update_status = ui::CheckUpdateStatus::Done(update_status);
                     }
                     Err(err) => {
-                        self.state.update_status = ui::CheckUpdateStatus::NotDone;
-                        self.state.error = Some(err.to_string());
+                        self.state.update_status = ui::CheckUpdateStatus::Failed(err.to_string());
                     }
                 }
             }
