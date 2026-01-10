@@ -1,5 +1,4 @@
 #[cfg(feature = "self-update")]
-use crate::update;
 use crate::{
     calendar::{Month, TimeOfTheYear},
     export::{run_export_thread, Cancel, Elevation, Progress},
