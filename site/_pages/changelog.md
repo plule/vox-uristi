@@ -4,9 +4,16 @@ layout: single
 permalink: /changelog
 ---
 
+### v0.17
+
+![v0.17](/vox-uristi/assets/changelog/v0.16.png)
+
+- Ignore fog of war in adventure mode
+- Automatically check for updates
+
 ### v0.16
 
-![v0.15](/vox-uristi/assets/changelog/v0.16.png)
+![v0.16](/vox-uristi/assets/changelog/v0.16.png)
 
 - Rail tracks are now exported
 - Bolt throwers are now exported
