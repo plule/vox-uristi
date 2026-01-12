@@ -6,7 +6,7 @@ permalink: /changelog
 
 ### v0.17
 
-![v0.17](/vox-uristi/assets/changelog/v0.16.png)
+![v0.17](/vox-uristi/assets/changelog/v0.17.png)
 
 - Ignore fog of war in adventure mode
 - Automatically check for updates
