@@ -66,7 +66,7 @@ impl BlockTile<'_> {
         // Voxels that spatters can sit on top
         let mut occupied_for_spatters: HashSet<(u8, u8, u8)> = HashSet::new();
 
-        if self.hidden() {
+        if self.hidden() && !context.adventure() {
             let shape: Box3D<bool> = box_full();
 
             models.extend(

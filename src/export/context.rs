@@ -3,8 +3,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use dfhack_remote::{
-    BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition, BuildingType, ListEnumsOut,
-    ListMaterialsIn, MapInfo, MaterialList, PlantRawList, TiletypeList,
+    get_world_info_out::Mode, BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition,
+    BuildingType, ListEnumsOut, ListMaterialsIn, MapInfo, MaterialList, PlantRawList, TiletypeList,
 };
 use protobuf::MessageField;
 
@@ -12,6 +12,7 @@ use crate::{export::ExportSettings, export::BLOCK_SIZE, rfr::create_building_def
 
 /// Shared context between the export methods
 pub struct DFContext {
+    pub mode: Mode,
     pub settings: ExportSettings,
     pub tile_types: TiletypeList,
     pub materials: MaterialList,
@@ -40,7 +41,9 @@ impl DFContext {
             .into_iter()
             .map(|mat| ((mat.type_(), mat.index()), mat))
             .collect();
+
         Ok(Self {
+            mode: client.core().get_world_info()?.mode(),
             settings,
             tile_types: client.remote_fortress_reader().get_tiletype_list()?.reply,
             materials: client.remote_fortress_reader().get_material_list()?.reply,
@@ -74,5 +77,9 @@ impl DFContext {
 
     pub fn max_vox_y(&self) -> i32 {
         (self.map_info.block_size_y() * (BLOCK_SIZE * BASE) as i32) / 2
+    }
+
+    pub fn adventure(&self) -> bool {
+        self.mode == Mode::MODE_ADVENTURE
     }
 }
