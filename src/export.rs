@@ -56,10 +56,9 @@ pub const BLOCK_VOX_SIZE: Size = Size {
 pub enum Layers {
     All,
     Building,
+    Liquid,
     Terrain,
     Vegetation,
-    Roughness,
-    Liquid,
     Spatter,
     Fire,
     Flows,
@@ -210,9 +209,14 @@ pub fn try_export_voxels(
         }
 
         progress_tx.send(Progress::update("Reading...", progress, block_list_count))?;
+        let block_list = block_list?;
 
-        for block in block_list?.map_blocks {
+        for block in block_list.map_blocks {
             blocks.push(block);
+        }
+
+        for engraving in block_list.engravings {
+            map.add_engraving(engraving);
         }
     }
 
