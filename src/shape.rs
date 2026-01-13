@@ -66,6 +66,27 @@ pub fn box_from_levels_with_content<const B: usize, const H: usize, T: Copy>(
     })
 }
 
+// Transform a box according to the function
+pub fn box_map<const B: usize, const H: usize, Ti: Copy, To: Copy, F>(
+    inbox: Box3D<Ti, B, H>,
+    mut func: F,
+) -> Box3D<To, B, H>
+where
+    F: FnMut(Ti) -> To,
+{
+    inbox.map(|slice| slice.map(|col| col.map(&mut func)))
+}
+
+pub fn box_from_shape_fn<const B: usize, const H: usize, To: Copy, F>(
+    inbox: Box3D<bool, B, H>,
+    mut func: F,
+) -> Box3D<Option<To>, B, H>
+where
+    F: FnMut() -> To,
+{
+    box_map(inbox, |include| if include { Some(func()) } else { None })
+}
+
 /// Build a constant 2D slice
 pub const fn slice_const<const B: usize, T: Copy>(value: T) -> Slice2D<T, B> {
     [[value; B]; B]

@@ -23,6 +23,7 @@ pub enum Material {
     DarkGeneric(MatPair),
     /// Generic material with tile information
     TileGeneric(MatPair, TiletypeMaterial),
+    DarkTileGeneric(MatPair, TiletypeMaterial),
     /// Generic material with a growth console color associated to it
     Plant {
         material: MatPair,
@@ -44,8 +45,11 @@ pub enum DefaultMaterials {
     Smoke,
     Miasma,
     DarkGrass,
+    DarkGrassDark,
     LightGrass,
+    LightGrassDark,
     DeadGrass,
+    DeadGrassDark,
     Wood,
     Light,
     Rock,
@@ -74,10 +78,13 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::Miasma => (208, 89, 255, 64),
             DefaultMaterials::DarkGrass => (0, 102, 0, 255),
             DefaultMaterials::LightGrass => (0, 153, 51, 255),
-            DefaultMaterials::DeadGrass => (102, 102, 0, 255),
+            DefaultMaterials::DeadGrass => (61, 102, 0, 255),
             DefaultMaterials::Wood => (75, 21, 0, 255),
             DefaultMaterials::Light => (255, 255, 255, 255),
             DefaultMaterials::Rock => (100, 98, 122, 255),
+            DefaultMaterials::DarkGrassDark => (0, 79, 0, 255),
+            DefaultMaterials::LightGrassDark => (1, 130, 44, 255),
+            DefaultMaterials::DeadGrassDark => (47, 79, 0, 255),
         }
     }
 }
@@ -190,7 +197,7 @@ impl EffectiveMaterial {
             Material::DarkGeneric(matpair) => {
                 let mut res = Self::from_matpair(matpair, context);
                 let color = Hsv::from_color(Srgb::new(res.r, res.g, res.b).into_linear());
-                let color = color.darken(0.5);
+                let color = color.darken(0.2);
                 let color: Rgb<palette::encoding::Srgb, u8> =
                     Rgb::from_linear(Rgb::from_color(color));
                 (res.r, res.g, res.b, res.a) = (color.red, color.green, color.blue, 255);
@@ -198,6 +205,20 @@ impl EffectiveMaterial {
             }
             Material::TileGeneric(matpair, tiletype_material) => {
                 let mut res = Self::from_matpair(matpair, context);
+                if tiletype_material == &TiletypeMaterial::FROZEN_LIQUID {
+                    res.mat_type = Some("_glass");
+                    res.ior = Some(50);
+                    res.transparency = Some(50);
+                }
+                res
+            }
+            Material::DarkTileGeneric(matpair, tiletype_material) => {
+                let mut res = Self::from_matpair(matpair, context);
+                let color = Hsv::from_color(Srgb::new(res.r, res.g, res.b).into_linear());
+                let color = color.darken(0.2);
+                let color: Rgb<palette::encoding::Srgb, u8> =
+                    Rgb::from_linear(Rgb::from_color(color));
+                (res.r, res.g, res.b, res.a) = (color.red, color.green, color.blue, 255);
                 if tiletype_material == &TiletypeMaterial::FROZEN_LIQUID {
                     res.mat_type = Some("_glass");
                     res.ior = Some(50);

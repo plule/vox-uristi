@@ -113,10 +113,9 @@ impl BlockTile<'_> {
             }
             _ => {
                 // classic tile structure
-                let (terrain, roughness) = self.build_terrain(map, context, palette);
+                let terrain = self.build_terrain(map, context, palette);
                 occupied_for_spatters.extend(terrain.iter().map(|v| (v.x, v.y, v.z)));
                 models.extend(Layers::Terrain, terrain);
-                models.extend(Layers::Roughness, roughness);
             }
         }
 

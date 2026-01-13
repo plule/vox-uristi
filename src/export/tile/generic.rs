@@ -5,13 +5,16 @@ use crate::{
         tile::ramp_levels, DFContext, DefaultMaterials, EffectiveMaterial, Map, Material, Palette,
     },
     rfr::BlockTile,
-    shape::{box_empty, box_from_levels, slice_empty, slice_from_fn, slice_full, Box3D},
-    voxel::{voxels_from_shape, voxels_from_uniform_shape},
-    DFMapCoords, StableRng,
+    shape::{
+        box_const, box_empty, box_from_fn, box_from_levels, box_from_shape_fn, box_map,
+        slice_const, slice_from_fn, slice_full, Box3D,
+    },
+    voxel::voxels_from_shape,
+    DFMapCoords, StableRng, WithDFCoords,
 };
 use dfhack_remote::{TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 use easy_ext::ext;
-use rand::Rng;
+use rand::seq::IndexedRandom;
 
 pub fn ramp_shape(map: &Map, coords: DFMapCoords) -> [[[bool; 3]; 3]; 5] {
     let levels = ramp_levels(map, coords);
@@ -36,134 +39,159 @@ pub impl BlockTile<'_> {
         }
     }
 
-    // Returns a tuple with the terrain voxels and the "roughness" voxels
+    // Returns a tuple with the terrain voxels
     fn build_terrain(
         &self,
         map: &Map,
         context: &DFContext,
         palette: &mut Palette,
-    ) -> (Vec<dot_vox::Voxel>, Vec<dot_vox::Voxel>) {
+    ) -> Vec<dot_vox::Voxel> {
         let mut rng = self.stable_rng();
         let coords = self.global_coords();
         let tile_type = self.tile_type();
-        let material = match self.tile_type().material() {
+        let (material, material_dark) = match self.tile_type().material() {
             // Grass don't have proper materials in the raw
-            TiletypeMaterial::GRASS_LIGHT => Material::Default(DefaultMaterials::LightGrass),
-            TiletypeMaterial::GRASS_DARK => Material::Default(DefaultMaterials::DarkGrass),
-            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
-                Material::Default(DefaultMaterials::DeadGrass)
-            }
+            TiletypeMaterial::GRASS_LIGHT => (
+                Material::Default(DefaultMaterials::LightGrass),
+                Material::Default(DefaultMaterials::LightGrassDark),
+            ),
+            TiletypeMaterial::GRASS_DARK => (
+                Material::Default(DefaultMaterials::DarkGrass),
+                Material::Default(DefaultMaterials::DarkGrassDark),
+            ),
+            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => (
+                Material::Default(DefaultMaterials::DeadGrass),
+                Material::Default(DefaultMaterials::DeadGrassDark),
+            ),
             // Generic material from raw
-            mat => Material::TileGeneric(self.material().clone(), mat),
+            mat => (
+                Material::TileGeneric(self.material().clone(), mat),
+                Material::DarkTileGeneric(self.material().clone(), mat),
+            ),
         };
 
-        let (shape_base, shape_rough): (Box3D<bool>, Box3D<bool>) = match tile_type.shape() {
+        let rough = !matches!(
+            tile_type.special(),
+            TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD // smoothed surface
+        ) && !matches!(
+            tile_type.material(),
+            TiletypeMaterial::CONSTRUCTION /* constructed surface or ramp */ | TiletypeMaterial::FROZEN_LIQUID /* exclude ice it looks bad */
+        );
+
+        let engraved = map
+            .occupancy
+            .get(&self.coords())
+            .is_some_and(|o| o.engraving.is_some());
+
+        let mat1 = palette.get(&material, context);
+        let mat2 = if engraved || rough {
+            palette.get(&material_dark, context)
+        } else {
+            0
+        };
+        let mut rand_mat = || *[mat1, mat2].choose(&mut rng).unwrap();
+
+        let shape: Box3D<bool> = match tile_type.shape() {
             TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
-                let item_on_tile = map
-                    .occupancy
-                    .get(&coords)
-                    .is_some_and(|t| !t.buildings.is_empty());
-                let rough = !item_on_tile // no roughness if there is a rendered item
-                    && tile_type.material() != TiletypeMaterial::FROZEN_LIQUID // no roughness for ice, it looks bad
-                    && !matches!(
-                        tile_type.special(),
-                        TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD
-                    );
-                (
-                    [
-                        slice_empty(),
-                        slice_empty(),
-                        slice_empty(),
-                        slice_empty(),
-                        slice_full(),
-                    ],
-                    [
-                        slice_empty(),
-                        slice_empty(),
-                        slice_empty(),
-                        slice_from_fn(|_, _| rough && rng.random_bool(1.0 / 7.0)),
-                        slice_empty(),
-                    ],
-                )
+                let floor_slice = if engraved {
+                    slice_from_fn(|x, y| Some(if (x + y) % 2 == 1 { mat1 } else { mat2 }))
+                } else if rough {
+                    slice_from_fn(|_, _| Some(rand_mat()))
+                } else {
+                    slice_const(Some(mat1))
+                };
+
+                let shape: Box3D<Option<u8>> = [
+                    slice_const(None),
+                    slice_const(None),
+                    slice_const(None),
+                    slice_const(None),
+                    floor_slice,
+                ];
+
+                return voxels_from_shape(shape, self.local_coords());
             }
             TiletypeShape::WALL => {
-                let c = map.neighbouring_8flat(coords, |o| {
-                    o.block_tile.as_ref().is_some_and(|t| t.is_wall())
-                });
-                // Inside the wall is either the "hidden" material, or the material of the wall if
-                // it's transparent. It could be worth avoiding building the whole effective mat here...
-                let effective_material = EffectiveMaterial::from_material(&material, context);
-                let inside = if effective_material.transparency.is_some() {
-                    material.clone()
+                // Build the wall shape
+                let mut wall_shape: Box3D<u8> = if rough {
+                    box_from_fn(|_, _, _| rand_mat())
+                } else if engraved {
+                    [
+                        slice_from_fn(|x, y| if (x + y) % 2 == 0 { mat1 } else { mat2 }),
+                        slice_from_fn(|x, y| if (x + y) % 2 == 1 { mat1 } else { mat2 }),
+                        slice_from_fn(|x, y| if (x + y) % 2 == 0 { mat1 } else { mat2 }),
+                        slice_from_fn(|x, y| if (x + y) % 2 == 0 { mat1 } else { mat2 }),
+                        slice_const(mat1),
+                    ]
                 } else {
-                    Material::Default(DefaultMaterials::Hidden)
+                    box_const(mat1)
                 };
-                let slice = [
-                    [c.n && c.w && c.nw, c.n, c.n && c.e && c.ne],
-                    [c.w, true, c.e],
-                    [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
-                ]
-                .map(|col| {
-                    col.map(|b| {
-                        Some(if b {
-                            palette.get(&inside, context)
+
+                // Replace the inside with the "void" material unless it's a transparent material
+                // improvement: not build the whole material here
+                let effective_material = EffectiveMaterial::from_material(&material, context);
+                if effective_material.transparency.is_none() {
+                    let c = map.neighbouring_8flat(coords, |o| {
+                        o.block_tile.as_ref().is_some_and(|t| t.is_wall())
+                    });
+                    let inside_slice = [
+                        [c.n && c.w && c.nw, c.n, c.n && c.e && c.ne],
+                        [c.w, true, c.e],
+                        [c.s && c.w && c.sw, c.s, c.s && c.e && c.se],
+                    ];
+                    let inside_shape = [
+                        inside_slice,
+                        inside_slice,
+                        inside_slice,
+                        inside_slice,
+                        inside_slice,
+                    ];
+                    let inside_mat =
+                        palette.get(&Material::Default(DefaultMaterials::Hidden), context);
+                    wall_shape = box_from_fn(|x, y, z| {
+                        if inside_shape[z][y][x] {
+                            inside_mat
                         } else {
-                            palette.get(&material, context)
-                        })
-                    })
-                });
-                let shape = [slice, slice, slice, slice, slice];
-                return (voxels_from_shape(shape, self.local_coords()), vec![]);
+                            wall_shape[z][y][x]
+                        }
+                    });
+                }
+
+                let shape: Box3D<Option<u8>> = box_map(wall_shape, Some);
+                return voxels_from_shape(shape, self.local_coords());
             }
             TiletypeShape::FORTIFICATION => {
                 let conn = map.neighbouring_flat(coords, |o| {
                     o.block_tile.as_ref().is_some_and(|t| t.is_wall())
                 });
-                #[rustfmt::skip]
-                let shape = [
-                    [
-                        [true, conn.n, true],
-                        [conn.w, false, conn.e],
-                        [true, conn.s, true]
-                    ],
-                    [
-                        [true, conn.n, true],
-                        [conn.w, false, conn.e],
-                        [true, conn.s, true]
-                    ],
-                    [
-                        [true, conn.n, true],
-                        [conn.w, false, conn.e],
-                        [true, conn.s, true]
-                    ],
-                    [
-                        [true, conn.n, true],
-                        [conn.w, false, conn.e],
-                        [true, conn.s, true]
-                    ],
-                    slice_full()
+                let slice_fortification = [
+                    [true, conn.n, true],
+                    [conn.w, false, conn.e],
+                    [true, conn.s, true],
                 ];
-                (shape, box_empty())
+                [
+                    slice_fortification,
+                    slice_fortification,
+                    slice_full(),
+                    slice_full(),
+                    slice_full(),
+                ]
             }
-            TiletypeShape::STAIR_UP => (stairs(true, true, false, true, coords.z), box_empty()),
-            TiletypeShape::STAIR_DOWN => (stairs(false, false, true, false, coords.z), box_empty()),
-            TiletypeShape::STAIR_UPDOWN => (stairs(true, true, true, false, coords.z), box_empty()),
-            TiletypeShape::RAMP => (ramp_shape(map, coords), box_empty()),
-            _ => (box_empty(), box_empty()),
+            TiletypeShape::STAIR_UP => stairs(true, true, false, true, coords.z),
+            TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
+            TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
+            TiletypeShape::RAMP => ramp_shape(map, coords),
+            _ => box_empty(),
         };
 
-        (
-            voxels_from_uniform_shape(
-                shape_base,
-                self.local_coords(),
-                palette.get(&material, context),
-            ),
-            voxels_from_uniform_shape(
-                shape_rough,
-                self.local_coords(),
-                palette.get(&material, context),
-            ),
-        )
+        let mat1 = palette.get(&material, context);
+        let textured_shape: Box3D<Option<u8>> = if rough {
+            let mat2 = palette.get(&material_dark, context);
+            box_from_shape_fn(shape, || *[mat1, mat2].choose(&mut rng).unwrap())
+        } else {
+            box_from_shape_fn(shape, || mat1)
+        };
+        voxels_from_shape(textured_shape, self.local_coords())
     }
 
     fn plant_part(&self) -> PlantPart {

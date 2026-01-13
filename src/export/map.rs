@@ -3,12 +3,11 @@
 use crate::{
     coords::{WithBlockCoords, WithBoundingBox},
     direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
-    export::BlockTileExt,
-    export::DFContext,
+    export::{BlockTileExt, DFContext},
     rfr::{self, BlockTile, BuildingExt, BuildingFlags},
-    DFMapCoords,
+    DFMapCoords, WithDFCoords,
 };
-use dfhack_remote::{BuildingInstance, MapBlock};
+use dfhack_remote::{BuildingInstance, Engraving, MapBlock};
 use itertools::Itertools;
 use std::collections::HashMap;
 
@@ -33,6 +32,7 @@ pub struct Map<'a> {
 pub struct Occupancy<'a> {
     pub block_tile: Option<BlockTile<'a>>,
     pub buildings: Vec<&'a BuildingInstance>,
+    pub engraving: Option<Engraving>,
 }
 
 impl<'a> Map<'a> {
@@ -47,6 +47,11 @@ impl<'a> Map<'a> {
             let coords = tile.global_coords();
             self.occupancy.entry(coords).or_default().block_tile = Some(tile);
         }
+    }
+
+    pub fn add_engraving(&mut self, engraving: Engraving) {
+        let coords = engraving.coords();
+        self.occupancy.entry(coords).or_default().engraving = Some(engraving);
     }
 
     fn add_buildings(&mut self, buildings: &'a Vec<BuildingInstance>) {

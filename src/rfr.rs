@@ -1,14 +1,14 @@
 //! Remote fortress reader API helpers
 use crate::{
     coords::{DFBlockCoords, DFLocalCoords, WithBlockCoords},
-    DFMapCoords,
+    DFMapCoords, WithDFCoords,
 };
 use anyhow::Result;
 use bitflags::bitflags;
 use dfhack_remote::{
     core_text_fragment::Color, BasicMaterialInfo, BlockList, BlockRequest, BuildingDefinition,
-    BuildingInstance, ColorDefinition, GrowthPrint, ListEnumsOut, MapBlock, MatPair, Spatter,
-    Tiletype, TiletypeList, TreeGrowth,
+    BuildingInstance, ColorDefinition, Engraving, GrowthPrint, ListEnumsOut, MapBlock, MatPair,
+    Spatter, Tiletype, TiletypeList, TreeGrowth,
 };
 use palette::{named, Srgb};
 use protobuf::Enum;
@@ -429,4 +429,15 @@ pub fn create_building_def_map(
         })
         .collect();
     building_map
+}
+
+impl WithDFCoords for Engraving {
+    fn coords(&self) -> DFMapCoords {
+        let pos = self.pos.get_or_default();
+        DFMapCoords {
+            x: pos.x(),
+            y: pos.y(),
+            z: pos.z(),
+        }
+    }
 }
