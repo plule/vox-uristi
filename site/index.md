@@ -29,7 +29,7 @@ it.
 
 ## Features/Roadmap
 
-### Next
+### Done
 
 - ☑ Base building blocks (walls, floors, fortifications)
 - ☑ Water, magma and grass
@@ -46,6 +46,10 @@ it.
 - ☑ Export the buildings as individual selectable objects
 - ☑ Split the export into useful layers
 - ☑ Rails
+
+### Next
+
+- ☐ Rough/Smooth/Engraved wall representation
 - ☐ Item state (opened/closed)
 - ☐ Easier/interactive export
 
