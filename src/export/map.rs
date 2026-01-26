@@ -2,14 +2,14 @@
 
 use crate::{
     coords::{WithBlockCoords, WithBoundingBox},
-    direction::{DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
+    direction::{Direction, DirectionFlat, Neighbouring, Neighbouring8Flat, NeighbouringFlat},
     export::{BlockTileExt, DFContext},
     rfr::{self, BlockTile, BuildingExt, BuildingFlags},
     DFMapCoords, WithDFCoords,
 };
-use dfhack_remote::{BuildingInstance, Engraving, MapBlock};
+use dfhack_remote::{BuildingInstance, Engraving, MapBlock, TiletypeShape};
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct LevelData<'a> {
@@ -28,11 +28,23 @@ pub struct Map<'a> {
     buildings_added: bool,
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct Occupancy<'a> {
     pub block_tile: Option<BlockTile<'a>>,
     pub buildings: Vec<&'a BuildingInstance>,
     pub engraving: Option<Engraving>,
+    pub hidden: bool,
+}
+
+impl<'a> Default for Occupancy<'a> {
+    fn default() -> Self {
+        Self {
+            block_tile: Default::default(),
+            buildings: Default::default(),
+            engraving: Default::default(),
+            hidden: true,
+        }
+    }
 }
 
 impl<'a> Map<'a> {
@@ -45,7 +57,65 @@ impl<'a> Map<'a> {
 
         for tile in rfr::TileIterator::new(block, &context.tile_types) {
             let coords = tile.global_coords();
+            self.occupancy.entry(coords).or_default().hidden = tile.hidden();
             self.occupancy.entry(coords).or_default().block_tile = Some(tile);
+        }
+    }
+
+    pub fn is_hidden(&self, coords: DFMapCoords) -> bool {
+        self.occupancy.get(&coords).is_some_and(|o| o.hidden)
+    }
+
+    pub fn recompute_hidden(&mut self) {
+        // shapes hiding everything
+        let wall_shapes: HashSet<TiletypeShape> =
+            HashSet::from_iter([TiletypeShape::WALL, TiletypeShape::SHRUB]);
+        // shape hiding what's below
+        let floor_shapes: HashSet<TiletypeShape> = HashSet::from_iter([
+            TiletypeShape::FLOOR,
+            TiletypeShape::STAIR_UP,
+            TiletypeShape::PEBBLES,
+            TiletypeShape::BOULDER,
+            TiletypeShape::RAMP,
+            TiletypeShape::RAMP_TOP,
+            TiletypeShape::SAPLING,
+        ]);
+
+        let mut new_hidden = HashMap::new();
+        for (coords, _) in &self.occupancy {
+            let surrounded_by_wall = self
+                .neighbouring_8flat(*coords, |o| {
+                    o.block_tile
+                        .as_ref()
+                        .is_none_or(|b| wall_shapes.contains(&b.tile_type().shape()))
+                })
+                .array()
+                .iter()
+                .all(|opaque| **opaque);
+            let below_solid_ground_or_wall = self
+                .occupancy
+                .get(&(coords + Direction::Above.coords()))
+                .is_none_or(|o| {
+                    o.block_tile.as_ref().is_none_or(|t| {
+                        let shape = t.tile_type().shape();
+                        floor_shapes.contains(&shape) || wall_shapes.contains(&shape)
+                    })
+                });
+            let above_wall = self
+                .occupancy
+                .get(&(coords + Direction::Below.coords()))
+                .is_none_or(|o| {
+                    o.block_tile
+                        .as_ref()
+                        .is_none_or(|t| wall_shapes.contains(&t.tile_type().shape()))
+                });
+            new_hidden.insert(
+                *coords,
+                surrounded_by_wall && below_solid_ground_or_wall && above_wall,
+            );
+        }
+        for (coords, hidden) in new_hidden {
+            self.occupancy.entry(coords).or_default().hidden = hidden;
         }
     }
 

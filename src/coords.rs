@@ -44,7 +44,7 @@ pub trait WithBoundingBox {
 }
 
 /// Coordinates of a tile in the dwarf fortress map
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DFMapCoords {
     pub x: i32,
     pub y: i32,
