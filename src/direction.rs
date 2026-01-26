@@ -182,12 +182,6 @@ impl<T> NeighbouringFlat<T> {
     }
 }
 
-impl<T> NeighbouringFlat<T> {
-    pub fn array(&self) -> [&T; 4] {
-        [&self.n, &self.e, &self.s, &self.w]
-    }
-}
-
 impl NeighbouringFlat<bool> {
     pub fn directions(&self) -> Vec<DirectionFlat> {
         let mut ret = Vec::new();
@@ -257,9 +251,5 @@ impl<T> Neighbouring<T> {
             s: func(Direction::South),
             w: func(Direction::West),
         }
-    }
-
-    pub fn to_array(&self) -> [&T; 6] {
-        [&self.a, &self.b, &self.n, &self.e, &self.s, &self.w]
     }
 }

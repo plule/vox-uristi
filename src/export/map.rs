@@ -82,7 +82,7 @@ impl<'a> Map<'a> {
         ]);
 
         let mut new_hidden = HashMap::new();
-        for (coords, _) in &self.occupancy {
+        for coords in self.occupancy.keys() {
             let surrounded_by_wall = self
                 .neighbouring_8flat(*coords, |o| {
                     o.block_tile
