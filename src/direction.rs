@@ -117,17 +117,6 @@ impl BitOr for NeighbouringFlat<bool> {
     }
 }
 
-impl NeighbouringFlat<bool> {
-    pub fn from_direction(direction: &str) -> Self {
-        NeighbouringFlat::<bool> {
-            n: direction.contains('N'),
-            e: direction.contains('E'),
-            s: direction.contains('S'),
-            w: direction.contains('W'),
-        }
-    }
-}
-
 impl WithDFCoords for Direction8Flat {
     fn coords(&self) -> DFMapCoords {
         match self {
@@ -214,6 +203,15 @@ impl NeighbouringFlat<bool> {
 
         ret
     }
+
+    pub fn from_direction(direction: &str) -> Self {
+        NeighbouringFlat::<bool> {
+            n: direction.contains('N'),
+            e: direction.contains('E'),
+            s: direction.contains('S'),
+            w: direction.contains('W'),
+        }
+    }
 }
 
 impl<T> Neighbouring8Flat<T> {
@@ -231,6 +229,12 @@ impl<T> Neighbouring8Flat<T> {
             w: func(Direction8Flat::West),
             nw: func(Direction8Flat::NorthWest),
         }
+    }
+
+    pub fn array(&self) -> [&T; 8] {
+        [
+            &self.n, &self.ne, &self.e, &self.se, &self.s, &self.sw, &self.w, &self.nw,
+        ]
     }
 }
 

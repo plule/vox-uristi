@@ -40,7 +40,7 @@ pub fn build(
     let x = block.map_x() * BASE as i32 - context.max_vox_x() + 24;
     let y = context.max_vox_y() - block.map_y() * BASE as i32 - 23;
 
-    if !context.adventure() && tiles.iter().all(|t| t.hidden()) {
+    if tiles.iter().all(|t| map.occupancy[&t.coords()].hidden) {
         // The full block is hidden, skip the construction and add the
         // hidden model to save space
         let block_group = vox.insert_group_node_simple(

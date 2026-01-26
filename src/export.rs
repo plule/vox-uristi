@@ -227,6 +227,11 @@ pub fn try_export_voxels(
         map.add_block(block, &context);
     }
 
+    if context.adventure() {
+        progress_tx.send(Progress::undetermined("Recomputing hidden blocks"))?;
+        map.recompute_hidden();
+    }
+
     progress_tx.send(Progress::undetermined("Cleaning..."))?;
 
     // Setup the palette, with the default material pre-inserted
