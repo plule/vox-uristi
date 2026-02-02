@@ -69,7 +69,7 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::Hidden => (0, 0, 0, 255),
             DefaultMaterials::Water => (0, 0, 255, 64),
             DefaultMaterials::Mist => (255, 255, 255, 64),
-            DefaultMaterials::Magma => (255, 0, 0, 64),
+            DefaultMaterials::Magma => (134, 0, 0, 64),
             DefaultMaterials::Fire => (255, 174, 0, 64),
             DefaultMaterials::Smoke => (100, 100, 100, 64),
             DefaultMaterials::Miasma => (208, 89, 255, 64),
@@ -142,6 +142,8 @@ pub struct EffectiveMaterial {
     pub emit: Option<u8>,
     pub flux: Option<u8>,
     pub ior: Option<u8>,
+    pub media_type: Option<&'static str>,
+    pub density: Option<u8>,
 }
 
 impl EffectiveMaterial {
@@ -156,9 +158,13 @@ impl EffectiveMaterial {
                         res.transparency = Some(50);
                     }
                     DefaultMaterials::Magma => {
-                        res.mat_type = Some("_emit");
-                        res.emit = Some(50);
-                        res.flux = Some(2);
+                        res.mat_type = Some("_blend");
+                        res.roughness = Some(100);
+                        res.ior = Some(0);
+                        res.metalness = Some(50);
+                        res.transparency = Some(100);
+                        res.media_type = Some("2"); // emit
+                        res.density = Some(100);
                     }
                     DefaultMaterials::Fire => {
                         res.mat_type = Some("_emit");
@@ -307,7 +313,14 @@ impl EffectiveMaterial {
                 res.ior = Some(50);
                 res.transparency = Some(50);
             }
-            // Grass don't have a proper material
+            // Obsidian and friends
+            TiletypeMaterial::LAVA_STONE => {
+                res.mat_type = Some("_glass");
+                res.roughness = Some(10);
+                res.transparency = Some(0);
+                res.ior = Some(5);
+            }
+            // Grass don't have a proper material, or maybe hidden into plants raws?
             TiletypeMaterial::GRASS_LIGHT => {
                 (res.r, res.g, res.b, res.a) = (0, 153, 51, 255);
             }
@@ -327,6 +340,12 @@ impl EffectiveMaterial {
             }
             _ => {}
         }
+        let mut hsv = res.hsv();
+        // Avoid pitch black materials
+        if hsv.value < 0.02 {
+            hsv.value = 0.02;
+            res.set_hsv(hsv);
+        }
         res
     }
     fn apply_material(&self, color: &mut dot_vox::Color, material: &mut dot_vox::Material) {
@@ -342,6 +361,8 @@ impl EffectiveMaterial {
             emit,
             flux,
             ior,
+            media_type,
+            density,
         } = self.to_owned();
         color.r = r;
         color.g = g;
@@ -372,6 +393,14 @@ impl EffectiveMaterial {
 
         if let Some(ior) = ior {
             material.set_ior((ior as f32) / 100.0);
+        }
+
+        if let Some(media_type) = media_type {
+            material.set_media_type(media_type);
+        }
+
+        if let Some(density) = density {
+            material.set_density((density as f32) / 1000.0);
         }
     }
 
