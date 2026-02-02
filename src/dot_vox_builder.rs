@@ -372,6 +372,9 @@ pub impl Material {
     fn set_density(&mut self, density: f32) {
         self.set_f32("_d", density);
     }
+    fn set_media_type(&mut self, media_type: &str) {
+        self.set_str("_media", media_type);
+    }
 }
 
 #[cfg(test)]

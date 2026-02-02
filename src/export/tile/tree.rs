@@ -41,9 +41,9 @@ pub impl BlockTile<'_> {
                 ..Default::default()
             }),
             _ => Material::Default(if alive {
-                DefaultMaterials::LightGrass
+                DefaultMaterials::Plant
             } else {
-                DefaultMaterials::DeadGrass
+                DefaultMaterials::DeadPlant
             }),
         };
         let mut voxels = voxels_from_uniform_shape(

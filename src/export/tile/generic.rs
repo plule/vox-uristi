@@ -49,26 +49,9 @@ pub impl BlockTile<'_> {
         let mut rng = self.stable_rng();
         let coords = self.global_coords();
         let tile_type = self.tile_type();
-        let (material, material_dark) = match self.tile_type().material() {
-            // Grass don't have proper materials in the raw
-            TiletypeMaterial::GRASS_LIGHT => (
-                Material::Default(DefaultMaterials::LightGrass),
-                Material::Default(DefaultMaterials::LightGrassDark),
-            ),
-            TiletypeMaterial::GRASS_DARK => (
-                Material::Default(DefaultMaterials::DarkGrass),
-                Material::Default(DefaultMaterials::DarkGrassDark),
-            ),
-            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => (
-                Material::Default(DefaultMaterials::DeadGrass),
-                Material::Default(DefaultMaterials::DeadGrassDark),
-            ),
-            // Generic material from raw
-            mat => (
-                Material::TileGeneric(self.material().clone(), mat),
-                Material::DarkTileGeneric(self.material().clone(), mat),
-            ),
-        };
+        let material = Material::TileGeneric(self.material().clone(), self.tile_type().material());
+        let material_dark =
+            Material::DarkTileGeneric(self.material().clone(), self.tile_type().material());
 
         let rough = !matches!(
             tile_type.special(),
