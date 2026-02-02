@@ -7,8 +7,9 @@ use dfhack_remote::TiletypeMaterial;
 use dfhack_remote::{core_text_fragment::Color, MatPair};
 use dot_vox::DotVoxData;
 use num_enum::IntoPrimitive;
+use palette::encoding::Linear;
 use palette::{named, rgb::Rgb, FromColor, Hsv};
-use palette::{Darken, Srgb};
+use palette::{Darken, Desaturate};
 use std::collections::HashMap;
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
@@ -44,12 +45,8 @@ pub enum DefaultMaterials {
     Fire,
     Smoke,
     Miasma,
-    DarkGrass,
-    DarkGrassDark,
-    LightGrass,
-    LightGrassDark,
-    DeadGrass,
-    DeadGrassDark,
+    Plant,
+    DeadPlant,
     Wood,
     Light,
     Rock,
@@ -76,15 +73,11 @@ impl RGBAColor for DefaultMaterials {
             DefaultMaterials::Fire => (255, 174, 0, 64),
             DefaultMaterials::Smoke => (100, 100, 100, 64),
             DefaultMaterials::Miasma => (208, 89, 255, 64),
-            DefaultMaterials::DarkGrass => (0, 102, 0, 255),
-            DefaultMaterials::LightGrass => (0, 153, 51, 255),
-            DefaultMaterials::DeadGrass => (61, 102, 0, 255),
             DefaultMaterials::Wood => (75, 21, 0, 255),
             DefaultMaterials::Light => (255, 255, 255, 255),
             DefaultMaterials::Rock => (100, 98, 122, 255),
-            DefaultMaterials::DarkGrassDark => (0, 79, 0, 255),
-            DefaultMaterials::LightGrassDark => (1, 130, 44, 255),
-            DefaultMaterials::DeadGrassDark => (47, 79, 0, 255),
+            DefaultMaterials::Plant => (0, 153, 51, 255),
+            DefaultMaterials::DeadPlant => (61, 102, 0, 255),
         }
     }
 }
@@ -196,34 +189,15 @@ impl EffectiveMaterial {
             Material::Generic(matpair) => Self::from_matpair(matpair, context),
             Material::DarkGeneric(matpair) => {
                 let mut res = Self::from_matpair(matpair, context);
-                let color = Hsv::from_color(Srgb::new(res.r, res.g, res.b).into_linear());
-                let color = color.darken(0.2);
-                let color: Rgb<palette::encoding::Srgb, u8> =
-                    Rgb::from_linear(Rgb::from_color(color));
-                (res.r, res.g, res.b, res.a) = (color.red, color.green, color.blue, 255);
+                res.set_hsv(res.hsv().darken(0.2));
                 res
             }
             Material::TileGeneric(matpair, tiletype_material) => {
-                let mut res = Self::from_matpair(matpair, context);
-                if tiletype_material == &TiletypeMaterial::FROZEN_LIQUID {
-                    res.mat_type = Some("_glass");
-                    res.ior = Some(50);
-                    res.transparency = Some(50);
-                }
-                res
+                Self::from_matpair_and_tiletype(matpair, tiletype_material, context)
             }
             Material::DarkTileGeneric(matpair, tiletype_material) => {
-                let mut res = Self::from_matpair(matpair, context);
-                let color = Hsv::from_color(Srgb::new(res.r, res.g, res.b).into_linear());
-                let color = color.darken(0.2);
-                let color: Rgb<palette::encoding::Srgb, u8> =
-                    Rgb::from_linear(Rgb::from_color(color));
-                (res.r, res.g, res.b, res.a) = (color.red, color.green, color.blue, 255);
-                if tiletype_material == &TiletypeMaterial::FROZEN_LIQUID {
-                    res.mat_type = Some("_glass");
-                    res.ior = Some(50);
-                    res.transparency = Some(50);
-                }
+                let mut res = Self::from_matpair_and_tiletype(matpair, tiletype_material, context);
+                res.set_hsv(res.hsv().darken(0.2));
                 res
             }
             Material::Plant {
@@ -246,9 +220,9 @@ impl EffectiveMaterial {
                         (main_color.red, main_color.green, main_color.blue, 255);
                     return res;
                 }
-                let mut hsv = Hsv::from_color(main_color.into_linear::<f32>());
-                let source_color = Hsv::from_color(source_color.rgb().into_linear::<f32>());
-                let dest_color = Hsv::from_color(dest_color.rgb().into_linear::<f32>());
+                let mut hsv = Hsv::from_color(main_color.into_linear::<f64>());
+                let source_color = Hsv::from_color(source_color.rgb().into_linear::<f64>());
+                let dest_color = Hsv::from_color(dest_color.rgb().into_linear::<f64>());
                 // I have no idea what's going on here, I just did my best to replicate what is done in Armok Vision
                 // https://github.com/RosaryMala/armok-vision/blob/3027c785a54d7a8d9a7a9f7f2a10a1815c3bb500/Assets/Scripts/MapGen/DfColor.cs#L37
                 // and the result looks fairly similar to in-game colors.
@@ -260,9 +234,7 @@ impl EffectiveMaterial {
                         - ((1.0 - hsv.value)
                             * ((1.0 - dest_color.value) / (1.0 - source_color.value)));
                 }
-                let rgb = Rgb::from_color(hsv);
-                let rgba: Rgb<palette::encoding::Srgb, u8> = Rgb::from_linear(rgb);
-                (res.r, res.g, res.b, res.a) = (rgba.red, rgba.green, rgba.blue, 255);
+                res.set_hsv(hsv);
                 res
             }
         }
@@ -270,16 +242,21 @@ impl EffectiveMaterial {
 
     pub fn from_matpair(matpair: &MatPair, context: &DFContext) -> Self {
         let mut res = EffectiveMaterial::default();
-        (res.r, res.g, res.b, res.a) = context
+        (res.r, res.g, res.b, res.a) = (0, 0, 0, 0);
+        if let Some(material) = context
             .materials
             .material_list
             .iter()
             .find(|m| matpair == m.mat_pair.get_or_default())
-            .map_or((0, 0, 0, 0), |material| match material.id() {
-                // Water coloring exception, it's "clear" so no color, make it light blue for ice
-                "WATER" => (200, 200, 230, 255),
-                _ => material.state_color.get_rgba(),
-            });
+        {
+            // raw rgba
+            (res.r, res.g, res.b, res.a) = material.state_color.get_rgba();
+
+            // override for water ("clear" so no color)
+            if material.id() == "WATER" {
+                (res.r, res.g, res.b, res.a) = (200, 200, 230, 255);
+            }
+        }
         if let Some(info) = context
             .inorganic_materials_map
             .get(&(matpair.mat_type(), matpair.mat_index()))
@@ -317,6 +294,41 @@ impl EffectiveMaterial {
         res
     }
 
+    pub fn from_matpair_and_tiletype(
+        matpair: &MatPair,
+        tiletype_material: &TiletypeMaterial,
+        context: &DFContext,
+    ) -> Self {
+        let mut res = Self::from_matpair(matpair, context);
+        match tiletype_material {
+            // Apply a reflective effect on ice
+            TiletypeMaterial::FROZEN_LIQUID => {
+                res.mat_type = Some("_glass");
+                res.ior = Some(50);
+                res.transparency = Some(50);
+            }
+            // Grass don't have a proper material
+            TiletypeMaterial::GRASS_LIGHT => {
+                (res.r, res.g, res.b, res.a) = (0, 153, 51, 255);
+            }
+            TiletypeMaterial::GRASS_DARK => {
+                (res.r, res.g, res.b, res.a) = (0, 102, 0, 255);
+            }
+            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
+                (res.r, res.g, res.b, res.a) = (61, 102, 0, 255);
+            }
+            // Desaturate a bit constructions
+            TiletypeMaterial::CONSTRUCTION => {
+                res.set_hsv(res.hsv().desaturate(0.1));
+            }
+            // Desaturate more raw materials
+            TiletypeMaterial::STONE | TiletypeMaterial::DRIFTWOOD => {
+                res.set_hsv(res.hsv().desaturate(0.15));
+            }
+            _ => {}
+        }
+        res
+    }
     fn apply_material(&self, color: &mut dot_vox::Color, material: &mut dot_vox::Material) {
         let Self {
             r,
@@ -361,5 +373,22 @@ impl EffectiveMaterial {
         if let Some(ior) = ior {
             material.set_ior((ior as f32) / 100.0);
         }
+    }
+
+    fn rgb(&self) -> palette::Srgb<u8> {
+        (self.r, self.g, self.b).into()
+    }
+
+    fn set_rgb(&mut self, rgb: palette::Srgb<u8>) {
+        (self.r, self.g, self.b) = rgb.into();
+    }
+
+    fn hsv(&self) -> Hsv<Linear<palette::encoding::Srgb>, f64> {
+        Hsv::from_color(self.rgb().into_linear())
+    }
+
+    fn set_hsv(&mut self, hsv: Hsv<Linear<palette::encoding::Srgb>, f64>) {
+        let rgb = Rgb::from_linear(Rgb::from_color(hsv));
+        self.set_rgb(rgb);
     }
 }
