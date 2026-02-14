@@ -569,7 +569,7 @@ dependencies = [
  "anyhow",
  "arrayvec",
  "log",
- "nom 8.0.0",
+ "nom",
  "num-rational",
  "v_frame",
 ]
@@ -1319,13 +1319,13 @@ dependencies = [
 
 [[package]]
 name = "dot_vox"
-version = "5.1.1"
-source = "git+https://github.com/dust-engine/dot_vox.git?branch=master#2537c06ca8e8bcb1d87965a91a21886665a930f4"
+version = "5.2.0"
+source = "git+https://github.com/dust-engine/dot_vox.git?branch=master#27673abfd436b8f569075f4ffb5384d639b70ff5"
 dependencies = [
  "ahash",
  "lazy_static",
  "log",
- "nom 7.1.3",
+ "nom",
 ]
 
 [[package]]
@@ -2775,12 +2775,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
-name = "minimal-lexical"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
-
-[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2908,16 +2902,6 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
-
-[[package]]
-name = "nom"
-version = "7.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
-dependencies = [
- "memchr",
- "minimal-lexical",
-]
 
 [[package]]
 name = "nom"
