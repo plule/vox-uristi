@@ -10,7 +10,7 @@ use crate::{
 use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
 use itertools::Itertools;
-use rand::{rngs::StdRng, seq::IndexedRandom, Rng};
+use rand::{rngs::StdRng, seq::IndexedRandom, RngExt};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
