@@ -163,7 +163,7 @@ impl DirectionFlat {
             BuildingDirection::EAST => Some(DirectionFlat::East),
             BuildingDirection::SOUTH => Some(DirectionFlat::South),
             BuildingDirection::WEST => Some(DirectionFlat::West),
-            BuildingDirection::NONE => None,
+            _ => None,
         }
     }
 }
