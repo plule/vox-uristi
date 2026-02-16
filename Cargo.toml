@@ -30,7 +30,7 @@ opener = { version = "0.8", features = ["reveal"], optional = true }
 palette = "0.7"
 protobuf = { version = "=3.7.2" }
 protobuf-json-mapping = { version = "=3.7.2", optional = true }
-rand = "0.9"
+rand = "0.10"
 reqwest = { version = "0.13", features = ["blocking", "json"], optional = true }
 rfd = { version = "0.17", optional = true }
 rgb = "0.8"

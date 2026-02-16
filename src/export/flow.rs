@@ -11,7 +11,7 @@ use crate::{
     DFMapCoords, StableRng, WithDFCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType};
-use rand::Rng;
+use rand::RngExt;
 
 #[easy_ext::ext(FlowInfoExt)]
 impl FlowInfo {

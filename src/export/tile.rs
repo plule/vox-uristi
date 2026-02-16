@@ -16,7 +16,7 @@ use crate::{
 };
 use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 pub use generic::BlockTileExt;
-use rand::Rng;
+use rand::RngExt;
 pub use tree::BlockTilePlantExt;
 
 pub fn ramp_levels(map: &Map<'_>, coords: DFMapCoords) -> [[usize; 3]; 3] {
