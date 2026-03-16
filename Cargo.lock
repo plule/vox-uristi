@@ -1218,9 +1218,9 @@ dependencies = [
 
 [[package]]
 name = "dfhack-proto"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79cfbf4021a32cf005e8ab9b6ad99ee190ceed1240ba901025485e06c4e0f03f"
+checksum = "2dd2acb6d883daf1559dcc6ab0a6d840d13c866e0c1511ebf7f4f965aecf228d"
 dependencies = [
  "dfhack-proto-srcs",
  "heck",
@@ -1235,9 +1235,9 @@ dependencies = [
 
 [[package]]
 name = "dfhack-proto-srcs"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc568c1d23d074be58982cfbf0786fed88b9ae41164c50f8481fbde9dbdb8ec8"
+checksum = "2c47f8f9278bbf135f548af420c6e4586b74fc1c07f9691f643410513fcbaf93"
 dependencies = [
  "glob",
  "reqwest 0.12.28",
@@ -1246,9 +1246,9 @@ dependencies = [
 
 [[package]]
 name = "dfhack-remote"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66107e71deddde288b8d6bb639b84b07dba5737791e913bc416eefd943b8f9c5"
+checksum = "e6fa61839cece9fc7ef8d475cfda34191e1cd4abee58d5db2931a80e872a8559"
 dependencies = [
  "byteorder",
  "derive_more",
