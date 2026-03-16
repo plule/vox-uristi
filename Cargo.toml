@@ -44,7 +44,7 @@ strum = { version = "0.28.0", features = ["derive"] }
 tracing-subscriber = "0.3.22"
 
 [build-dependencies]
-image = "0.25.9"
+image = "0.25.10"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
