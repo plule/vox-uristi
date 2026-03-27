@@ -9,8 +9,15 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    allow:
+      - dependency-type: "all"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every week
       interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/site"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "all"
