@@ -11,13 +11,25 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    groups:
+      all:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      all:
+        patterns:
+          - "*"
   - package-ecosystem: "bundler"
     directory: "/site"
     schedule:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    groups:
+      all:
+        patterns:
+          - "*"
