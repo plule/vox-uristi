@@ -31,13 +31,13 @@ impl App {
         Default::default()
     }
 
-    fn central_panel(&mut self, ui: &mut Ui, ctx: &egui::Context) {
+    fn central_panel(&mut self, ui: &mut Ui) {
         ui.heading("☀Vox Uristi☀");
 
         let mut canceled = false;
         match &mut self.state.progress {
             Some((progress, rx, tx)) => {
-                ctx.request_repaint();
+                ui.request_repaint();
                 if ui.button("Cancel").clicked() {
                     canceled = true;
                     if let Err(err) = tx.send(Cancel) {
@@ -224,7 +224,7 @@ impl eframe::App for App {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         #[cfg(feature = "self-update")]
         if let ui::CheckUpdateStatus::Doing(receiver) = &self.state.update_status {
             if let Some(update_status) = receiver.try_iter().last() {
@@ -238,11 +238,11 @@ impl eframe::App for App {
                 }
             }
         }
-        egui::CentralPanel::default().show(ctx, |ui| {
-            self.central_panel(ui, ctx);
-        });
 
-        egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            self.central_panel(ui);
+        });
+        egui::Panel::bottom("status").show_inside(ui, |ui| {
             self.status_bar(ui);
         });
     }

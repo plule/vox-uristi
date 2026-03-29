@@ -17,7 +17,7 @@ derive_more = { version = "2", features = ["deref"] }
 dfhack-remote = { version = "0.12" }
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1"
-eframe = { version = "0.33", features = ["persistence"], optional = true }
+eframe = { version = "0.34", features = ["persistence"], optional = true }
 glob-match = "0.2"
 include_dir = { version = "0.7", features = ["glob"] }
 indicatif = "0.18"
@@ -36,7 +36,7 @@ semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", optional = true }
 serde_yaml = "0.9"
-strum = { version = "0.27", features = ["derive"] }
+strum = { version = "0.28", features = ["derive"] }
 tracing-subscriber = "0.3"
 
 [build-dependencies]
