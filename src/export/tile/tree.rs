@@ -10,7 +10,7 @@ use crate::{
 use dfhack_remote::{MatPair, TiletypeSpecial};
 use easy_ext::ext;
 use itertools::Itertools;
-use rand::{rngs::StdRng, seq::IndexedRandom, Rng};
+use rand::{rngs::StdRng, seq::IndexedRandom, RngExt};
 
 #[ext(BlockTilePlantExt)]
 pub impl BlockTile<'_> {
@@ -23,10 +23,10 @@ pub impl BlockTile<'_> {
         let mut rng = self.stable_rng();
         let part = self.plant_part();
         let tile_type = self.tile_type();
-        let plant_index = self.material().mat_index();
+        let plant_index = self.material().mat_index;
         let alive = !matches!(
             tile_type.special(),
-            TiletypeSpecial::DEAD | TiletypeSpecial::SMOOTH_DEAD
+            TiletypeSpecial::Dead | TiletypeSpecial::SmoothDead
         );
         // The "structure material" for plants looks like it's always an ugly default brown.
         // For tree, in mat_type 420 is generally the wood, which is nicer.
@@ -36,9 +36,8 @@ pub impl BlockTile<'_> {
             | PlantPart::HeavyBranch { .. }
             | PlantPart::LightBranch
             | PlantPart::Trunk => Material::Generic(MatPair {
-                mat_type: Some(420),
-                mat_index: Some(plant_index),
-                ..Default::default()
+                mat_type: 420,
+                mat_index: plant_index,
             }),
             _ => Material::Default(if alive {
                 DefaultMaterials::Plant
@@ -338,7 +337,7 @@ pub impl BlockTile<'_> {
     }
 
     fn growth_materials(&self, part: &PlantPart, context: &DFContext) -> Vec<Material> {
-        let plant_index = self.material().mat_index();
+        let plant_index = self.material().mat_index;
         if let Some(plant_raw) = context.plant_raws.plant_raws.get(plant_index as usize) {
             plant_raw
                 .growths
@@ -357,7 +356,7 @@ pub impl BlockTile<'_> {
                         }
                 })
                 .map(|growth| {
-                    let material = growth.mat.clone().unwrap_or_default();
+                    let material = growth.mat.unwrap_or_default();
                     let current_print = growth
                         .prints
                         .iter()

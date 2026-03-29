@@ -224,7 +224,7 @@ impl Prefab {
         let content_materials = match self.content {
             ContentMode::Unique => obj
                 .content_materials()
-                .unique_by(|m| (m.mat_index(), m.mat_type()))
+                .unique_by(|m| (m.mat_index, m.mat_type))
                 .take(8)
                 .collect_vec(),
             ContentMode::All => obj.content_materials().take(8).collect_vec(),
@@ -384,7 +384,7 @@ mod tests {
     use std::{collections::HashSet, path::Path};
 
     use dfhack_remote::{BlockList, BuildingList};
-    use protobuf::Message;
+    use prost::Message;
 
     use crate::{
         coords::WithBoundingBox,
@@ -405,13 +405,18 @@ mod tests {
         let mut models_to_check: HashSet<&str> =
             MODELS.buildings.keys().map(|s| s.as_str()).collect();
         let mut missing_models = Vec::new();
-        let building_defs = BuildingList::parse_from_bytes(
-            &std::fs::read(Path::new("testdata/building_defs.dat")).unwrap(),
+        let building_defs = BuildingList::decode(
+            std::fs::read(Path::new("testdata/building_defs.dat"))
+                .unwrap()
+                .as_slice(),
         )
         .unwrap();
-        let block_list =
-            BlockList::parse_from_bytes(&std::fs::read(Path::new("testdata/block_0.dat")).unwrap())
-                .unwrap();
+        let block_list = BlockList::decode(
+            std::fs::read(Path::new("testdata/block_0.dat"))
+                .unwrap()
+                .as_slice(),
+        )
+        .unwrap();
         let building_defs = create_building_def_map(building_defs);
         assert!(!block_list.map_blocks.is_empty());
         let mut total_buildings = 0;
@@ -419,12 +424,12 @@ mod tests {
         for block in block_list.map_blocks {
             for building in block.buildings {
                 total_buildings += 1;
-                let building_type = building.building_type.clone();
+                let building_type = building.building_type.unwrap().clone();
                 let def = building_defs
                     .get(&(
-                        building_type.building_type(),
-                        building_type.building_subtype(),
-                        building_type.building_custom(),
+                        building_type.building_type,
+                        building_type.building_subtype,
+                        building_type.building_custom,
                     ))
                     .unwrap();
                 if let Some(prefab) = MODELS.buildings.get(def.id()) {

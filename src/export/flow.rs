@@ -11,7 +11,7 @@ use crate::{
     DFMapCoords, StableRng, WithDFCoords,
 };
 use dfhack_remote::{FlowInfo, FlowType};
-use rand::Rng;
+use rand::RngExt;
 
 #[easy_ext::ext(FlowInfoExt)]
 impl FlowInfo {
@@ -23,7 +23,7 @@ impl FlowInfo {
             y: (coords.y as usize % BLOCK_SIZE) as u8,
         };
         let mut rng = self.stable_rng();
-        let shape: Box3D<bool> = match self.type_() {
+        let shape: Box3D<bool> = match self.r#type() {
             FlowType::OceanWave => [
                 slice_empty(),
                 slice_empty(),
@@ -39,7 +39,7 @@ impl FlowInfo {
                 rng.random_ratio(self.density().clamp(0, 100) as u32, 400)
             }),
         };
-        let material = match self.type_() {
+        let material = match self.r#type() {
             FlowType::Mist | FlowType::SeaFoam | FlowType::Steam => {
                 Material::Default(DefaultMaterials::Mist)
             }
@@ -54,7 +54,7 @@ impl FlowInfo {
             | FlowType::MaterialDust
             | FlowType::MaterialGas
             | FlowType::MaterialVapor
-            | FlowType::Web => Material::Generic(self.material.get_or_default().to_owned()),
+            | FlowType::Web => Material::Generic(self.material.unwrap_or_default().to_owned()),
         };
 
         voxels_from_uniform_shape(shape, local_coords, palette.get(&material, context))
@@ -63,7 +63,7 @@ impl FlowInfo {
 
 impl WithDFCoords for FlowInfo {
     fn coords(&self) -> DFMapCoords {
-        self.pos.get_or_default().into()
+        self.pos.unwrap_or_default().into()
     }
 }
 

@@ -69,16 +69,16 @@ impl<'a> Map<'a> {
     pub fn recompute_hidden(&mut self) {
         // shapes hiding everything
         let wall_shapes: HashSet<TiletypeShape> =
-            HashSet::from_iter([TiletypeShape::WALL, TiletypeShape::SHRUB]);
+            HashSet::from_iter([TiletypeShape::Wall, TiletypeShape::Shrub]);
         // shape hiding what's below
         let floor_shapes: HashSet<TiletypeShape> = HashSet::from_iter([
-            TiletypeShape::FLOOR,
-            TiletypeShape::STAIR_UP,
-            TiletypeShape::PEBBLES,
-            TiletypeShape::BOULDER,
-            TiletypeShape::RAMP,
-            TiletypeShape::RAMP_TOP,
-            TiletypeShape::SAPLING,
+            TiletypeShape::Floor,
+            TiletypeShape::StairUp,
+            TiletypeShape::Pebbles,
+            TiletypeShape::Boulder,
+            TiletypeShape::Ramp,
+            TiletypeShape::RampTop,
+            TiletypeShape::Sapling,
         ]);
 
         let mut new_hidden = HashMap::new();

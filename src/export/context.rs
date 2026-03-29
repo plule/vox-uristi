@@ -6,7 +6,6 @@ use dfhack_remote::{
     get_world_info_out::Mode, BasicMaterialInfo, BasicMaterialInfoMask, BuildingDefinition,
     BuildingType, ListEnumsOut, ListMaterialsIn, MapInfo, MaterialList, PlantRawList, TiletypeList,
 };
-use protobuf::MessageField;
 
 use crate::{export::ExportSettings, export::BLOCK_SIZE, rfr::create_building_def_map, BASE};
 
@@ -26,7 +25,7 @@ pub struct DFContext {
 impl DFContext {
     pub fn try_new(client: &mut dfhack_remote::Client, settings: ExportSettings) -> Result<Self> {
         let inorganics_materials = client.core().list_materials(ListMaterialsIn {
-            mask: MessageField::some(BasicMaterialInfoMask {
+            mask: Some(BasicMaterialInfoMask {
                 flags: Some(true),
                 reaction: Some(true),
                 ..Default::default()
@@ -39,7 +38,7 @@ impl DFContext {
             .reply
             .value
             .into_iter()
-            .map(|mat| ((mat.type_(), mat.index()), mat))
+            .map(|mat| ((mat.r#type, mat.index), mat))
             .collect();
 
         Ok(Self {
@@ -65,9 +64,9 @@ impl DFContext {
         building_type: &BuildingType,
     ) -> Option<&'a BuildingDefinition> {
         self.building_map.get(&(
-            building_type.building_type(),
-            building_type.building_subtype(),
-            building_type.building_custom(),
+            building_type.building_type,
+            building_type.building_subtype,
+            building_type.building_custom,
         ))
     }
 
@@ -80,6 +79,6 @@ impl DFContext {
     }
 
     pub fn adventure(&self) -> bool {
-        self.mode == Mode::MODE_ADVENTURE
+        self.mode == Mode::Adventure
     }
 }

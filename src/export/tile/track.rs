@@ -19,7 +19,7 @@ pub impl BlockTile<'_> {
         palette: &mut Palette,
     ) -> Vec<dot_vox::Voxel> {
         // Build the material. We don't have the material below the track, use generic rock
-        let track_material = palette.get(&Material::Generic(self.material().clone()), context);
+        let track_material = palette.get(&Material::Generic(*self.material()), context);
         let ground_material = palette.get(&Material::Default(DefaultMaterials::Rock), context);
 
         // connectivity where the rails are
@@ -36,7 +36,7 @@ pub impl BlockTile<'_> {
 
         // base elevation, ramp or flat
         let mut level_slice: Slice2D<usize> = match self.tile_type().shape() {
-            TiletypeShape::RAMP => ramp_levels(map, self.coords()),
+            TiletypeShape::Ramp => ramp_levels(map, self.coords()),
             _ => [[1, 1, 1], [1, 1, 1], [1, 1, 1]],
         };
 
