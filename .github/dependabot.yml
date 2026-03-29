@@ -10,13 +10,7 @@ updates:
     schedule:
       interval: "weekly"
     allow:
-      - dependency-type: "direct"
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    allow:
-      - dependency-type: "indirect"
+      - dependency-type: "all"
     groups:
       all:
         patterns:
@@ -29,6 +23,7 @@ updates:
       all:
         patterns:
           - "*"
+        update-types: [minor, patch]
   - package-ecosystem: "bundler"
     directory: "/site"
     schedule:
