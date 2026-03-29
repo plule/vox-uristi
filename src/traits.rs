@@ -1,5 +1,5 @@
 //! Trait used across vox uristi
-use rand::{rngs::StdRng, Rng};
+use rand::{rngs::StdRng, Rng, RngExt};
 
 /// Generate a boolean, with clamped probability
 pub trait GenBoolSafe: Rng {

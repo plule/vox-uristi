@@ -23,7 +23,7 @@ impl FromPrefab for BuildingInstance {
                 .iter()
                 .filter_map(|item| {
                     if item.mode() == 2 {
-                        Some(item.item.material.get_or_default().to_owned())
+                        item.item.as_ref().and_then(|i| i.material)
                     } else {
                         None
                     }
@@ -35,7 +35,7 @@ impl FromPrefab for BuildingInstance {
     fn content_materials(&self) -> Box<dyn Iterator<Item = MatPair> + '_> {
         Box::new(self.items.iter().filter_map(|item| {
             if item.mode() != 2 {
-                Some(item.item.material.get_or_default().to_owned())
+                item.item.as_ref().and_then(|i| i.material)
             } else {
                 None
             }
@@ -43,9 +43,7 @@ impl FromPrefab for BuildingInstance {
     }
 
     fn df_orientation(&self) -> Option<DirectionFlat> {
-        self.direction
-            .and_then(|dir| dir.enum_value().ok())
-            .and_then(|dir| DirectionFlat::maybe_from_df(&dir))
+        DirectionFlat::maybe_from_df(&self.direction())
     }
 
     fn self_connectivity(
@@ -53,12 +51,12 @@ impl FromPrefab for BuildingInstance {
         map: &Map,
         context: &DFContext,
     ) -> crate::direction::NeighbouringFlat<bool> {
-        let def = context.building_definition(&self.building_type);
+        let def = context.building_definition(&self.building_type.unwrap_or_default());
         let coords = self.coords();
         map.neighbouring_flat(coords, |o| {
             o.buildings
                 .iter()
-                .any(|b| def == context.building_definition(&b.building_type))
+                .any(|b| def == context.building_definition(&b.building_type.unwrap_or_default()))
         })
     }
 }
@@ -105,7 +103,7 @@ pub impl BuildingInstance {
         palette: &mut Palette,
     ) -> Option<(String, dot_vox::Model)> {
         let building_definition =
-            context.building_definition(self.building_type.get_or_default())?;
+            context.building_definition(&self.building_type.unwrap_or_default())?;
 
         let name = building_definition.name();
         let prefab = MODELS.building(building_definition.id())?;
@@ -114,7 +112,7 @@ pub impl BuildingInstance {
     }
 
     fn is_chair(&self, context: &DFContext) -> bool {
-        if let Some(def) = context.building_definition(&self.building_type) {
+        if let Some(def) = context.building_definition(&self.building_type.unwrap_or_default()) {
             def.id() == "Chair"
         } else {
             false

@@ -11,7 +11,6 @@ use dfhack_remote::{
     Spatter, Tiletype, TiletypeList, TreeGrowth,
 };
 use palette::{named, Srgb};
-use protobuf::Enum;
 use std::{
     collections::HashMap,
     fmt::{Debug, Display},
@@ -43,9 +42,10 @@ df.global.game.minimap.mustmake=1
 df.global.game.minimap.update=1"#,
             elevation - offset
         );
-        let mut req = dfhack_remote::CoreRunCommandRequest::new();
-        req.set_command("lua".to_string());
-        req.arguments.push(scriptlet);
+        let req = dfhack_remote::CoreRunCommandRequest {
+            command: "lua".to_string(),
+            arguments: vec![scriptlet],
+        };
         self.core().run_command(req)?;
         Ok(())
     }
@@ -53,7 +53,7 @@ df.global.game.minimap.update=1"#,
 
 impl WithBlockCoords for MapBlock {
     fn block_coords(&self) -> DFBlockCoords {
-        DFBlockCoords::new(self.map_x(), self.map_y(), self.map_z())
+        DFBlockCoords::new(self.map_x, self.map_y, self.map_z)
     }
 }
 
@@ -153,14 +153,16 @@ impl<'a> Iterator for BlockListIterator<'a> {
     type Item = Result<BlockList>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut req = BlockRequest::new();
-        req.set_blocks_needed(self.block_per_it);
-        req.set_min_x(self.x_range.start);
-        req.set_max_x(self.x_range.end);
-        req.set_min_y(self.y_range.start);
-        req.set_max_y(self.y_range.end);
-        req.set_min_z(self.z_range.start);
-        req.set_max_z(self.z_range.end);
+        let req = BlockRequest {
+            blocks_needed: Some(self.block_per_it),
+            min_x: Some(self.x_range.start),
+            max_x: Some(self.x_range.end),
+            min_y: Some(self.y_range.start),
+            max_y: Some(self.y_range.end),
+            min_z: Some(self.z_range.start),
+            max_z: Some(self.z_range.end),
+            ..Default::default()
+        };
         match self.client.remote_fortress_reader().get_block_list(req) {
             Ok(blocks) => {
                 if blocks.map_blocks.iter().all(|b| b.tiles.is_empty()) {
@@ -266,7 +268,7 @@ impl<'a> BlockTile<'a> {
 
     pub fn spatters(&self) -> &Vec<Spatter> {
         self.block
-            .spatterPile
+            .spatter_pile
             .get(self.index)
             .map(|pile| &pile.spatters)
             .unwrap_or(&self.empty_spatters)
@@ -278,10 +280,10 @@ impl Display for BlockTile<'_> {
         writeln!(f, "coords: {}", self.global_coords())?;
         writeln!(f, "hidden: {}", self.hidden())?;
         writeln!(f, "water: {}", self.water())?;
-        writeln!(f, "tile_type: {}", self.tile_type())?;
-        writeln!(f, "material: {}", self.material())?;
-        writeln!(f, "base_material: {}", self.base_material())?;
-        writeln!(f, "vein_material: {}", self.vein_material())?;
+        writeln!(f, "tile_type: {:?}", self.tile_type())?;
+        writeln!(f, "material: {:?}", self.material())?;
+        writeln!(f, "base_material: {:?}", self.base_material())?;
+        writeln!(f, "vein_material: {:?}", self.vein_material())?;
         writeln!(f, "magma: {}", self.magma())?;
         writeln!(f, "water_stagnant: {}", self.water_stagnant())?;
         writeln!(f, "water_salt: {}", self.water_salt())?;
@@ -296,10 +298,10 @@ impl Display for BlockTile<'_> {
                 spatter.amount(),
                 spatter.amount_normalized(),
                 spatter.state(),
-                spatter.material.get_or_default().mat_type(),
-                spatter.material.get_or_default().mat_index(),
-                spatter.item.get_or_default().mat_type(),
-                spatter.item.get_or_default().mat_index(),
+                spatter.material.unwrap_or_default().mat_type,
+                spatter.material.unwrap_or_default().mat_index,
+                spatter.item.unwrap_or_default().mat_type,
+                spatter.item.unwrap_or_default().mat_index,
             )?;
         }
         Ok(())
@@ -309,9 +311,9 @@ impl Display for BlockTile<'_> {
 impl RGBColor for ColorDefinition {
     fn rgb(&self) -> Srgb<u8> {
         Srgb::new(
-            self.red().try_into().unwrap_or_default(),
-            self.green().try_into().unwrap_or_default(),
-            self.blue().try_into().unwrap_or_default(),
+            self.red.try_into().unwrap_or_default(),
+            self.green.try_into().unwrap_or_default(),
+            self.blue.try_into().unwrap_or_default(),
         )
     }
 }
@@ -354,29 +356,29 @@ impl GetTiming for TreeGrowth {
 
 impl ConsoleColor for GrowthPrint {
     fn get_console_color(&self) -> Color {
-        Color::from_i32(self.color()).unwrap_or(Color::COLOR_BLACK)
+        Color::try_from(self.color()).unwrap_or(Color::Black)
     }
 }
 
 impl RGBColor for Color {
     fn rgb(&self) -> palette::Srgb<u8> {
         match self {
-            Color::COLOR_BLACK => named::BLACK,
-            Color::COLOR_BLUE => named::BLUE,
-            Color::COLOR_GREEN => named::GREEN,
-            Color::COLOR_CYAN => named::CYAN,
-            Color::COLOR_RED => named::RED,
-            Color::COLOR_MAGENTA => named::DARKMAGENTA,
-            Color::COLOR_BROWN => named::BROWN,
-            Color::COLOR_GREY => named::GRAY,
-            Color::COLOR_DARKGREY => named::DARKGRAY,
-            Color::COLOR_LIGHTBLUE => named::LIGHTBLUE,
-            Color::COLOR_LIGHTGREEN => named::LIGHTGREEN,
-            Color::COLOR_LIGHTCYAN => named::LIGHTCYAN,
-            Color::COLOR_LIGHTRED => named::PINK,
-            Color::COLOR_LIGHTMAGENTA => named::MAGENTA,
-            Color::COLOR_YELLOW => named::YELLOW,
-            Color::COLOR_WHITE => named::WHITE,
+            Color::Black => named::BLACK,
+            Color::Blue => named::BLUE,
+            Color::Green => named::GREEN,
+            Color::Cyan => named::CYAN,
+            Color::Red => named::RED,
+            Color::Magenta => named::DARKMAGENTA,
+            Color::Brown => named::BROWN,
+            Color::Grey => named::GRAY,
+            Color::Darkgrey => named::DARKGRAY,
+            Color::Lightblue => named::LIGHTBLUE,
+            Color::Lightgreen => named::LIGHTGREEN,
+            Color::Lightcyan => named::LIGHTCYAN,
+            Color::Lightred => named::PINK,
+            Color::Lightmagenta => named::MAGENTA,
+            Color::Yellow => named::YELLOW,
+            Color::White => named::WHITE,
         }
     }
 }
@@ -421,11 +423,8 @@ pub fn create_building_def_map(
         .building_list
         .into_iter()
         .map(|b| {
-            let t = b.building_type.get_or_default();
-            (
-                (t.building_type(), t.building_subtype(), t.building_custom()),
-                b,
-            )
+            let t = b.building_type;
+            ((t.building_type, t.building_subtype, t.building_custom), b)
         })
         .collect();
     building_map
@@ -433,7 +432,7 @@ pub fn create_building_def_map(
 
 impl WithDFCoords for Engraving {
     fn coords(&self) -> DFMapCoords {
-        let pos = self.pos.get_or_default();
+        let pos = self.pos.unwrap_or_default();
         DFMapCoords {
             x: pos.x(),
             y: pos.y(),

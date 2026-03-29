@@ -159,11 +159,11 @@ impl WithDFCoords for DirectionFlat {
 impl DirectionFlat {
     pub fn maybe_from_df(value: &BuildingDirection) -> Option<Self> {
         match value {
-            BuildingDirection::NORTH => Some(DirectionFlat::North),
-            BuildingDirection::EAST => Some(DirectionFlat::East),
-            BuildingDirection::SOUTH => Some(DirectionFlat::South),
-            BuildingDirection::WEST => Some(DirectionFlat::West),
-            BuildingDirection::NONE => None,
+            BuildingDirection::North => Some(DirectionFlat::North),
+            BuildingDirection::East => Some(DirectionFlat::East),
+            BuildingDirection::South => Some(DirectionFlat::South),
+            BuildingDirection::West => Some(DirectionFlat::West),
+            _ => None,
         }
     }
 }

@@ -37,15 +37,15 @@ pub fn build(
     }
 
     // Create the parent group for all the objects of this block
-    let x = block.map_x() * BASE as i32 - context.max_vox_x() + 24;
-    let y = context.max_vox_y() - block.map_y() * BASE as i32 - 23;
+    let x = block.map_x * BASE as i32 - context.max_vox_x() + 24;
+    let y = context.max_vox_y() - block.map_y * BASE as i32 - 23;
 
     if tiles.iter().all(|t| map.occupancy[&t.coords()].hidden) {
         // The full block is hidden, skip the construction and add the
         // hidden model to save space
         let block_group = vox.insert_group_node_simple(
             level_group_id,
-            format!("block {} {}", block.map_x(), block.map_y(),),
+            format!("block {} {}", block.map_x, block.map_y),
             Some(DotVoxModelCoords::new(x, y, 0)),
             Layers::All.id(),
         );
@@ -80,7 +80,7 @@ pub fn build(
 
     let block_group = vox.insert_group_node_simple(
         level_group_id,
-        format!("block {} {}", block.map_x(), block.map_y(),),
+        format!("block {} {}", block.map_x, block.map_y),
         Some(DotVoxModelCoords::new(x, y, 0)),
         Layers::All.id(),
     );

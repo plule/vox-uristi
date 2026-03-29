@@ -27,7 +27,7 @@ pub impl BlockTile<'_> {
     fn is_wall(&self) -> bool {
         matches!(
             self.tile_type().shape(),
-            TiletypeShape::WALL | TiletypeShape::FORTIFICATION
+            TiletypeShape::Wall | TiletypeShape::Fortification
         )
     }
 
@@ -49,16 +49,16 @@ pub impl BlockTile<'_> {
         let mut rng = self.stable_rng();
         let coords = self.global_coords();
         let tile_type = self.tile_type();
-        let material = Material::TileGeneric(self.material().clone(), self.tile_type().material());
+        let material = Material::TileGeneric(*self.material(), self.tile_type().material());
         let material_dark =
-            Material::DarkTileGeneric(self.material().clone(), self.tile_type().material());
+            Material::DarkTileGeneric(*self.material(), self.tile_type().material());
 
         let rough = !matches!(
             tile_type.special(),
-            TiletypeSpecial::SMOOTH | TiletypeSpecial::SMOOTH_DEAD // smoothed surface
+            TiletypeSpecial::Smooth | TiletypeSpecial::SmoothDead // smoothed surface
         ) && !matches!(
             tile_type.material(),
-            TiletypeMaterial::CONSTRUCTION /* constructed surface or ramp */ | TiletypeMaterial::FROZEN_LIQUID /* exclude ice it looks bad */
+            TiletypeMaterial::Construction /* constructed surface or ramp */ | TiletypeMaterial::FrozenLiquid /* exclude ice it looks bad */
         );
 
         let engraved = map
@@ -75,7 +75,7 @@ pub impl BlockTile<'_> {
         let mut rand_mat = || *[mat1, mat2].choose(&mut rng).unwrap();
 
         let shape: Box3D<bool> = match tile_type.shape() {
-            TiletypeShape::FLOOR | TiletypeShape::BOULDER | TiletypeShape::PEBBLES => {
+            TiletypeShape::Floor | TiletypeShape::Boulder | TiletypeShape::Pebbles => {
                 let floor_slice = if engraved {
                     slice_from_fn(|x, y| Some(if (x + y) % 2 == 1 { mat1 } else { mat2 }))
                 } else if rough {
@@ -94,7 +94,7 @@ pub impl BlockTile<'_> {
 
                 return voxels_from_shape(shape, self.local_coords());
             }
-            TiletypeShape::WALL => {
+            TiletypeShape::Wall => {
                 // Build the wall shape
                 let mut wall_shape: Box3D<u8> = if rough {
                     box_from_fn(|_, _, _| rand_mat())
@@ -143,7 +143,7 @@ pub impl BlockTile<'_> {
                 let shape: Box3D<Option<u8>> = box_map(wall_shape, Some);
                 return voxels_from_shape(shape, self.local_coords());
             }
-            TiletypeShape::FORTIFICATION => {
+            TiletypeShape::Fortification => {
                 let conn = map.neighbouring_flat(coords, |o| {
                     o.block_tile.as_ref().is_some_and(|t| t.is_wall())
                 });
@@ -160,10 +160,10 @@ pub impl BlockTile<'_> {
                     slice_full(),
                 ]
             }
-            TiletypeShape::STAIR_UP => stairs(true, true, false, true, coords.z),
-            TiletypeShape::STAIR_DOWN => stairs(false, false, true, false, coords.z),
-            TiletypeShape::STAIR_UPDOWN => stairs(true, true, true, false, coords.z),
-            TiletypeShape::RAMP => ramp_shape(map, coords),
+            TiletypeShape::StairUp => stairs(true, true, false, true, coords.z),
+            TiletypeShape::StairDown => stairs(false, false, true, false, coords.z),
+            TiletypeShape::StairUpdown => stairs(true, true, true, false, coords.z),
+            TiletypeShape::Ramp => ramp_shape(map, coords),
             _ => box_empty(),
         };
 
@@ -185,13 +185,13 @@ pub impl BlockTile<'_> {
             tile_type.direction(),
         ) {
             // these are probably actually somewhere...
-            (TiletypeMaterial::ROOT, _, _) => PlantPart::Root,
-            (TiletypeMaterial::MUSHROOM, _, _) => PlantPart::Cap,
-            (_, TiletypeShape::SAPLING, _) => PlantPart::Sapling,
-            (_, TiletypeShape::TWIG, _) => PlantPart::Twig,
-            (_, TiletypeShape::SHRUB, _) => PlantPart::Shrub,
-            (_, TiletypeShape::BRANCH, "--------") => PlantPart::LightBranch,
-            (_, TiletypeShape::BRANCH, direction) => PlantPart::HeavyBranch {
+            (TiletypeMaterial::Root, _, _) => PlantPart::Root,
+            (TiletypeMaterial::Mushroom, _, _) => PlantPart::Cap,
+            (_, TiletypeShape::Sapling, _) => PlantPart::Sapling,
+            (_, TiletypeShape::Twig, _) => PlantPart::Twig,
+            (_, TiletypeShape::Shrub, _) => PlantPart::Shrub,
+            (_, TiletypeShape::Branch, "--------") => PlantPart::LightBranch,
+            (_, TiletypeShape::Branch, direction) => PlantPart::HeavyBranch {
                 connectivity: connectivity_from_direction_string(direction),
             },
             _ => PlantPart::Trunk,

@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use dfhack_remote::{BasicMaterialInfoMask, BlockRequest, ListMaterialsIn};
-use protobuf::{Message, MessageField, MessageFull};
+use prost::Message;
+use serde::Serialize;
 
 use crate::{rfr, rfr::DFHackExt, DFMapCoords, DevCommand, WithDFCoords};
 
@@ -46,7 +47,7 @@ pub fn probe(destination: PathBuf) -> Result<(), anyhow::Error> {
                 }
             }
             for (i, flow) in block.flows.iter().enumerate() {
-                if DFMapCoords::from(flow.pos.get_or_default()) == probe {
+                if DFMapCoords::from(flow.pos.unwrap_or_default()) == probe {
                     dump(flow, &destination, format!("flow_{i}.json").as_str())?;
                 }
             }
@@ -65,7 +66,7 @@ fn regen_test_data() -> Result<(), anyhow::Error> {
     for (index, block_list) in
         rfr::BlockListIterator::try_new(&mut client, 100, 0..1000, 0..1000, z..z + 1)?.enumerate()
     {
-        let data = block_list?.write_to_bytes()?;
+        let data = block_list?.encode_to_vec();
         let mut dest = destination.clone();
         dest.push(format!("block_{index}.dat"));
         println!("{}", &dest.display());
@@ -73,7 +74,7 @@ fn regen_test_data() -> Result<(), anyhow::Error> {
     }
 
     let building_defs = client.remote_fortress_reader().get_building_def_list()?;
-    let data = building_defs.write_to_bytes()?;
+    let data = building_defs.encode_to_vec();
     let mut dest = destination.clone();
     dest.push("building_defs.dat");
     println!("{}", &dest.display());
@@ -86,7 +87,7 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
     let mut client = dfhack_remote::connect()?;
 
     let req = ListMaterialsIn {
-        mask: MessageField::some(BasicMaterialInfoMask {
+        mask: Some(BasicMaterialInfoMask {
             flags: Some(true),
             reaction: Some(true),
             ..Default::default()
@@ -145,8 +146,8 @@ fn dump_lists(destination: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn dump(message: &impl MessageFull, folder: &Path, filename: &str) -> Result<()> {
-    let json = protobuf_json_mapping::print_to_string(message)?;
+fn dump(message: &impl Serialize, folder: &Path, filename: &str) -> Result<()> {
+    let json = serde_json::to_string_pretty(message)?;
     let mut dest = folder.to_path_buf();
     dest.push(filename);
     println!("{}", &dest.display());

@@ -219,8 +219,10 @@ impl EffectiveMaterial {
                     .materials
                     .material_list
                     .iter()
-                    .find(|m| mat == m.mat_pair.get_or_default())
-                    .map_or(named::BLACK, |material| material.state_color.rgb());
+                    .find(|m| mat == &m.mat_pair)
+                    .map_or(named::BLACK, |material| {
+                        material.state_color.unwrap_or_default().rgb()
+                    });
                 if source_color == dest_color {
                     (res.r, res.g, res.b, res.a) =
                         (main_color.red, main_color.green, main_color.blue, 255);
@@ -253,10 +255,10 @@ impl EffectiveMaterial {
             .materials
             .material_list
             .iter()
-            .find(|m| matpair == m.mat_pair.get_or_default())
+            .find(|m| matpair == &m.mat_pair)
         {
             // raw rgba
-            (res.r, res.g, res.b, res.a) = material.state_color.get_rgba();
+            (res.r, res.g, res.b, res.a) = material.state_color.unwrap_or_default().get_rgba();
 
             // override for water ("clear" so no color)
             if material.id() == "WATER" {
@@ -265,7 +267,7 @@ impl EffectiveMaterial {
         }
         if let Some(info) = context
             .inorganic_materials_map
-            .get(&(matpair.mat_type(), matpair.mat_index()))
+            .get(&(matpair.mat_type, matpair.mat_index))
         {
             for flag in info.flag_names(&context.enums) {
                 match flag {
@@ -291,7 +293,7 @@ impl EffectiveMaterial {
                     _ => {}
                 }
             }
-            if info.token() == "MARBLE" {
+            if info.token == "MARBLE" {
                 res.mat_type = Some("_metal");
                 res.roughness = Some(50);
                 res.metalness = Some(50);
@@ -308,34 +310,34 @@ impl EffectiveMaterial {
         let mut res = Self::from_matpair(matpair, context);
         match tiletype_material {
             // Apply a reflective effect on ice
-            TiletypeMaterial::FROZEN_LIQUID => {
+            TiletypeMaterial::FrozenLiquid => {
                 res.mat_type = Some("_glass");
                 res.ior = Some(50);
                 res.transparency = Some(50);
             }
             // Obsidian and friends
-            TiletypeMaterial::LAVA_STONE => {
+            TiletypeMaterial::LavaStone => {
                 res.mat_type = Some("_glass");
                 res.roughness = Some(10);
                 res.transparency = Some(0);
                 res.ior = Some(5);
             }
             // Grass don't have a proper material, or maybe hidden into plants raws?
-            TiletypeMaterial::GRASS_LIGHT => {
+            TiletypeMaterial::GrassLight => {
                 (res.r, res.g, res.b, res.a) = (0, 153, 51, 255);
             }
-            TiletypeMaterial::GRASS_DARK => {
+            TiletypeMaterial::GrassDark => {
                 (res.r, res.g, res.b, res.a) = (0, 102, 0, 255);
             }
-            TiletypeMaterial::GRASS_DRY | TiletypeMaterial::GRASS_DEAD => {
+            TiletypeMaterial::GrassDry | TiletypeMaterial::GrassDead => {
                 (res.r, res.g, res.b, res.a) = (61, 102, 0, 255);
             }
             // Desaturate a bit constructions
-            TiletypeMaterial::CONSTRUCTION => {
+            TiletypeMaterial::Construction => {
                 res.set_hsv(res.hsv().desaturate(0.1));
             }
             // Desaturate more raw materials
-            TiletypeMaterial::STONE | TiletypeMaterial::DRIFTWOOD => {
+            TiletypeMaterial::Stone | TiletypeMaterial::Driftwood => {
                 res.set_hsv(res.hsv().desaturate(0.15));
             }
             _ => {}

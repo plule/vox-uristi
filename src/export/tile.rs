@@ -16,7 +16,7 @@ use crate::{
 };
 use dfhack_remote::{MatterState, TiletypeMaterial, TiletypeShape, TiletypeSpecial};
 pub use generic::BlockTileExt;
-use rand::Rng;
+use rand::RngExt;
 pub use tree::BlockTilePlantExt;
 
 pub fn ramp_levels(map: &Map<'_>, coords: DFMapCoords) -> [[usize; 3]; 3] {
@@ -86,19 +86,19 @@ impl BlockTile<'_> {
             self.tile_type().special(),
         ) {
             (
-                TiletypeMaterial::ROOT
-                | TiletypeMaterial::MUSHROOM
-                | TiletypeMaterial::PLANT
-                | TiletypeMaterial::TREE_MATERIAL,
+                TiletypeMaterial::Root
+                | TiletypeMaterial::Mushroom
+                | TiletypeMaterial::Plant
+                | TiletypeMaterial::TreeMaterial,
                 _,
                 _,
             )
             | (
                 _,
-                TiletypeShape::SAPLING
-                | TiletypeShape::TWIG
-                | TiletypeShape::SHRUB
-                | TiletypeShape::BRANCH,
+                TiletypeShape::Sapling
+                | TiletypeShape::Twig
+                | TiletypeShape::Shrub
+                | TiletypeShape::Branch,
                 _,
             ) => {
                 // plant, trees
@@ -106,7 +106,7 @@ impl BlockTile<'_> {
                 occupied_for_spatters.extend(trees.iter().map(|v| (v.x, v.y, v.z)));
                 models.extend(Layers::Vegetation, trees);
             }
-            (_, _, TiletypeSpecial::TRACK) => {
+            (_, _, TiletypeSpecial::Track) => {
                 // tracks or frozen tracks
                 let track = self.build_track(map, context, palette);
                 models.extend(Layers::Terrain, track);
@@ -149,7 +149,7 @@ impl BlockTile<'_> {
         // spatters
         for spatter in self.spatters() {
             // spatters sit on top of existing voxels, when there is some space
-            let material = Material::Generic(spatter.material.get_or_default().clone());
+            let material = Material::Generic(spatter.material.unwrap_or_default());
 
             for (x, y, z) in &occupied_for_spatters {
                 let coords = (*x, *y, *z + 1);
@@ -182,7 +182,7 @@ impl BlockTile<'_> {
         }
 
         // Fire is identified as a special tiletype material
-        if self.tile_type().material() == TiletypeMaterial::FIRE {
+        if self.tile_type().material() == TiletypeMaterial::Fire {
             let shape: Box3D<bool> = box_from_fn(|_, _, _| rng.random_bool(0.1));
             let material = palette.get(&Material::Default(DefaultMaterials::Fire), context);
             models.extend(
