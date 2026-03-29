@@ -23,7 +23,6 @@ updates:
       all:
         patterns:
           - "*"
-        update-types: [minor, patch]
   - package-ecosystem: "bundler"
     directory: "/site"
     schedule:
