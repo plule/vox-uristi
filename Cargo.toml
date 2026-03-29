@@ -27,14 +27,14 @@ num-integer = "0.1"
 num_enum = "0.7"
 opener = { version = "0.8", features = ["reveal"], optional = true }
 palette = "0.7"
-prost = "0.14.3"
+prost = "0.14"
 rand = "0.10"
 reqwest = { version = "0.13", features = ["blocking", "json"], optional = true }
 rfd = { version = "0.17", optional = true }
 rgb = "0.8"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1.0.149", optional = true }
+serde_json = { version = "1", optional = true }
 serde_yaml = "0.9"
 strum = { version = "0.27", features = ["derive"] }
 tracing-subscriber = "0.3"
