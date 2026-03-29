@@ -14,7 +14,7 @@ anyhow = "1"
 bitflags = "2"
 clap = { version = "4", features = ["derive"] }
 derive_more = { version = "2", features = ["deref"] }
-dfhack-remote = { version = "0.11", path = "../dfhack-remote" }
+dfhack-remote = { version = "0.11" }
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1"
 eframe = { version = "0.33", features = ["persistence"], optional = true }
