@@ -5,12 +5,18 @@
 
 version: 2
 updates:
-  - package-ecosystem: "cargo" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "cargo"
+    directory: "/"
     schedule:
       interval: "weekly"
     allow:
-      - dependency-type: "all"
+      - dependency-type: "direct"
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "indirect"
     groups:
       all:
         patterns:
