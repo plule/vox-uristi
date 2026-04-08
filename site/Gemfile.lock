@@ -14,10 +14,10 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    addressable (2.8.9)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     base64 (0.3.0)
-    bigdecimal (4.1.0)
+    bigdecimal (4.1.1)
     coffee-script (2.4.1)
       coffee-script-source
       execjs
@@ -39,7 +39,7 @@ GEM
       ffi (>= 1.15.0)
       logger
     eventmachine (1.2.7)
-    execjs (2.10.0)
+    execjs (2.10.1)
     faraday (2.14.1)
       faraday-net_http (>= 2.0, < 3.5)
       json
