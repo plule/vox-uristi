@@ -75,7 +75,7 @@ jobs:
         if: ${{ matrix.os=='ubuntu-latest' }}
         # TODO: move this release out of the matrix job
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
