@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
       - name: Install packages (Linux)
         if: runner.os == 'Linux'
@@ -55,7 +55,7 @@ jobs:
       packages: write
       deployments: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
       - name: Install packages (Linux)
         if: runner.os == 'Linux'
@@ -94,6 +94,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}} # Detect that the PR author is dependabot
     steps:
-      - uses: fastify/github-action-merge-dependabot@v3.14.0
+      - uses: fastify/github-action-merge-dependabot@v3.15.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
