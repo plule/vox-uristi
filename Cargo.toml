@@ -17,7 +17,7 @@ derive_more = { version = "2", features = ["deref"] }
 dfhack-remote = { version = "0.12" }
 dot_vox = { git = "https://github.com/dust-engine/dot_vox.git", branch = "master" } # unreleased ability to write materials
 easy-ext = "1"
-eframe = { version = "0.35", features = ["persistence"], optional = true }
+eframe = { version = "0.36", features = ["persistence"], optional = true }
 glob-match = "0.2"
 include_dir = { version = "0.7", features = ["glob"] }
 indicatif = "0.18"
