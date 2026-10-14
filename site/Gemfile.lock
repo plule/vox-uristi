@@ -196,8 +196,11 @@ GEM
       jekyll (~> 3.3)
     minitest (5.27.0)
     net-dns (0.20.0)
-    net-http (0.9.1)
+    net-http (0.10.0)
+      net-protocol (>= 0.3.0)
       uri (>= 0.11.1)
+    net-protocol (0.4.0)
+      timeout
     nokogiri (1.19.4-x64-mingw-ucrt)
       racc (~> 1.4)
     nokogiri (1.19.4-x86_64-linux-gnu)
@@ -227,12 +230,13 @@ GEM
     terminal-table (1.8.0)
       unicode-display_width (~> 1.1, >= 1.1.1)
     thread_safe (0.3.6)
+    timeout (0.6.1)
     typhoeus (0.8.0)
       ethon (>= 0.8.0)
     tzinfo (1.2.11)
       thread_safe (~> 0.1)
     unicode-display_width (1.8.0)
-    uri (1.1.1)
+    uri (1.1.2)
 
 PLATFORMS
   x64-mingw-ucrt
