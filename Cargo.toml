@@ -30,7 +30,7 @@ palette = "0.7"
 prost = "0.14"
 rand = "0.10"
 reqwest = { version = "0.13", features = ["blocking", "json"], optional = true }
-rfd = { version = "0.17", optional = true }
+rfd = { version = "0.18", optional = true }
 rgb = "0.8"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
